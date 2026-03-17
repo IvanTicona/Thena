@@ -1,0 +1,59 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Build outputs
+dist/
+build/
+*.egg-info/
+
+# Prisma generated client
+server/src/generated/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Docker
+docker-compose.override.yml
+
+# MinIO data
+minio-data/
+
+# PostgreSQL data
+pg-data/
+
+# Redis data
+redis-data/
+
+# Coverage
+coverage/
+htmlcov/
+.coverage
+.nyc_output/
+
+# Temp
+tmp/
+temp/

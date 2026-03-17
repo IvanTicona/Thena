@@ -1,0 +1,215 @@
+generator client {
+  provider        = "prisma-client"
+  output          = "../src/generated/prisma"
+  moduleFormat    = "cjs"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  extensions = [pgvector(map: "vector", schema: "public")]
+}
+
+// =============================================
+// Enums
+// =============================================
+
+enum UserRole {
+  STUDENT
+  TUTOR
+}
+
+enum ChapterStatus {
+  LOCKED
+  DRAFT
+  IN_REVIEW
+  APPROVED
+}
+
+enum JobStatus {
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum AgentType {
+  STRUCTURE
+  METHODOLOGY
+  COHERENCE
+}
+
+enum AgentStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+enum ObservationSeverity {
+  INFO
+  SUGGESTION
+  WARNING
+  ERROR
+}
+
+enum KnowledgeLayer {
+  TUTOR
+  INSTITUTIONAL
+}
+
+// =============================================
+// Models
+// =============================================
+
+model User {
+  id        String   @id @default(uuid()) @db.Uuid
+  email     String   @unique @db.VarChar(255)
+  name      String   @db.VarChar(255)
+  role      UserRole
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  // Relations
+  chapters         Chapter[]        @relation("StudentChapters")
+  approvedChapters Chapter[]        @relation("ApprovedByTutor")
+  submissions      Submission[]
+  knowledgeChunks  KnowledgeChunk[]
+
+  @@map("users")
+}
+
+model Chapter {
+  id         String        @id @default(uuid()) @db.Uuid
+  number     Int           @db.SmallInt
+  title      String        @db.VarChar(255)
+  status     ChapterStatus @default(LOCKED)
+  studentId  String        @map("student_id") @db.Uuid
+  approvedBy String?       @map("approved_by") @db.Uuid
+  approvedAt DateTime?     @map("approved_at")
+  createdAt  DateTime      @default(now()) @map("created_at")
+  updatedAt  DateTime      @default(now()) @updatedAt @map("updated_at")
+
+  // Relations
+  student     User         @relation("StudentChapters", fields: [studentId], references: [id])
+  approver    User?        @relation("ApprovedByTutor", fields: [approvedBy], references: [id])
+  submissions Submission[]
+
+  @@unique([studentId, number])
+  @@map("chapters")
+}
+
+model Submission {
+  id              String   @id @default(uuid()) @db.Uuid
+  chapterId       String   @map("chapter_id") @db.Uuid
+  studentId       String   @map("student_id") @db.Uuid
+  versionNumber   Int      @map("version_number")
+  fileUrl         String   @map("file_url") @db.VarChar(500)
+  fileName        String   @map("file_name") @db.VarChar(255)
+  mimeType        String   @map("mime_type") @db.VarChar(100)
+  markdownContent String?  @map("markdown_content") @db.Text
+  submittedAt     DateTime @default(now()) @map("submitted_at")
+
+  // Relations
+  chapter   Chapter    @relation(fields: [chapterId], references: [id])
+  student   User       @relation(fields: [studentId], references: [id])
+  reviewJob ReviewJob?
+
+  @@unique([chapterId, versionNumber])
+  @@index([studentId, submittedAt(sort: Desc)])
+  @@map("submissions")
+}
+
+model ReviewJob {
+  id           String    @id @default(uuid()) @db.Uuid
+  submissionId String    @unique @map("submission_id") @db.Uuid
+  status       JobStatus @default(QUEUED)
+  errorMessage String?   @map("error_message") @db.Text
+  startedAt    DateTime? @map("started_at")
+  completedAt  DateTime? @map("completed_at")
+  durationMs   Int?      @map("duration_ms")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  submission   Submission   @relation(fields: [submissionId], references: [id])
+  agentResults AgentResult[]
+  reviewReport ReviewReport?
+
+  @@map("review_jobs")
+}
+
+model AgentResult {
+  id          String      @id @default(uuid()) @db.Uuid
+  reviewJobId String      @map("review_job_id") @db.Uuid
+  agentType   AgentType   @map("agent_type")
+  status      AgentStatus @default(PENDING)
+  findings    Json?
+  startedAt   DateTime?   @map("started_at")
+  completedAt DateTime?   @map("completed_at")
+  createdAt   DateTime    @default(now()) @map("created_at")
+
+  // Relations
+  reviewJob    ReviewJob     @relation(fields: [reviewJobId], references: [id])
+  observations Observation[]
+
+  @@unique([reviewJobId, agentType])
+  @@map("agent_results")
+}
+
+model ReviewReport {
+  id                String   @id @default(uuid()) @db.Uuid
+  reviewJobId       String   @unique @map("review_job_id") @db.Uuid
+  summaryText       String   @map("summary_text") @db.Text
+  totalObservations Int      @default(0) @map("total_observations")
+  bySeverity        Json     @default("{}") @map("by_severity")
+  generatedAt       DateTime @default(now()) @map("generated_at")
+
+  // Relations
+  reviewJob    ReviewJob     @relation(fields: [reviewJobId], references: [id])
+  observations Observation[]
+
+  @@map("review_reports")
+}
+
+model Observation {
+  id              String              @id @default(uuid()) @db.Uuid
+  agentResultId   String              @map("agent_result_id") @db.Uuid
+  reviewReportId  String              @map("review_report_id") @db.Uuid
+  type            AgentType
+  severity        ObservationSeverity
+  message         String              @db.Text
+  suggestion      String?             @db.Text
+  textFragment    String?             @map("text_fragment") @db.Text
+  offsetStart     Int?                @map("offset_start")
+  offsetEnd       Int?                @map("offset_end")
+  sourceReference Json?               @map("source_reference")
+  createdAt       DateTime            @default(now()) @map("created_at")
+
+  // Relations
+  agentResult  AgentResult  @relation(fields: [agentResultId], references: [id])
+  reviewReport ReviewReport @relation(fields: [reviewReportId], references: [id])
+
+  @@index([reviewReportId])
+  @@index([agentResultId])
+  @@map("observations")
+}
+
+model KnowledgeChunk {
+  id             String         @id @default(uuid()) @db.Uuid
+  layer          KnowledgeLayer
+  ownerId        String?        @map("owner_id") @db.Uuid
+  sourceDocument String         @map("source_document") @db.VarChar(255)
+  sectionTitle   String?        @map("section_title") @db.VarChar(255)
+  content        String         @db.Text
+  embedding      Unsupported("vector(1536)")?
+  chunkIndex     Int            @default(0) @map("chunk_index")
+  metadata       Json           @default("{}")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @default(now()) @updatedAt @map("updated_at")
+
+  // Relations
+  owner User? @relation(fields: [ownerId], references: [id])
+
+  @@index([layer, ownerId])
+  @@map("knowledge_chunks")
+}
