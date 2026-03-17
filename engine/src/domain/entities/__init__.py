@@ -1,0 +1,100 @@
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import TypedDict
+
+
+class ObservationType(str, Enum):
+    STRUCTURE = "STRUCTURE"
+    METHODOLOGY = "METHODOLOGY"
+    COHERENCE = "COHERENCE"
+
+
+class Severity(str, Enum):
+    INFO = "INFO"
+    SUGGESTION = "SUGGESTION"
+    WARNING = "WARNING"
+    ERROR = "ERROR"
+
+
+@dataclass
+class SourceReference:
+    layer: str
+    chunk_id: str
+    document_title: str
+    section: str
+
+
+@dataclass
+class Observation:
+    type: ObservationType
+    severity: Severity
+    message: str
+    suggestion: str | None = None
+    text_fragment: str | None = None
+    offset_start: int | None = None
+    offset_end: int | None = None
+    source_reference: SourceReference | None = None
+
+    def to_dict(self) -> dict:
+        result = {
+            "type": self.type.value,
+            "severity": self.severity.value,
+            "message": self.message,
+        }
+        if self.suggestion:
+            result["suggestion"] = self.suggestion
+        if self.text_fragment:
+            result["textFragment"] = self.text_fragment
+        if self.offset_start is not None:
+            result["offsetStart"] = self.offset_start
+        if self.offset_end is not None:
+            result["offsetEnd"] = self.offset_end
+        if self.source_reference:
+            result["sourceReference"] = {
+                "layer": self.source_reference.layer,
+                "chunkId": self.source_reference.chunk_id,
+                "documentTitle": self.source_reference.document_title,
+                "section": self.source_reference.section,
+            }
+        return result
+
+
+@dataclass
+class DocumentSection:
+    heading: str
+    level: int
+    content: str
+    offset_start: int
+    offset_end: int
+
+
+@dataclass
+class ParsedDocument:
+    full_text: str
+    markdown: str
+    sections: list[DocumentSection] = field(default_factory=list)
+
+
+class ReviewState(TypedDict, total=False):
+    # Input
+    submission_id: str
+    chapter_number: int
+    chapter_title: str
+    document_text: str
+    document_sections: list[dict]
+    markdown_content: str
+    previous_chapters: list[dict]
+    rag_context: list[dict]
+    tutor_id: str | None
+
+    # Agent outputs
+    structure_findings: list[dict]
+    methodology_findings: list[dict]
+    coherence_findings: list[dict]
+
+    # Final output
+    observations: list[dict]
+    summary: str
+
+    # Error tracking
+    agent_errors: dict[str, str]
