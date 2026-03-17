@@ -1,5 +1,10 @@
-import { Layout, Select, Tag, Typography, Alert } from 'antd';
-import { Outlet } from 'react-router-dom';
+import { Layout, Menu, Select, Tag, Typography, Alert } from 'antd';
+import {
+  BookOutlined,
+  DashboardOutlined,
+  DatabaseOutlined,
+} from '@ant-design/icons';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useUser } from '../../context/UserContext';
 
 const { Header, Sider, Content, Footer } = Layout;
@@ -7,6 +12,35 @@ const { Title } = Typography;
 
 export function AppLayout() {
   const { currentUser, users, switchUser } = useUser();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const isStudent = currentUser.role === 'STUDENT';
+
+  const menuItems = isStudent
+    ? [
+        {
+          key: '/chapters',
+          icon: <BookOutlined />,
+          label: 'Mis Capitulos',
+        },
+      ]
+    : [
+        {
+          key: '/tutor',
+          icon: <DashboardOutlined />,
+          label: 'Panel de Tutor',
+        },
+        {
+          key: '/tutor/knowledge',
+          icon: <DatabaseOutlined />,
+          label: 'Base de Conocimiento',
+        },
+      ];
+
+  const selectedKey =
+    menuItems.find((item) => location.pathname.startsWith(item.key))?.key ||
+    menuItems[0]?.key;
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
@@ -20,12 +54,16 @@ export function AppLayout() {
           padding: '0 24px',
         }}
       >
-        <Title level={4} style={{ margin: 0 }}>
+        <Title
+          level={4}
+          style={{ margin: 0, cursor: 'pointer' }}
+          onClick={() => navigate(isStudent ? '/chapters' : '/tutor')}
+        >
           THENA
         </Title>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Tag color={currentUser.role === 'STUDENT' ? 'blue' : 'green'}>
-            {currentUser.role === 'STUDENT' ? 'Estudiante' : 'Tutor'}
+          <Tag color={isStudent ? 'blue' : 'green'}>
+            {isStudent ? 'Estudiante' : 'Tutor'}
           </Tag>
           <Select
             value={currentUser.id}
@@ -40,13 +78,17 @@ export function AppLayout() {
       </Header>
 
       <Layout>
-        <Sider width={240} style={{ background: '#fff' }}>
-          <div style={{ padding: 16, color: '#999', fontSize: 12 }}>
-            Navegacion (pendiente)
-          </div>
+        <Sider width={220} style={{ background: '#fff' }}>
+          <Menu
+            mode="inline"
+            selectedKeys={[selectedKey]}
+            items={menuItems}
+            onClick={({ key }) => navigate(key)}
+            style={{ borderRight: 0, paddingTop: 8 }}
+          />
         </Sider>
 
-        <Content style={{ padding: 24, minHeight: 360 }}>
+        <Content style={{ padding: 24, minHeight: 360, background: '#f5f5f5' }}>
           <Outlet />
         </Content>
       </Layout>

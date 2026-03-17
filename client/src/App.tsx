@@ -3,6 +3,11 @@ import esES from 'antd/locale/es_ES';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { UserProvider } from './context/UserContext';
 import { AppLayout } from './components/layout/AppLayout';
+import ChapterList from './pages/student/ChapterList';
+import ChapterDetail from './pages/student/ChapterDetail';
+import ReviewView from './pages/student/ReviewView';
+import TutorDashboard from './pages/tutor/TutorDashboard';
+import KnowledgeBase from './pages/tutor/KnowledgeBase';
 
 function App() {
   return (
@@ -11,26 +16,14 @@ function App() {
         <Routes>
           <Route element={<AppLayout />}>
             <Route path="/" element={<Navigate to="/chapters" replace />} />
-            <Route
-              path="/chapters"
-              element={<div>Capitulos (pendiente)</div>}
-            />
-            <Route
-              path="/chapters/:id"
-              element={<div>Detalle de Capitulo (pendiente)</div>}
-            />
+            <Route path="/chapters" element={<ChapterList />} />
+            <Route path="/chapters/:id" element={<ChapterDetail />} />
             <Route
               path="/chapters/:id/review/:jobId"
-              element={<div>Vista de Revision (pendiente)</div>}
+              element={<ReviewView />}
             />
-            <Route
-              path="/tutor"
-              element={<div>Panel del Tutor (pendiente)</div>}
-            />
-            <Route
-              path="/tutor/knowledge"
-              element={<div>Base de Conocimiento (pendiente)</div>}
-            />
+            <Route path="/tutor" element={<TutorDashboard />} />
+            <Route path="/tutor/knowledge" element={<KnowledgeBase />} />
           </Route>
         </Routes>
       </UserProvider>
