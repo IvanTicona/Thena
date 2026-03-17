@@ -8,6 +8,7 @@ import { UserModule } from './modules/user/user.module.js';
 import { ChapterModule } from './modules/chapter/chapter.module.js';
 import { SubmissionModule } from './modules/submission/submission.module.js';
 import { ReviewModule } from './modules/review/review.module.js';
+import { KnowledgeModule } from './modules/knowledge/knowledge.module.js';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { ReviewModule } from './modules/review/review.module.js';
     ChapterModule,
     SubmissionModule,
     ReviewModule,
+    KnowledgeModule,
   ],
   controllers: [],
   providers: [],
