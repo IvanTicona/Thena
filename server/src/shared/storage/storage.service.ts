@@ -8,10 +8,7 @@ export class StorageService implements OnModuleInit {
   private bucket: string;
 
   constructor(private readonly config: ConfigService) {
-    this.bucket = this.config.get<string>(
-      'MINIO_BUCKET',
-      'thena-documents',
-    );
+    this.bucket = this.config.get<string>('MINIO_BUCKET', 'thena-documents');
     this.client = new Minio.Client({
       endPoint: this.config.get<string>('MINIO_ENDPOINT', 'minio'),
       port: parseInt(this.config.get<string>('MINIO_PORT', '9000'), 10),
@@ -21,7 +18,7 @@ export class StorageService implements OnModuleInit {
     });
   }
 
-  async onModuleInit() {
+  async onModuleInit(): Promise<void> {
     const exists = await this.client.bucketExists(this.bucket);
     if (!exists) {
       await this.client.makeBucket(this.bucket);
@@ -34,9 +31,15 @@ export class StorageService implements OnModuleInit {
     buffer: Buffer,
     contentType: string,
   ): Promise<string> {
-    await this.client.putObject(this.bucket, objectName, buffer, buffer.length, {
-      'Content-Type': contentType,
-    });
+    await this.client.putObject(
+      this.bucket,
+      objectName,
+      buffer,
+      buffer.length,
+      {
+        'Content-Type': contentType,
+      },
+    );
     return `${this.bucket}/${objectName}`;
   }
 

@@ -6,16 +6,62 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../../../shared/prisma/prisma.service.js';
 
+export interface ChapterListItem {
+  id: string;
+  number: number;
+  title: string;
+  status: string;
+  latestSubmission: {
+    id: string;
+    versionNumber: number;
+    submittedAt: Date;
+  } | null;
+  submissionCount: number;
+}
+
+export interface ChapterDetail {
+  id: string;
+  number: number;
+  title: string;
+  status: string;
+  submissions: {
+    id: string;
+    versionNumber: number;
+    fileName: string;
+    submittedAt: Date;
+    reviewJob: { id: string; status: string } | null;
+  }[];
+  approvedBy: string | null;
+  approvedAt: Date | null;
+}
+
+export interface ChapterApprovalResult {
+  id: string;
+  number: number;
+  title: string;
+  status: string;
+  approvedBy: string | null;
+  approvedAt: Date | null;
+  nextChapter: {
+    id: string;
+    number: number;
+    title: string;
+    status: string;
+  } | null;
+}
+
+export interface ChapterRejectionResult {
+  id: string;
+  status: string;
+}
+
 @Injectable()
 export class ChapterService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAllForUser(userId: string, role: 'STUDENT' | 'TUTOR') {
+  async findAllForUser(userId: string, role: 'STUDENT' | 'TUTOR'): Promise<ChapterListItem[]> {
     // For MVP: student sees own chapters, tutor sees the only student's chapters
-    const whereClause =
-      role === 'STUDENT'
-        ? { studentId: userId }
-        : {}; // Tutor sees all chapters (single student in MVP)
+    const whereClause = role === 'STUDENT' ? { studentId: userId } : {}; // Tutor sees all chapters (single student in MVP)
 
     const chapters = await this.prisma.client.chapter.findMany({
       where: whereClause,
@@ -44,7 +90,7 @@ export class ChapterService {
     }));
   }
 
-  async findById(id: string) {
+  async findById(id: string): Promise<ChapterDetail> {
     const chapter = await this.prisma.client.chapter.findUnique({
       where: { id },
       include: {
@@ -78,7 +124,7 @@ export class ChapterService {
     };
   }
 
-  async approve(chapterId: string, tutorId: string) {
+  async approve(chapterId: string, tutorId: string): Promise<ChapterApprovalResult> {
     const chapter = await this.prisma.client.chapter.findUnique({
       where: { id: chapterId },
       include: {
@@ -159,7 +205,7 @@ export class ChapterService {
     };
   }
 
-  async reject(chapterId: string) {
+  async reject(chapterId: string): Promise<ChapterRejectionResult> {
     const chapter = await this.prisma.client.chapter.findUnique({
       where: { id: chapterId },
     });

@@ -68,6 +68,11 @@ export interface ReviewReport {
   bySeverity: Record<Severity, number>;
 }
 
+export interface ReviewAgentStatus {
+  type: AgentType;
+  status: string;
+}
+
 export interface ReviewResult {
   id: string;
   submissionId: string;
@@ -75,7 +80,15 @@ export interface ReviewResult {
   startedAt: string | null;
   completedAt: string | null;
   durationMs: number | null;
+  agents: ReviewAgentStatus[];
   report: ReviewReport | null;
   observations: Observation[];
   markdownContent: string | null;
+}
+
+export interface KnowledgeDoc {
+  sourceDocument: string;
+  layer: 'TUTOR' | 'INSTITUTIONAL';
+  chunkCount: number;
+  lastUpdated: string;
 }

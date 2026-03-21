@@ -1,4 +1,9 @@
+import logging
 from dataclasses import dataclass
+
+from src.domain.entities import DocumentSectionDict
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -6,7 +11,7 @@ class TextChunk:
     content: str
     section_title: str | None
     chunk_index: int
-    metadata: dict
+    metadata: dict[str, str | int | None]
 
 
 CHUNK_SIZE = 1000  # characters
@@ -15,7 +20,7 @@ CHUNK_OVERLAP = 200  # characters
 
 def chunk_text(
     full_text: str,
-    sections: list[dict] | None = None,
+    sections: list[DocumentSectionDict] | None = None,
     chunk_size: int = CHUNK_SIZE,
     chunk_overlap: int = CHUNK_OVERLAP,
 ) -> list[TextChunk]:
@@ -26,7 +31,7 @@ def chunk_text(
 
 
 def _chunk_by_sections(
-    sections: list[dict], chunk_size: int, chunk_overlap: int
+    sections: list[DocumentSectionDict], chunk_size: int, chunk_overlap: int
 ) -> list[TextChunk]:
     """Chunk text respecting section boundaries."""
     chunks: list[TextChunk] = []

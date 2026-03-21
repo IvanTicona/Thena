@@ -19,7 +19,7 @@ def embed_and_store(
     layer: str,
     source_document: str,
     owner_id: str | None = None,
-):
+) -> None:
     """Generate embeddings for chunks and store them in pgvector."""
     if not chunks:
         logger.warning("No chunks to embed for %s", source_document)
@@ -51,9 +51,9 @@ def embed_and_store(
                             section_title, content, embedding,
                             chunk_index, metadata
                         ) VALUES (
-                            :id::uuid, :layer::"KnowledgeLayer", :owner_id::uuid, :source_document,
-                            :section_title, :content, :embedding::vector,
-                            :chunk_index, :metadata::jsonb
+                            CAST(:id AS uuid), CAST(:layer AS "KnowledgeLayer"), CAST(:owner_id AS uuid), :source_document,
+                            :section_title, :content, CAST(:embedding AS vector),
+                            :chunk_index, CAST(:metadata AS jsonb)
                         )
                     """),
                     {
@@ -74,7 +74,7 @@ def embed_and_store(
     )
 
 
-def delete_by_source(db_engine: Engine, source_document: str):
+def delete_by_source(db_engine: Engine, source_document: str) -> None:
     """Delete all chunks for a given source document."""
     with db_engine.begin() as conn:
         result = conn.execute(

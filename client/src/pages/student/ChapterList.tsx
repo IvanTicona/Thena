@@ -8,6 +8,7 @@ import {
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
+import { ApiError } from '../../services/api-error';
 import type { Chapter, ChapterStatus } from '../../types';
 
 const { Title, Text } = Typography;
@@ -39,7 +40,9 @@ export default function ChapterList() {
     api
       .get<Chapter[]>('/chapters')
       .then((res) => setChapters(res.data))
-      .catch(console.error)
+      .catch((err: ApiError) => {
+        console.error(err.message);
+      })
       .finally(() => setLoading(false));
   }, []);
 

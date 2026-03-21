@@ -15,8 +15,10 @@ import {
   CloseOutlined,
   EyeOutlined,
 } from '@ant-design/icons';
+import type { ColumnsType } from 'antd/es/table';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
+import { ApiError } from '../../services/api-error';
 import type { Chapter, ChapterStatus } from '../../types';
 
 const { Title } = Typography;
@@ -38,7 +40,9 @@ export default function TutorDashboard() {
     api
       .get<Chapter[]>('/chapters')
       .then((res) => setChapters(res.data))
-      .catch(console.error)
+      .catch((err: ApiError) => {
+        console.error(err.message);
+      })
       .finally(() => setLoading(false));
   };
 
@@ -58,10 +62,8 @@ export default function TutorDashboard() {
           await api.patch(`/chapters/${chapterId}/approve`);
           message.success('Capitulo aprobado');
           fetchChapters();
-        } catch (err: any) {
-          message.error(
-            err?.response?.data?.message || 'Error al aprobar el capitulo',
-          );
+        } catch (err) {
+          message.error(err instanceof ApiError ? err.message : 'Error al aprobar el capitulo');
         }
       },
     });
@@ -80,16 +82,14 @@ export default function TutorDashboard() {
           await api.patch(`/chapters/${chapterId}/reject`);
           message.success('Capitulo rechazado');
           fetchChapters();
-        } catch (err: any) {
-          message.error(
-            err?.response?.data?.message || 'Error al rechazar el capitulo',
-          );
+        } catch (err) {
+          message.error(err instanceof ApiError ? err.message : 'Error al rechazar el capitulo');
         }
       },
     });
   };
 
-  const columns = [
+  const columns: ColumnsType<Chapter> = [
     {
       title: '#',
       dataIndex: 'number',
@@ -118,7 +118,7 @@ export default function TutorDashboard() {
     {
       title: 'Ultima Entrega',
       key: 'latest',
-      render: (_: unknown, record: Chapter) => {
+      render: (_, record) => {
         if (!record.latestSubmission) return '-';
         return new Date(record.latestSubmission.submittedAt).toLocaleDateString(
           'es-BO',
@@ -129,7 +129,7 @@ export default function TutorDashboard() {
     {
       title: 'Acciones',
       key: 'actions',
-      render: (_: unknown, record: Chapter) => (
+      render: (_, record) => (
         <Space>
           {record.status !== 'LOCKED' && (
             <Button

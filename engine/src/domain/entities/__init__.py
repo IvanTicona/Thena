@@ -16,6 +16,54 @@ class Severity(str, Enum):
     ERROR = "ERROR"
 
 
+# ── TypedDicts for unstructured dict usage ───────────────────────
+
+
+class DocumentSectionDict(TypedDict):
+    heading: str
+    level: int
+    content: str
+    offset_start: int
+    offset_end: int
+
+
+class PreviousChapterDict(TypedDict):
+    chapter_number: int
+    chapter_title: str
+    markdown_content: str
+
+
+class RagChunkDict(TypedDict):
+    chunk_id: str
+    content: str
+    metadata: dict[str, str]
+    document_title: str
+    layer: str
+    section: str
+    similarity: float
+
+
+class FindingDict(TypedDict, total=False):
+    type: str
+    severity: str
+    message: str
+    suggestion: str | None
+    textFragment: str | None
+    offsetStart: int | None
+    offsetEnd: int | None
+    sourceReference: dict[str, str] | None
+
+
+class ChapterInfoDict(TypedDict):
+    chapter_number: int
+    chapter_title: str
+    student_id: str
+    tutor_id: str | None
+
+
+# ── Dataclasses ──────────────────────────────────────────────────
+
+
 @dataclass
 class SourceReference:
     layer: str
@@ -35,7 +83,7 @@ class Observation:
     offset_end: int | None = None
     source_reference: SourceReference | None = None
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, str | int | dict[str, str] | None]:
         result = {
             "type": self.type.value,
             "severity": self.severity.value,
@@ -81,19 +129,19 @@ class ReviewState(TypedDict, total=False):
     chapter_number: int
     chapter_title: str
     document_text: str
-    document_sections: list[dict]
+    document_sections: list[DocumentSectionDict]
     markdown_content: str
-    previous_chapters: list[dict]
-    rag_context: list[dict]
+    previous_chapters: list[PreviousChapterDict]
+    rag_context: list[RagChunkDict]
     tutor_id: str | None
 
     # Agent outputs
-    structure_findings: list[dict]
-    methodology_findings: list[dict]
-    coherence_findings: list[dict]
+    structure_findings: list[FindingDict]
+    methodology_findings: list[FindingDict]
+    coherence_findings: list[FindingDict]
 
     # Final output
-    observations: list[dict]
+    observations: list[FindingDict]
     summary: str
 
     # Error tracking

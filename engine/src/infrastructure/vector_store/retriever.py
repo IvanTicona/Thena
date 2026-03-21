@@ -1,18 +1,23 @@
+import logging
+
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
 from src.config import settings
 from src.application.llm_factory import LLMFactory
+from src.domain.entities import RagChunkDict
+
+logger = logging.getLogger(__name__)
 
 
 class RAGRetriever:
-    def __init__(self, db_engine: Engine):
+    def __init__(self, db_engine: Engine) -> None:
         self._db_engine = db_engine
         self._embeddings = LLMFactory.create_embeddings()
 
     def retrieve(
         self, query: str, tutor_id: str | None = None
-    ) -> list[dict]:
+    ) -> list[RagChunkDict]:
         """Retrieve relevant knowledge chunks from pgvector."""
         query_embedding = self._embeddings.embed_query(query)
 
@@ -29,16 +34,16 @@ class RAGRetriever:
                         kc.metadata,
                         kc.source_document,
                         kc.section_title,
-                        kc.layer::text AS layer,
-                        (kc.embedding <=> :embedding::vector) AS distance,
+                        CAST(kc.layer AS text) AS layer,
+                        (kc.embedding <=> CAST(:embedding AS vector)) AS distance,
                         CASE
-                            WHEN kc.layer = 'TUTOR' THEN (1 - (kc.embedding <=> :embedding::vector)) * :tutor_weight
-                            ELSE 1 - (kc.embedding <=> :embedding::vector)
+                            WHEN kc.layer = 'TUTOR' THEN (1 - (kc.embedding <=> CAST(:embedding AS vector))) * :tutor_weight
+                            ELSE 1 - (kc.embedding <=> CAST(:embedding AS vector))
                         END AS weighted_similarity
                     FROM knowledge_chunks kc
                     WHERE
-                        (kc.layer = 'INSTITUTIONAL' OR (kc.layer = 'TUTOR' AND kc.owner_id = :tutor_id::uuid))
-                        AND (1 - (kc.embedding <=> :embedding::vector)) >= :threshold
+                        (kc.layer = 'INSTITUTIONAL' OR (kc.layer = 'TUTOR' AND kc.owner_id = CAST(:tutor_id AS uuid)))
+                        AND (1 - (kc.embedding <=> CAST(:embedding AS vector))) >= :threshold
                     ORDER BY weighted_similarity DESC
                     LIMIT :top_k
                 """),
@@ -66,9 +71,10 @@ class RAGRetriever:
                     }
                 )
 
+            logger.info("Retrieved %d chunks (threshold=%.2f)", len(chunks), threshold)
             return chunks
 
-    def format_context(self, chunks: list[dict]) -> str:
+    def format_context(self, chunks: list[RagChunkDict]) -> str:
         """Format retrieved chunks as numbered references for LLM prompts."""
         if not chunks:
             return ""

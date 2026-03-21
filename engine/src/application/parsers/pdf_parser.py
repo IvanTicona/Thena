@@ -1,21 +1,27 @@
+import io
+import logging
 from dataclasses import dataclass, field
 
 from PyPDF2 import PdfReader
-import io
+
+from src.domain.entities import DocumentSectionDict
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
 class ParsedPDF:
     full_text: str
-    sections: list[dict] = field(default_factory=list)
+    sections: list[DocumentSectionDict] = field(default_factory=list)
 
 
 def parse_pdf(file_bytes: bytes) -> ParsedPDF:
     """Extract text from a PDF file, splitting by pages as pseudo-sections."""
+    logger.info("Parsing PDF file (%d bytes)", len(file_bytes))
     reader = PdfReader(io.BytesIO(file_bytes))
 
     full_text_parts: list[str] = []
-    sections: list[dict] = []
+    sections: list[DocumentSectionDict] = []
     char_offset = 0
 
     for i, page in enumerate(reader.pages):
@@ -40,4 +46,5 @@ def parse_pdf(file_bytes: bytes) -> ParsedPDF:
         char_offset += len(page_text) + 1
 
     full_text = "\n".join(full_text_parts)
+    logger.info("Parsed PDF: %d pages, %d sections, %d chars", len(reader.pages), len(sections), len(full_text))
     return ParsedPDF(full_text=full_text, sections=sections)

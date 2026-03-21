@@ -1,7 +1,11 @@
+import logging
+
 from langchain_core.language_models import BaseChatModel
 from langchain_core.embeddings import Embeddings
 
 from src.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 class LLMFactory:
@@ -11,6 +15,7 @@ class LLMFactory:
         model = settings.LLM_MODEL
         temperature = settings.LLM_TEMPERATURE
 
+        logger.info("Creating chat model: %s/%s (temp=%.2f)", provider, model, temperature)
         match provider:
             case "openai":
                 from langchain_openai import ChatOpenAI
@@ -28,6 +33,7 @@ class LLMFactory:
         provider = settings.EMBEDDING_PROVIDER
         model = settings.EMBEDDING_MODEL
 
+        logger.info("Creating embeddings model: %s/%s", provider, model)
         match provider:
             case "openai":
                 from langchain_openai import OpenAIEmbeddings

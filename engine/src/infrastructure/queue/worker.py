@@ -1,9 +1,8 @@
-import asyncio
 import json
 import logging
-import time
 
 import redis
+from sqlalchemy.engine import Engine
 
 from src.config import settings
 from src.infrastructure.storage.minio_client import MinioStorage
@@ -20,7 +19,7 @@ POLL_INTERVAL = 2  # seconds
 
 
 class ReviewWorker:
-    def __init__(self, db_engine):
+    def __init__(self, db_engine: Engine) -> None:
         self._db_engine = db_engine
         self._storage = MinioStorage()
         self._repository = ReviewRepository(db_engine)
@@ -29,7 +28,7 @@ class ReviewWorker:
         self._redis = redis.from_url(settings.REDIS_URL, decode_responses=True)
         self._running = False
 
-    def process_job(self, job_data: dict):
+    def process_job(self, job_data: dict[str, str]) -> None:
         """Process a single review job."""
         job_id = job_data["jobId"]
         submission_id = job_data["submissionId"]
@@ -114,7 +113,7 @@ class ReviewWorker:
             logger.error("Review job %s failed: %s", job_id, str(e), exc_info=True)
             self._repository.update_job_status(job_id, "FAILED", str(e))
 
-    def poll_queue(self):
+    def poll_queue(self) -> dict[str, str | dict[str, str]] | None:
         """Poll Redis for BullMQ jobs. Simplified polling for MVP."""
         # BullMQ stores jobs in Redis lists/sorted sets
         # For MVP, we poll the "wait" list
@@ -139,7 +138,7 @@ class ReviewWorker:
             logger.error("Queue poll error: %s", str(e))
             return None
 
-    def start(self):
+    def start(self) -> None:
         """Start the worker loop."""
         self._running = True
         logger.info("Review worker started, polling queue...")
@@ -157,9 +156,9 @@ class ReviewWorker:
                         self._redis.lrem(
                             "bull:review:active", 1, job["bull_job_id"]
                         )
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.warning("Failed to remove job from active list: %s", e)
 
-    def stop(self):
+    def stop(self) -> None:
         self._running = False
         logger.info("Review worker stopping...")

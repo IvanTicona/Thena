@@ -14,13 +14,14 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { KnowledgeService } from '../../application/services/knowledge.service.js';
+import { AuthenticatedRequest } from '../../../../shared/mock-auth/mock-auth.middleware.js';
 
 @Controller('knowledge')
 export class KnowledgeController {
   constructor(private readonly knowledgeService: KnowledgeService) {}
 
   @Get()
-  async list(@Req() req: any, @Query('layer') layer?: string) {
+  async list(@Req() req: AuthenticatedRequest, @Query('layer') layer?: string) {
     const userId = req.user?.id ?? null;
     // Tutors see their own + institutional; if no user, show institutional only
     return this.knowledgeService.listByOwner(
@@ -32,7 +33,7 @@ export class KnowledgeController {
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
   async upload(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @UploadedFile(
       new ParseFilePipe({
         validators: [
@@ -56,7 +57,7 @@ export class KnowledgeController {
 
   @Delete(':sourceDocument')
   async delete(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Param('sourceDocument') sourceDocument: string,
   ) {
     const userId = req.user?.id ?? null;

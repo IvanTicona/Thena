@@ -16,6 +16,7 @@ import os
 import sys
 
 from sqlalchemy import create_engine
+from sqlalchemy.engine import Engine
 
 from src.config import settings
 from src.application.parsers.pdf_parser import parse_pdf
@@ -23,7 +24,10 @@ from src.application.parsers.docx_parser import parse_docx
 from src.application.pipelines.chunker import chunk_text
 from src.application.pipelines.embedding import embed_and_store, delete_by_source
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
 logger = logging.getLogger(__name__)
 
 DEFAULT_DOCS = [
@@ -34,7 +38,7 @@ DEFAULT_DOCS = [
 ]
 
 
-def seed_file(db_engine, file_path: str, source_name: str, reset: bool = False):
+def seed_file(db_engine: Engine, file_path: str, source_name: str, reset: bool = False) -> None:
     """Parse, chunk, embed, and store a single file."""
     logger.info("Processing: %s", file_path)
 
@@ -83,7 +87,7 @@ def seed_file(db_engine, file_path: str, source_name: str, reset: bool = False):
     logger.info("Seeded %d chunks for %s", len(chunks), source_name)
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="Seed institutional knowledge base")
     parser.add_argument("--file", type=str, help="Path to a specific file to seed")
     parser.add_argument("--name", type=str, help="Source document name (defaults to filename)")

@@ -13,12 +13,12 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     this.client = new PrismaClient({ adapter });
   }
 
-  async onModuleInit() {
+  async onModuleInit(): Promise<void> {
     await this.client.$connect();
     console.log('Prisma connected to database');
   }
 
-  async onModuleDestroy() {
+  async onModuleDestroy(): Promise<void> {
     await this.client.$disconnect();
   }
 }

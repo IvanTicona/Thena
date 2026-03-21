@@ -6,6 +6,27 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../../../shared/prisma/prisma.service.js';
 
+type KnowledgeLayer = 'TUTOR' | 'INSTITUTIONAL';
+
+export interface KnowledgeDocumentSummary {
+  sourceDocument: string;
+  layer: string;
+  chunkCount: number;
+  lastUpdated: Date | null;
+}
+
+export interface KnowledgeDeletionResult {
+  sourceDocument: string;
+  deletedChunks: number;
+}
+
+export interface EngineIngestionResult {
+  status: string;
+  source_document: string;
+  chunks_created: number;
+  layer: string;
+}
+
 @Injectable()
 export class KnowledgeService {
   private engineUrl: string;
@@ -20,21 +41,19 @@ export class KnowledgeService {
     );
   }
 
-  async listByOwner(ownerId: string | null, layer?: string) {
-    // Group chunks by source_document to return document-level list
-    const where: Record<string, unknown> = {};
-    if (layer) {
-      where.layer = layer;
-    }
-    if (ownerId) {
-      where.ownerId = ownerId;
-    } else {
-      where.layer = 'INSTITUTIONAL';
-    }
+  async listByOwner(
+    ownerId: string | null,
+    layer?: string,
+  ): Promise<KnowledgeDocumentSummary[]> {
+    const resolvedLayer: KnowledgeLayer =
+      (layer as KnowledgeLayer) ?? (ownerId ? undefined : 'INSTITUTIONAL');
 
     const chunks = await this.prisma.client.knowledgeChunk.groupBy({
       by: ['sourceDocument', 'layer'],
-      where,
+      where: {
+        ...(resolvedLayer && { layer: resolvedLayer }),
+        ...(ownerId ? { ownerId } : { layer: 'INSTITUTIONAL' }),
+      },
       _count: { id: true },
       _max: { createdAt: true },
     });
@@ -51,7 +70,7 @@ export class KnowledgeService {
     file: Express.Multer.File,
     layer: string,
     ownerId: string | null,
-  ) {
+  ): Promise<EngineIngestionResult> {
     const allowedMimes = [
       'application/pdf',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -84,14 +103,17 @@ export class KnowledgeService {
       throw new BadRequestException(`Engine ingestion failed: ${error}`);
     }
 
-    return response.json();
+    return response.json() as Promise<EngineIngestionResult>;
   }
 
-  async deleteBySource(sourceDocument: string, ownerId: string | null) {
-    const where: Record<string, unknown> = { sourceDocument };
-    if (ownerId) {
-      where.ownerId = ownerId;
-    }
+  async deleteBySource(
+    sourceDocument: string,
+    ownerId: string | null,
+  ): Promise<KnowledgeDeletionResult> {
+    const where = {
+      sourceDocument,
+      ...(ownerId && { ownerId }),
+    };
 
     const existing = await this.prisma.client.knowledgeChunk.findFirst({
       where,

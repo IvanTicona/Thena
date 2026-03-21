@@ -4,7 +4,7 @@ import logging
 from langchain_core.messages import SystemMessage, HumanMessage
 
 from src.application.llm_factory import LLMFactory
-from src.domain.entities import ReviewState
+from src.domain.entities import ReviewState, FindingDict, RagChunkDict
 
 logger = logging.getLogger(__name__)
 
@@ -18,12 +18,14 @@ class BaseAgent:
     findings_key: str = ""
 
     def get_system_prompt(self, state: ReviewState) -> str:
+        """Return the system prompt for this agent. Subclasses must implement."""
         raise NotImplementedError
 
     def get_user_prompt(self, state: ReviewState) -> str:
+        """Return the user prompt for this agent. Subclasses must implement."""
         raise NotImplementedError
 
-    def run(self, state: ReviewState) -> dict:
+    def run(self, state: ReviewState) -> dict[str, list[FindingDict] | dict[str, str]]:
         """Execute the agent and return updated state fields."""
         llm = LLMFactory.create_chat_model()
         system_prompt = self.get_system_prompt(state)
@@ -66,7 +68,7 @@ class BaseAgent:
         }
 
     @staticmethod
-    def _format_rag_context(chunks: list[dict]) -> str:
+    def _format_rag_context(chunks: list[RagChunkDict]) -> str:
         lines = [
             "## Base de Conocimiento Relevante\n",
             "Las siguientes referencias fundamentan tu evaluacion:\n",
@@ -82,7 +84,7 @@ class BaseAgent:
         )
         return "\n".join(lines)
 
-    def _parse_response(self, content: str) -> list[dict]:
+    def _parse_response(self, content: str) -> list[FindingDict]:
         """Parse the LLM response as a JSON array of observations."""
         # Strip markdown code fences if present
         text = content.strip()

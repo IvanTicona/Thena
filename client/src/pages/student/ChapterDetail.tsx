@@ -15,8 +15,10 @@ import {
   FileWordOutlined,
   EyeOutlined,
 } from '@ant-design/icons';
+import type { ColumnsType } from 'antd/es/table';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
+import { ApiError } from '../../services/api-error';
 import type { Chapter, Submission } from '../../types';
 
 const { Title, Text } = Typography;
@@ -41,7 +43,8 @@ export default function ChapterDetail() {
       setChapter(chRes.data);
       setSubmissions(chRes.data.submissions || []);
     } catch (err) {
-      console.error(err);
+      const msg = err instanceof ApiError ? err.message : 'Error al cargar el capitulo';
+      console.error(msg);
     } finally {
       setLoading(false);
     }
@@ -55,7 +58,8 @@ export default function ChapterDetail() {
     setUploading(true);
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('chapterId', id!);
+    if (!id) return;
+    formData.append('chapterId', id);
 
     try {
       const res = await api.post('/submissions', formData, {
@@ -70,9 +74,8 @@ export default function ChapterDetail() {
       } else {
         fetchData();
       }
-    } catch (err: any) {
-      const msg = err?.response?.data?.message || 'Error al subir el documento';
-      message.error(msg);
+    } catch (err) {
+      message.error(err instanceof ApiError ? err.message : 'Error al subir el documento');
     } finally {
       setUploading(false);
     }
@@ -83,7 +86,7 @@ export default function ChapterDetail() {
 
   const canUpload = chapter.status === 'DRAFT' || chapter.status === 'IN_REVIEW';
 
-  const columns = [
+  const columns: ColumnsType<Submission> = [
     {
       title: 'Version',
       dataIndex: 'versionNumber',
@@ -117,7 +120,7 @@ export default function ChapterDetail() {
     {
       title: 'Estado',
       key: 'status',
-      render: (_: unknown, record: Submission) => {
+      render: (_, record) => {
         const status = record.reviewJob?.status || 'QUEUED';
         const colors: Record<string, string> = {
           QUEUED: 'default',
@@ -137,30 +140,30 @@ export default function ChapterDetail() {
     {
       title: 'Acciones',
       key: 'actions',
-      render: (_: unknown, record: Submission) => {
-        if (record.reviewJob?.status === 'COMPLETED') {
+      render: (_, record) => {
+        const job = record.reviewJob;
+        if (!job) return null;
+
+        if (job.status === 'COMPLETED') {
           return (
             <Button
               type="link"
               icon={<EyeOutlined />}
               onClick={() =>
-                navigate(`/chapters/${id}/review/${record.reviewJob!.id}`)
+                navigate(`/chapters/${id}/review/${job.id}`)
               }
             >
               Ver Revision
             </Button>
           );
         }
-        if (
-          record.reviewJob?.status === 'QUEUED' ||
-          record.reviewJob?.status === 'PROCESSING'
-        ) {
+        if (job.status === 'QUEUED' || job.status === 'PROCESSING') {
           return (
             <Button
               type="link"
               icon={<EyeOutlined />}
               onClick={() =>
-                navigate(`/chapters/${id}/review/${record.reviewJob!.id}`)
+                navigate(`/chapters/${id}/review/${job.id}`)
               }
             >
               Ver Progreso

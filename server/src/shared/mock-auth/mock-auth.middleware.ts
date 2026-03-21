@@ -19,7 +19,7 @@ export interface AuthenticatedRequest extends Request {
 export class MockAuthMiddleware implements NestMiddleware {
   constructor(private readonly prisma: PrismaService) {}
 
-  async use(req: Request, _res: Response, next: NextFunction) {
+  async use(req: Request, _res: Response, next: NextFunction): Promise<void> {
     const userId = req.headers['x-user-id'] as string;
 
     if (!userId) {

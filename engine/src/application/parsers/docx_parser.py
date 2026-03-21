@@ -1,6 +1,11 @@
+import io
+import logging
+
 from docx import Document as DocxDocument
 
 from src.domain.entities import DocumentSection, ParsedDocument
+
+logger = logging.getLogger(__name__)
 
 HEADING_STYLES = {
     "Heading 1": 1,
@@ -13,8 +18,7 @@ HEADING_STYLES = {
 
 def parse_docx(file_bytes: bytes) -> ParsedDocument:
     """Parse a DOCX file into structured sections with character offsets."""
-    import io
-
+    logger.info("Parsing DOCX file (%d bytes)", len(file_bytes))
     doc = DocxDocument(io.BytesIO(file_bytes))
 
     full_text_parts: list[str] = []
@@ -27,7 +31,7 @@ def parse_docx(file_bytes: bytes) -> ParsedDocument:
     current_offset_start: int = 0
     char_offset = 0
 
-    def _flush_section():
+    def _flush_section() -> None:
         nonlocal current_heading, current_content_parts, current_offset_start
         if current_heading is not None:
             content = "\n".join(current_content_parts).strip()
@@ -71,4 +75,5 @@ def parse_docx(file_bytes: bytes) -> ParsedDocument:
     full_text = "\n".join(full_text_parts)
     markdown = "\n\n".join(markdown_parts)
 
+    logger.info("Parsed DOCX: %d sections, %d chars", len(sections), len(full_text))
     return ParsedDocument(full_text=full_text, markdown=markdown, sections=sections)

@@ -7,6 +7,7 @@ import {
 } from 'react';
 import { setCurrentUserId } from '../services/api';
 import api from '../services/api';
+import type { ApiError } from '../services/api-error';
 
 export interface User {
   id: string;
@@ -15,54 +16,39 @@ export interface User {
   role: 'STUDENT' | 'TUTOR';
 }
 
-// Fallback mock users — replaced by API call
-const FALLBACK_USERS: User[] = [
-  {
-    id: 'student-001',
-    name: 'Ivan Torres',
-    email: 'student@thena.dev',
-    role: 'STUDENT',
-  },
-  {
-    id: 'tutor-001',
-    name: 'Dr. Tutor',
-    email: 'tutor@thena.dev',
-    role: 'TUTOR',
-  },
-];
-
 interface UserContextType {
   currentUser: User;
   users: User[];
   switchUser: (userId: string) => void;
+  ready: boolean;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: ReactNode }) {
-  const [users, setUsers] = useState<User[]>(FALLBACK_USERS);
-  const [currentUser, setCurrentUser] = useState<User>(FALLBACK_USERS[0]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [ready, setReady] = useState(false);
 
-  // Fetch real users from API
+  // Fetch real users from API on mount
   useEffect(() => {
-    setCurrentUserId(currentUser.id);
     api
       .get<User[]>('/users')
       .then((res) => {
         if (res.data.length > 0) {
           setUsers(res.data);
-          // Keep current selection if user exists in new list, otherwise pick first
-          const existing = res.data.find((u) => u.id === currentUser.id);
-          if (!existing) {
-            setCurrentUser(res.data[0]);
-            setCurrentUserId(res.data[0].id);
-          }
+          const student = res.data.find((u) => u.role === 'STUDENT') || res.data[0];
+          setCurrentUser(student);
+          setCurrentUserId(student.id);
         }
       })
-      .catch(() => {
-        // API not available — keep fallback users
+      .catch((err: ApiError) => {
+        console.error('Failed to fetch users:', err.message);
+      })
+      .finally(() => {
+        setReady(true);
       });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   const switchUser = (userId: string) => {
     const user = users.find((u) => u.id === userId);
@@ -72,8 +58,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  if (!ready || !currentUser) {
+    return null; // Don't render until users are loaded
+  }
+
   return (
-    <UserContext.Provider value={{ currentUser, users, switchUser }}>
+    <UserContext.Provider value={{ currentUser, users, switchUser, ready }}>
       {children}
     </UserContext.Provider>
   );

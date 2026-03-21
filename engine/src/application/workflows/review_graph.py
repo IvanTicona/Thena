@@ -1,8 +1,14 @@
+from __future__ import annotations
+
 import logging
+from typing import TYPE_CHECKING
 
 from langgraph.graph import StateGraph, START, END
 
-from src.domain.entities import ReviewState
+if TYPE_CHECKING:
+    from langgraph.graph.state import CompiledStateGraph
+
+from src.domain.entities import ReviewState, FindingDict
 from src.application.agents.structure import StructureAgent
 from src.application.agents.methodology import MethodologyAgent
 from src.application.agents.coherence import CoherenceAgent
@@ -15,22 +21,22 @@ _methodology_agent = MethodologyAgent()
 _coherence_agent = CoherenceAgent()
 
 
-def run_structure(state: ReviewState) -> dict:
+def run_structure(state: ReviewState) -> dict[str, list[FindingDict] | dict[str, str]]:
     logger.info("Running Structure Agent for submission %s", state.get("submission_id"))
     return _structure_agent.run(state)
 
 
-def run_methodology(state: ReviewState) -> dict:
+def run_methodology(state: ReviewState) -> dict[str, list[FindingDict] | dict[str, str]]:
     logger.info("Running Methodology Agent for submission %s", state.get("submission_id"))
     return _methodology_agent.run(state)
 
 
-def run_coherence(state: ReviewState) -> dict:
+def run_coherence(state: ReviewState) -> dict[str, list[FindingDict] | dict[str, str]]:
     logger.info("Running Coherence Agent for submission %s", state.get("submission_id"))
     return _coherence_agent.run(state)
 
 
-def run_synthesizer(state: ReviewState) -> dict:
+def run_synthesizer(state: ReviewState) -> dict[str, str | list[FindingDict]]:
     logger.info("Running Synthesizer for submission %s", state.get("submission_id"))
     return synthesize(state)
 
@@ -61,7 +67,7 @@ def build_review_graph() -> StateGraph:
     return graph
 
 
-def compile_review_graph():
+def compile_review_graph() -> CompiledStateGraph:
     """Compile and return the runnable review graph."""
     graph = build_review_graph()
     return graph.compile()

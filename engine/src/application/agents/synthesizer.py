@@ -4,7 +4,7 @@ import logging
 from langchain_core.messages import SystemMessage, HumanMessage
 
 from src.application.llm_factory import LLMFactory
-from src.domain.entities import ReviewState
+from src.domain.entities import ReviewState, FindingDict
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ FORMATO DE SALIDA: Responde UNICAMENTE con un JSON con este esquema:
 }"""
 
 
-def synthesize(state: ReviewState) -> dict:
+def synthesize(state: ReviewState) -> dict[str, str | list[FindingDict]]:
     """Consolidate findings from all agents into a unified report."""
     structure = state.get("structure_findings", [])
     methodology = state.get("methodology_findings", [])

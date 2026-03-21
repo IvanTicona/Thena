@@ -16,7 +16,9 @@ import {
   DeleteOutlined,
   FileOutlined,
 } from '@ant-design/icons';
+import type { ColumnsType } from 'antd/es/table';
 import api from '../../services/api';
+import { ApiError } from '../../services/api-error';
 
 const { Title, Text } = Typography;
 
@@ -37,7 +39,9 @@ export default function KnowledgeBase() {
     api
       .get<KnowledgeDoc[]>('/knowledge')
       .then((res) => setDocs(res.data))
-      .catch(console.error)
+      .catch((err: ApiError) => {
+        console.error(err.message);
+      })
       .finally(() => setLoading(false));
   };
 
@@ -57,10 +61,8 @@ export default function KnowledgeBase() {
       });
       message.success('Documento procesado e indexado correctamente');
       fetchDocs();
-    } catch (err: any) {
-      message.error(
-        err?.response?.data?.message || 'Error al procesar el documento',
-      );
+    } catch (err) {
+      message.error(err instanceof ApiError ? err.message : 'Error al procesar el documento');
     } finally {
       setUploading(false);
     }
@@ -71,14 +73,12 @@ export default function KnowledgeBase() {
       await api.delete(`/knowledge/${encodeURIComponent(sourceDocument)}`);
       message.success('Documento eliminado');
       fetchDocs();
-    } catch (err: any) {
-      message.error(
-        err?.response?.data?.message || 'Error al eliminar el documento',
-      );
+    } catch (err) {
+      message.error(err instanceof ApiError ? err.message : 'Error al eliminar el documento');
     }
   };
 
-  const columns = [
+  const columns: ColumnsType<KnowledgeDoc> = [
     {
       title: 'Documento',
       dataIndex: 'sourceDocument',
@@ -121,7 +121,7 @@ export default function KnowledgeBase() {
     {
       title: 'Acciones',
       key: 'actions',
-      render: (_: unknown, record: KnowledgeDoc) => (
+      render: (_, record) => (
         <Popconfirm
           title="¿Eliminar este documento?"
           description="Se eliminaran todos los fragmentos indexados."

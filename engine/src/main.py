@@ -1,6 +1,12 @@
 import logging
 import threading
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
 
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,9 +20,9 @@ _worker_thread: threading.Thread | None = None
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # Startup
-    print(f"Thena Engine starting | LLM: {settings.LLM_PROVIDER}/{settings.LLM_MODEL}")
+    logger.info("Thena Engine starting | LLM: %s/%s", settings.LLM_PROVIDER, settings.LLM_MODEL)
 
     db_engine = create_engine(settings.DATABASE_URL)
     app.state.db_engine = db_engine
@@ -30,14 +36,14 @@ async def lifespan(app: FastAPI):
     global _worker_thread
     _worker_thread = threading.Thread(target=worker.start, daemon=True)
     _worker_thread.start()
-    print("Review worker started")
+    logger.info("Review worker started")
 
     yield
 
     # Shutdown
     worker.stop()
     db_engine.dispose()
-    print("Thena Engine shutting down")
+    logger.info("Thena Engine shutting down")
 
 
 app = FastAPI(
@@ -57,7 +63,7 @@ app.add_middleware(
 
 
 @app.get("/health")
-async def health_check():
+async def health_check() -> dict[str, str]:
     return {"status": "ok", "service": "engine"}
 
 
@@ -68,7 +74,7 @@ async def ingest_knowledge(
     layer: str = Form("INSTITUTIONAL"),
     source_document: str = Form(None),
     owner_id: str = Form(None),
-):
+) -> dict[str, str | int]:
     """Ingest a document into the knowledge base (chunk + embed + store)."""
     if file.content_type not in (
         "application/pdf",
@@ -135,7 +141,7 @@ async def ingest_knowledge(
 
 
 @app.delete("/knowledge/{source_document}")
-async def delete_knowledge(request: Request, source_document: str):
+async def delete_knowledge(request: Request, source_document: str) -> dict[str, str]:
     """Delete all chunks for a given source document."""
     from src.application.pipelines.embedding import delete_by_source
 
