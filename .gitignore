@@ -57,3 +57,6 @@ htmlcov/
 # Temp
 tmp/
 temp/
+
+# Spec CSV exports
+spec/**/*.csv
