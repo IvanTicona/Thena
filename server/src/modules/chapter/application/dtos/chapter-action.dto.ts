@@ -1,11 +1,6 @@
-import { IsIn } from 'class-validator';
+// DTOs kept as empty marker classes — the action is implicit in the
+// route path (/approve, /reject) so no body payload is required.
 
-export class ApproveChapterDto {
-  @IsIn(['APPROVE'])
-  action: 'APPROVE';
-}
+export class ApproveChapterDto {}
 
-export class RejectChapterDto {
-  @IsIn(['REJECT'])
-  action: 'REJECT';
-}
+export class RejectChapterDto {}
