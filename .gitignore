@@ -60,3 +60,12 @@ temp/
 
 # Spec CSV exports
 spec/**/*.csv
+
+# Project documentation (binary files, not source code)
+docs/
+
+# Utility scripts (not part of the application)
+scripts/
+
+# Claude AI settings
+.claude/

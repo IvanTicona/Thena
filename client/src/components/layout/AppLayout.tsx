@@ -1,4 +1,5 @@
-import { Layout, Menu, Select, Tag, Typography, Alert } from 'antd';
+import { useEffect, useState } from 'react';
+import { Layout, Menu, Select, Tag, Typography, Alert, Badge } from 'antd';
 import {
   BookOutlined,
   DashboardOutlined,
@@ -6,9 +7,18 @@ import {
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useUser } from '../../context/UserContext';
+import api from '../../services/api';
+import type { Chapter, ChapterStatus } from '../../types';
 
 const { Header, Sider, Content, Footer } = Layout;
 const { Title } = Typography;
+
+const STATUS_DOT: Record<ChapterStatus, string> = {
+  LOCKED: '#d9d9d9',
+  DRAFT: '#1677ff',
+  IN_REVIEW: '#faad14',
+  APPROVED: '#52c41a',
+};
 
 export function AppLayout() {
   const { currentUser, users, switchUser } = useUser();
@@ -17,26 +27,56 @@ export function AppLayout() {
 
   const isStudent = currentUser.role === 'STUDENT';
 
-  const menuItems = isStudent
-    ? [
-        {
-          key: '/chapters',
-          icon: <BookOutlined />,
-          label: 'Mis Capitulos',
-        },
-      ]
-    : [
-        {
-          key: '/tutor',
-          icon: <DashboardOutlined />,
-          label: 'Panel de Tutor',
-        },
-        {
-          key: '/tutor/knowledge',
-          icon: <DatabaseOutlined />,
-          label: 'Base de Conocimiento',
-        },
-      ];
+  const [chapters, setChapters] = useState<Chapter[]>([]);
+
+  useEffect(() => {
+    if (isStudent) {
+      api
+        .get<Chapter[]>('/chapters')
+        .then((res) => setChapters(res.data))
+        .catch(() => {
+          // Silencioso — el sidebar se queda vacío si falla
+        });
+    }
+  }, [isStudent, currentUser.id]);
+
+  const studentMenuItems =
+    chapters.length > 0
+      ? chapters.map((ch) => ({
+          key: `/chapters/${ch.id}`,
+          icon: (
+            <Badge
+              dot
+              color={STATUS_DOT[ch.status]}
+              offset={[2, 0]}
+            >
+              <BookOutlined />
+            </Badge>
+          ),
+          label: `Cap. ${ch.number}: ${ch.title}`,
+        }))
+      : [
+          {
+            key: '/chapters',
+            icon: <BookOutlined />,
+            label: 'Mis Capítulos',
+          },
+        ];
+
+  const tutorMenuItems = [
+    {
+      key: '/tutor',
+      icon: <DashboardOutlined />,
+      label: 'Panel de Tutor',
+    },
+    {
+      key: '/tutor/knowledge',
+      icon: <DatabaseOutlined />,
+      label: 'Base de Conocimiento',
+    },
+  ];
+
+  const menuItems = isStudent ? studentMenuItems : tutorMenuItems;
 
   const selectedKey =
     menuItems.find((item) => location.pathname.startsWith(item.key))?.key ||
@@ -95,7 +135,7 @@ export function AppLayout() {
 
       <Footer style={{ textAlign: 'center', padding: '8px 24px' }}>
         <Alert
-          message="Toda retroalimentacion generada es orientacion preliminar, no una correccion definitiva ni una calificacion."
+          message="Toda retroalimentación generada es orientación preliminar, no una corrección definitiva ni una calificación."
           type="info"
           showIcon
           banner

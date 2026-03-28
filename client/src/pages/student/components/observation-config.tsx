@@ -18,6 +18,6 @@ export const SEVERITY_CONFIG: Record<
 
 export const AGENT_LABELS: Record<AgentType, string> = {
   STRUCTURE: 'Estructura',
-  METHODOLOGY: 'Metodologia',
+  METHODOLOGY: 'Metodología',
   COHERENCE: 'Coherencia',
 };

@@ -6,11 +6,12 @@ from sqlalchemy.engine import Engine
 from src.config import settings
 from src.application.llm_factory import LLMFactory
 from src.domain.entities import RagChunkDict
+from src.domain.ports import RAGRetrieverPort
 
 logger = logging.getLogger(__name__)
 
 
-class RAGRetriever:
+class RAGRetriever(RAGRetrieverPort):
     def __init__(self, db_engine: Engine) -> None:
         self._db_engine = db_engine
         self._embeddings = LLMFactory.create_embeddings()

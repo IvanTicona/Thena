@@ -142,10 +142,10 @@ export default function KnowledgeBase() {
       <Title level={3}>Base de Conocimiento</Title>
 
       <Card style={{ marginBottom: 24 }}>
-        <Title level={5}>Subir Criterios de Evaluacion</Title>
+        <Title level={5}>Subir Criterios de Evaluación</Title>
         <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
-          Sube documentos PDF o DOCX con tus criterios de evaluacion. El sistema
-          los procesara y usara como referencia al revisar los capitulos.
+          Sube documentos PDF o DOCX con tus criterios de evaluación. El sistema
+          los procesará y usará como referencia al revisar los capítulos.
         </Text>
         <Upload
           accept=".pdf,.docx"

@@ -20,6 +20,11 @@ export interface KnowledgeDeletionResult {
   deletedChunks: number;
 }
 
+export interface KnowledgeChunkDeletionResult {
+  id: string;
+  deleted: true;
+}
+
 export interface EngineIngestionResult {
   status: string;
   source_document: string;
@@ -133,5 +138,28 @@ export class KnowledgeService {
       sourceDocument,
       deletedChunks: result.count,
     };
+  }
+
+  async deleteById(
+    id: string,
+    ownerId: string | null,
+  ): Promise<KnowledgeChunkDeletionResult> {
+    const chunk = await this.prisma.client.knowledgeChunk.findUnique({
+      where: { id },
+    });
+
+    if (!chunk) {
+      throw new NotFoundException(`Knowledge chunk not found: ${id}`);
+    }
+
+    if (ownerId && chunk.ownerId !== ownerId) {
+      throw new NotFoundException(`Knowledge chunk not found: ${id}`);
+    }
+
+    await this.prisma.client.knowledgeChunk.delete({
+      where: { id },
+    });
+
+    return { id, deleted: true };
   }
 }

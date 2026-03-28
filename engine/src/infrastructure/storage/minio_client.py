@@ -3,11 +3,12 @@ import logging
 from minio import Minio
 
 from src.config import settings
+from src.domain.ports import FileStoragePort
 
 logger = logging.getLogger(__name__)
 
 
-class MinioStorage:
+class MinioStorage(FileStoragePort):
     def __init__(self) -> None:
         self._client = Minio(
             f"{settings.MINIO_ENDPOINT}:{settings.MINIO_PORT}",
@@ -30,3 +31,17 @@ class MinioStorage:
         finally:
             response.close()
             response.release_conn()
+
+    def upload_file(
+        self, bucket: str, key: str, data: bytes, content_type: str
+    ) -> str:
+        """Upload bytes to MinIO and return the object path."""
+        import io
+        self._client.put_object(
+            bucket,
+            key,
+            io.BytesIO(data),
+            length=len(data),
+            content_type=content_type,
+        )
+        return f"{bucket}/{key}"

@@ -11,6 +11,7 @@ import {
   ParseFilePipe,
   MaxFileSizeValidator,
   FileTypeValidator,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { KnowledgeService } from '../../application/services/knowledge.service.js';
@@ -53,6 +54,15 @@ export class KnowledgeController {
     const ownerId = effectiveLayer === 'TUTOR' ? userId : null;
 
     return this.knowledgeService.upload(file, effectiveLayer, ownerId);
+  }
+
+  @Delete('chunk/:id')
+  async deleteChunk(
+    @Req() req: AuthenticatedRequest,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    const userId = req.user?.id ?? null;
+    return this.knowledgeService.deleteById(id, userId);
   }
 
   @Delete(':sourceDocument')

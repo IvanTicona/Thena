@@ -7,11 +7,12 @@ from sqlalchemy import text, Connection
 from sqlalchemy.engine import Engine
 
 from src.domain.entities import FindingDict, ChapterInfoDict, PreviousChapterDict
+from src.domain.ports import ReviewRepositoryPort
 
 logger = logging.getLogger(__name__)
 
 
-class ReviewRepository:
+class ReviewRepository(ReviewRepositoryPort):
     def __init__(self, db_engine: Engine) -> None:
         self._db_engine = db_engine
 

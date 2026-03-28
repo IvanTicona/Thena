@@ -9,6 +9,7 @@ import {
   message,
   Card,
   Space,
+  Progress,
 } from 'antd';
 import {
   CheckOutlined,
@@ -26,7 +27,7 @@ const { Title } = Typography;
 const STATUS_CONFIG: Record<ChapterStatus, { color: string; label: string }> = {
   LOCKED: { color: 'default', label: 'Bloqueado' },
   DRAFT: { color: 'blue', label: 'Borrador' },
-  IN_REVIEW: { color: 'processing', label: 'En Revision' },
+  IN_REVIEW: { color: 'processing', label: 'En Revisión' },
   APPROVED: { color: 'success', label: 'Aprobado' },
 };
 
@@ -52,18 +53,18 @@ export default function TutorDashboard() {
 
   const handleApprove = (chapterId: string, chapterTitle: string) => {
     Modal.confirm({
-      title: 'Aprobar capitulo',
-      content: `¿Estas seguro de aprobar "${chapterTitle}"? Esto desbloqueara el siguiente capitulo para el estudiante.`,
+      title: 'Aprobar capítulo',
+      content: `¿Estás seguro de aprobar "${chapterTitle}"? Esto desbloqueará el siguiente capítulo para el estudiante.`,
       okText: 'Aprobar',
       okType: 'primary',
       cancelText: 'Cancelar',
       onOk: async () => {
         try {
           await api.patch(`/chapters/${chapterId}/approve`);
-          message.success('Capitulo aprobado');
+          message.success('Capítulo aprobado');
           fetchChapters();
         } catch (err) {
-          message.error(err instanceof ApiError ? err.message : 'Error al aprobar el capitulo');
+          message.error(err instanceof ApiError ? err.message : 'Error al aprobar el capítulo');
         }
       },
     });
@@ -71,8 +72,8 @@ export default function TutorDashboard() {
 
   const handleReject = (chapterId: string, chapterTitle: string) => {
     Modal.confirm({
-      title: 'Rechazar capitulo',
-      content: `¿Estas seguro de rechazar "${chapterTitle}"? El estudiante debera subir una nueva version.`,
+      title: 'Rechazar capítulo',
+      content: `¿Estás seguro de rechazar "${chapterTitle}"? El estudiante deberá subir una nueva versión.`,
       okText: 'Rechazar',
       okType: 'default',
       danger: true,
@@ -80,10 +81,10 @@ export default function TutorDashboard() {
       onOk: async () => {
         try {
           await api.patch(`/chapters/${chapterId}/reject`);
-          message.success('Capitulo rechazado');
+          message.success('Capítulo rechazado');
           fetchChapters();
         } catch (err) {
-          message.error(err instanceof ApiError ? err.message : 'Error al rechazar el capitulo');
+          message.error(err instanceof ApiError ? err.message : 'Error al rechazar el capítulo');
         }
       },
     });
@@ -97,7 +98,7 @@ export default function TutorDashboard() {
       width: 60,
     },
     {
-      title: 'Capitulo',
+      title: 'Capítulo',
       dataIndex: 'title',
       key: 'title',
     },
@@ -116,7 +117,7 @@ export default function TutorDashboard() {
       key: 'submissions',
     },
     {
-      title: 'Ultima Entrega',
+      title: 'Última Entrega',
       key: 'latest',
       render: (_, record) => {
         if (!record.latestSubmission) return '-';
@@ -131,13 +132,17 @@ export default function TutorDashboard() {
       key: 'actions',
       render: (_, record) => (
         <Space>
-          {record.status !== 'LOCKED' && (
+          {record.status !== 'LOCKED' && record.latestSubmission && (
             <Button
               type="link"
               icon={<EyeOutlined />}
-              onClick={() => navigate(`/chapters/${record.id}`)}
+              onClick={() =>
+                navigate(
+                  `/tutor/submissions/${record.latestSubmission!.id}?chapterId=${record.id}`,
+                )
+              }
             >
-              Ver
+              Ver revisión
             </Button>
           )}
           {record.status === 'IN_REVIEW' && (
@@ -165,9 +170,27 @@ export default function TutorDashboard() {
     },
   ];
 
+  const approvedCount = chapters.filter((c) => c.status === 'APPROVED').length;
+
   return (
     <div>
       <Title level={3}>Panel del Tutor</Title>
+
+      {/* GAP 4: Progreso del estudiante */}
+      <Card style={{ marginBottom: 24 }}>
+        <Title level={5} style={{ marginBottom: 12 }}>
+          Progreso del Estudiante
+        </Title>
+        {loading ? (
+          <Spin size="small" />
+        ) : (
+          <Progress
+            percent={Math.round((approvedCount / 8) * 100)}
+            format={() => `${approvedCount}/8 capítulos aprobados`}
+          />
+        )}
+      </Card>
+
       <Card>
         <Table
           dataSource={chapters}

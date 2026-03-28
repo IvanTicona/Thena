@@ -23,7 +23,7 @@ export default function ObservationFilters({
         options={[
           { value: 'ALL', label: 'Todos los tipos' },
           { value: 'STRUCTURE', label: 'Estructura' },
-          { value: 'METHODOLOGY', label: 'Metodologia' },
+          { value: 'METHODOLOGY', label: 'Metodología' },
           { value: 'COHERENCE', label: 'Coherencia' },
         ]}
       />

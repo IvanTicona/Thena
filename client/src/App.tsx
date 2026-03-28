@@ -8,6 +8,7 @@ import ChapterDetail from './pages/student/ChapterDetail';
 import ReviewView from './pages/student/ReviewView';
 import TutorDashboard from './pages/tutor/TutorDashboard';
 import KnowledgeBase from './pages/tutor/KnowledgeBase';
+import SubmissionReview from './pages/tutor/SubmissionReview';
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
             />
             <Route path="/tutor" element={<TutorDashboard />} />
             <Route path="/tutor/knowledge" element={<KnowledgeBase />} />
+            <Route path="/tutor/submissions/:submissionId" element={<SubmissionReview />} />
           </Route>
         </Routes>
       </UserProvider>

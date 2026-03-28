@@ -21,7 +21,7 @@ const STATUS_CONFIG: Record<
   DRAFT: { color: 'blue', label: 'Borrador', icon: <EditOutlined /> },
   IN_REVIEW: {
     color: 'processing',
-    label: 'En Revision',
+    label: 'En Revisión',
     icon: <SyncOutlined spin />,
   },
   APPROVED: {
@@ -47,11 +47,11 @@ export default function ChapterList() {
   }, []);
 
   if (loading) return <Spin size="large" style={{ display: 'block', margin: '100px auto' }} />;
-  if (!chapters.length) return <Empty description="No hay capitulos asignados" />;
+  if (!chapters.length) return <Empty description="No hay capítulos asignados" />;
 
   return (
     <div>
-      <Title level={3}>Mis Capitulos</Title>
+      <Title level={3}>Mis Capítulos</Title>
       <Row gutter={[16, 16]}>
         {chapters.map((ch) => {
           const cfg = STATUS_CONFIG[ch.status];
@@ -76,7 +76,7 @@ export default function ChapterList() {
                   }}
                 >
                   <Text strong>
-                    Capitulo {ch.number}
+                    Capítulo {ch.number}
                   </Text>
                   <Tag icon={cfg.icon} color={cfg.color}>
                     {cfg.label}
@@ -87,7 +87,7 @@ export default function ChapterList() {
                 </Title>
                 {ch.latestSubmission && (
                   <Text type="secondary" style={{ fontSize: 12, marginTop: 8, display: 'block' }}>
-                    Ultima entrega: v{ch.latestSubmission.versionNumber} -{' '}
+                    Última entrega: v{ch.latestSubmission.versionNumber} -{' '}
                     {new Date(ch.latestSubmission.submittedAt).toLocaleDateString('es-BO')}
                   </Text>
                 )}

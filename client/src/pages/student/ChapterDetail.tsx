@@ -43,7 +43,7 @@ export default function ChapterDetail() {
       setChapter(chRes.data);
       setSubmissions(chRes.data.submissions || []);
     } catch (err) {
-      const msg = err instanceof ApiError ? err.message : 'Error al cargar el capitulo';
+      const msg = err instanceof ApiError ? err.message : 'Error al cargar el capítulo';
       console.error(msg);
     } finally {
       setLoading(false);
@@ -82,7 +82,7 @@ export default function ChapterDetail() {
   };
 
   if (loading) return <Spin size="large" style={{ display: 'block', margin: '100px auto' }} />;
-  if (!chapter) return <Alert type="error" message="Capitulo no encontrado" />;
+  if (!chapter) return <Alert type="error" message="Capítulo no encontrado" />;
 
   const canUpload = chapter.status === 'DRAFT' || chapter.status === 'IN_REVIEW';
 
@@ -178,14 +178,14 @@ export default function ChapterDetail() {
   return (
     <div>
       <Title level={3}>
-        Capitulo {chapter.number}: {chapter.title}
+        Capítulo {chapter.number}: {chapter.title}
       </Title>
 
       {canUpload && (
         <Card style={{ marginBottom: 24 }}>
           <Title level={5}>Subir Documento</Title>
           <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
-            Sube tu archivo DOCX para recibir retroalimentacion.
+            Sube tu archivo DOCX para recibir retroalimentación.
           </Text>
           <Upload
             accept=".docx"
@@ -205,8 +205,8 @@ export default function ChapterDetail() {
       {chapter.status === 'LOCKED' && (
         <Alert
           type="warning"
-          message="Este capitulo esta bloqueado"
-          description="Debes completar y aprobar el capitulo anterior antes de poder subir este capitulo."
+          message="Este capítulo está bloqueado"
+          description="Debes completar y aprobar el capítulo anterior antes de poder subir este capítulo."
           showIcon
           style={{ marginBottom: 24 }}
         />
@@ -215,8 +215,8 @@ export default function ChapterDetail() {
       {chapter.status === 'APPROVED' && (
         <Alert
           type="success"
-          message="Capitulo aprobado"
-          description="Este capitulo ha sido aprobado por tu tutor."
+          message="Capítulo aprobado"
+          description="Este capítulo ha sido aprobado por tu tutor."
           showIcon
           style={{ marginBottom: 24 }}
         />
@@ -228,7 +228,7 @@ export default function ChapterDetail() {
           columns={columns}
           rowKey="id"
           pagination={false}
-          locale={{ emptyText: 'No hay entregas para este capitulo' }}
+          locale={{ emptyText: 'No hay entregas para este capítulo' }}
         />
       </Card>
     </div>

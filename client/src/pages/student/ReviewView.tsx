@@ -3,9 +3,10 @@ import {
   Typography,
   Spin,
   Alert,
-  Tag,
+  Steps,
   Empty,
 } from 'antd';
+import { Allotment } from 'allotment';
 import { useParams } from 'react-router-dom';
 import { usePolling } from '../../hooks/usePolling';
 import type {
@@ -13,7 +14,6 @@ import type {
   Observation,
   AgentType,
   Severity,
-  ReviewAgentStatus,
 } from '../../types';
 import { AGENT_LABELS } from './components/observation-config';
 import ReviewSummaryCard from './components/ReviewSummaryCard';
@@ -26,6 +26,12 @@ const { Title, Text } = Typography;
 const shouldStopPolling = (data: ReviewResult) =>
   data.status === 'COMPLETED' || data.status === 'FAILED';
 
+const agentStepStatus = (status: string): 'finish' | 'process' | 'wait' => {
+  if (status === 'COMPLETED') return 'finish';
+  if (status === 'RUNNING') return 'process';
+  return 'wait';
+};
+
 export default function ReviewView() {
   const { id: chapterId, jobId } = useParams<{ id: string; jobId: string }>();
   const [selectedObs, setSelectedObs] = useState<string | null>(null);
@@ -33,65 +39,59 @@ export default function ReviewView() {
   const [severityFilter, setSeverityFilter] = useState<Severity | 'ALL'>('ALL');
   const markdownRef = useRef<HTMLDivElement>(null);
 
+  // Suppress unused warning — chapterId is available for context if needed
+  void chapterId;
+
   const { data: review, loading } = usePolling<ReviewResult>({
     url: `/reviews/${jobId}`,
     interval: 3000,
     shouldStop: shouldStopPolling,
   });
 
+  const handleHighlightClick = useCallback((obsId: string) => {
+    setSelectedObs((prev) => (prev === obsId ? null : obsId));
+  }, []);
+
   if (loading)
     return (
       <Spin size="large" style={{ display: 'block', margin: '100px auto' }} />
     );
-  if (!review) return <Alert type="error" message="Revision no encontrada" />;
+  if (!review) return <Alert type="error" message="Revisión no encontrada" />;
 
-  // Processing view
+  // Vista de procesamiento
   if (review.status === 'QUEUED' || review.status === 'PROCESSING') {
     return (
       <div style={{ maxWidth: 600, margin: '60px auto', textAlign: 'center' }}>
         <Spin size="large" />
         <Title level={4} style={{ marginTop: 24 }}>
           {review.status === 'QUEUED'
-            ? 'Tu documento esta en cola...'
+            ? 'Tu documento está en cola...'
             : 'Analizando tu documento...'}
         </Title>
         <Text type="secondary">
-          Los agentes de IA estan revisando tu capitulo. Esto puede tomar unos
-          minutos.
+          Los agentes de IA están revisando tu capítulo.
         </Text>
         {review.agents && review.agents.length > 0 && (
           <div style={{ marginTop: 24, textAlign: 'left' }}>
-            {review.agents.map(
-              (a: ReviewAgentStatus) => (
-                <div
-                  key={a.type}
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    padding: '8px 0',
-                  }}
-                >
-                  <Text>{AGENT_LABELS[a.type]}</Text>
-                  <Tag
-                    color={
-                      a.status === 'COMPLETED'
-                        ? 'success'
-                        : a.status === 'RUNNING'
-                          ? 'processing'
-                          : 'default'
-                    }
-                  >
-                    {a.status === 'COMPLETED'
-                      ? 'Completado'
-                      : a.status === 'RUNNING'
-                        ? 'En proceso'
-                        : 'Pendiente'}
-                  </Tag>
-                </div>
-              ),
-            )}
+            <Steps
+              direction="vertical"
+              current={-1}
+              items={review.agents.map((a) => ({
+                title: AGENT_LABELS[a.type],
+                status: agentStepStatus(a.status),
+                description:
+                  a.status === 'COMPLETED'
+                    ? 'Completado'
+                    : a.status === 'RUNNING'
+                      ? 'En proceso...'
+                      : 'Pendiente',
+              }))}
+            />
           </div>
         )}
+        <Text type="secondary" style={{ marginTop: 16, display: 'block' }}>
+          Tiempo estimado: 2-5 minutos
+        </Text>
       </div>
     );
   }
@@ -100,15 +100,15 @@ export default function ReviewView() {
     return (
       <Alert
         type="error"
-        message="La revision ha fallado"
-        description="Ocurrio un error durante el analisis. Intenta subir el documento nuevamente."
+        message="La revisión ha fallado"
+        description="Ocurrió un error durante el análisis. Intenta subir el documento nuevamente."
         showIcon
         style={{ maxWidth: 600, margin: '60px auto' }}
       />
     );
   }
 
-  // Completed — split view
+  // Completado — vista dividida
   const observations = review.observations || [];
   const filtered = observations.filter((o) => {
     if (typeFilter !== 'ALL' && o.type !== typeFilter) return false;
@@ -118,12 +118,8 @@ export default function ReviewView() {
 
   const handleObsClick = (obs: Observation) => {
     setSelectedObs(obs.id === selectedObs ? null : obs.id);
-
-    // Scroll to highlight in markdown
     if (obs.textFragment && markdownRef.current) {
-      const el = markdownRef.current.querySelector(
-        `[data-obs-id="${obs.id}"]`,
-      );
+      const el = markdownRef.current.querySelector(`[data-obs-id="${obs.id}"]`);
       if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
@@ -131,48 +127,59 @@ export default function ReviewView() {
   };
 
   return (
-    <div style={{ display: 'flex', gap: 16, height: 'calc(100vh - 200px)' }}>
-      {/* Left panel — Markdown document */}
-      <DocumentPreview ref={markdownRef} markdownContent={review.markdownContent} />
+    <div style={{ height: 'calc(100vh - 200px)' }}>
+      <Allotment defaultSizes={[60, 40]}>
+        {/* Panel izquierdo — Documento Markdown */}
+        <Allotment.Pane minSize={300}>
+          <DocumentPreview
+            ref={markdownRef}
+            markdownContent={review.markdownContent}
+            observations={filtered}
+            onHighlightClick={handleHighlightClick}
+          />
+        </Allotment.Pane>
 
-      {/* Right panel — Observations */}
-      <div
-        style={{
-          width: 420,
-          minWidth: 380,
-          overflow: 'auto',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 12,
-        }}
-      >
-        {/* Summary */}
-        {review.report && <ReviewSummaryCard report={review.report} />}
+        {/* Panel derecho — Observaciones */}
+        <Allotment.Pane minSize={320} preferredSize={420}>
+          <div
+            style={{
+              height: '100%',
+              overflow: 'auto',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 12,
+              paddingLeft: 16,
+            }}
+          >
+            {/* Resumen */}
+            {review.report && <ReviewSummaryCard report={review.report} />}
 
-        {/* Filters */}
-        <ObservationFilters
-          typeFilter={typeFilter}
-          severityFilter={severityFilter}
-          onTypeChange={setTypeFilter}
-          onSeverityChange={setSeverityFilter}
-        />
+            {/* Filtros */}
+            <ObservationFilters
+              typeFilter={typeFilter}
+              severityFilter={severityFilter}
+              onTypeChange={setTypeFilter}
+              onSeverityChange={setSeverityFilter}
+            />
 
-        {/* Observation cards */}
-        <div style={{ flex: 1, overflow: 'auto' }}>
-          {filtered.length === 0 ? (
-            <Empty description="No hay observaciones con estos filtros" />
-          ) : (
-            filtered.map((obs) => (
-              <ObservationCard
-                key={obs.id}
-                observation={obs}
-                isSelected={selectedObs === obs.id}
-                onClick={handleObsClick}
-              />
-            ))
-          )}
-        </div>
-      </div>
+            {/* Tarjetas de observaciones */}
+            <div style={{ flex: 1, overflow: 'auto' }}>
+              {filtered.length === 0 ? (
+                <Empty description="No hay observaciones con estos filtros" />
+              ) : (
+                filtered.map((obs) => (
+                  <ObservationCard
+                    key={obs.id}
+                    observation={obs}
+                    isSelected={selectedObs === obs.id}
+                    onClick={handleObsClick}
+                  />
+                ))
+              )}
+            </div>
+          </div>
+        </Allotment.Pane>
+      </Allotment>
     </div>
   );
 }

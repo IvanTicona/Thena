@@ -15,7 +15,7 @@ export default function ReviewSummaryCard({ report }: ReviewSummaryCardProps) {
         Resumen
       </Title>
       <Paragraph
-        ellipsis={{ rows: 4, expandable: true, symbol: 'leer mas' }}
+        ellipsis={{ rows: 4, expandable: true, symbol: 'leer más' }}
       >
         {report.summaryText}
       </Paragraph>
