@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Form, Input, Button, Typography, Card, Alert, Select } from 'antd';
 import {
   UserOutlined,
@@ -28,6 +28,8 @@ export default function RegisterPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [form] = Form.useForm<RegisterFormValues>();
 
+  useEffect(() => { document.title = 'Crear Cuenta — Thena'; }, []);
+
   const handleSubmit = async (values: RegisterFormValues) => {
     setIsLoading(true);
     setErrorMsg(null);
@@ -50,7 +52,7 @@ export default function RegisterPage() {
       <div className="auth-form-wrapper">
         {/* Heading — outside the card */}
         <div className="auth-form-heading">
-          <Title level={2} className="auth-form-title">
+          <Title level={2} className="auth-form-title font-academic">
             Crear Cuenta
           </Title>
           <Text className="auth-form-subtitle">
@@ -175,7 +177,7 @@ export default function RegisterPage() {
                 loading={isLoading}
                 className="auth-submit-btn"
               >
-                {isLoading ? 'Cargando...' : 'Crear Cuenta'}
+                {isLoading ? 'Registrando...' : 'Crear Cuenta'}
               </Button>
             </Form.Item>
           </Form>

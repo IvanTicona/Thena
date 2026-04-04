@@ -16,6 +16,7 @@ import {
   DatabaseOutlined,
   LogoutOutlined,
   UserOutlined,
+  MenuOutlined,
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/useAuth';
@@ -41,6 +42,7 @@ export function AppLayout() {
   const isStudent = user?.role === 'STUDENT';
 
   const [chapters, setChapters] = useState<Chapter[]>([]);
+  const [siderCollapsed, setSiderCollapsed] = useState(false);
 
   useEffect(() => {
     if (isStudent) {
@@ -113,13 +115,23 @@ export function AppLayout() {
   return (
     <Layout className="app-layout">
       <Header className="app-layout__header">
-        <Title
-          level={4}
-          className="app-layout__brand"
-          onClick={() => navigate(isStudent ? '/chapters' : '/tutor')}
-        >
-          Thena
-        </Title>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Button
+            type="text"
+            icon={<MenuOutlined />}
+            onClick={() => setSiderCollapsed(!siderCollapsed)}
+            className="app-layout__menu-toggle"
+            aria-label="Abrir menú"
+          />
+          <img src="/upb_logo.svg" alt="UPB" style={{ height: 24, marginRight: 8 }} />
+          <Title
+            level={4}
+            className="app-layout__brand"
+            onClick={() => navigate(isStudent ? '/chapters' : '/tutor')}
+          >
+            Thena
+          </Title>
+        </div>
 
         <Space align="center" size={12}>
           <Tag color={isStudent ? 'blue' : 'green'}>
@@ -141,7 +153,15 @@ export function AppLayout() {
       </Header>
 
       <Layout>
-        <Sider width={220} className="app-layout__sider">
+        <Sider
+          width={220}
+          className="app-layout__sider"
+          breakpoint="lg"
+          collapsedWidth={0}
+          trigger={null}
+          collapsed={siderCollapsed}
+          onCollapse={setSiderCollapsed}
+        >
           <Menu
             mode="inline"
             selectedKeys={[selectedKey]}

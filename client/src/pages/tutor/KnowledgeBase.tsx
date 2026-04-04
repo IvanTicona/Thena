@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
   Typography,
   Upload,
@@ -8,7 +8,6 @@ import {
   Card,
   message,
   Popconfirm,
-  Space,
   Empty,
 } from 'antd';
 import {
@@ -19,22 +18,18 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import api from '../../services/api';
 import { ApiError } from '../../services/api-error';
+import type { KnowledgeDoc } from '../../types';
+import { formatDate } from '../../utils/format';
+import './KnowledgeBase.css';
 
 const { Title, Text } = Typography;
-
-interface KnowledgeDoc {
-  sourceDocument: string;
-  layer: 'TUTOR' | 'INSTITUTIONAL';
-  chunkCount: number;
-  lastUpdated: string;
-}
 
 export default function KnowledgeBase() {
   const [docs, setDocs] = useState<KnowledgeDoc[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
 
-  const fetchDocs = () => {
+  const fetchDocs = useCallback(() => {
     setLoading(true);
     api
       .get<KnowledgeDoc[]>('/knowledge')
@@ -43,11 +38,13 @@ export default function KnowledgeBase() {
         console.error(err.message);
       })
       .finally(() => setLoading(false));
-  };
+  }, []);
 
   useEffect(() => {
     fetchDocs();
-  }, []);
+  }, [fetchDocs]);
+
+  useEffect(() => { document.title = 'Base de Conocimiento — Thena'; }, []);
 
   const handleUpload = async (file: File) => {
     setUploading(true);
@@ -85,7 +82,7 @@ export default function KnowledgeBase() {
       key: 'doc',
       render: (name: string) => (
         <span>
-          <FileOutlined style={{ marginRight: 8 }} />
+          <FileOutlined className="knowledge-base__file-icon" />
           {name}
         </span>
       ),
@@ -109,14 +106,7 @@ export default function KnowledgeBase() {
       title: 'Actualizado',
       dataIndex: 'lastUpdated',
       key: 'updated',
-      render: (d: string) =>
-        d
-          ? new Date(d).toLocaleDateString('es-BO', {
-              day: '2-digit',
-              month: 'short',
-              year: 'numeric',
-            })
-          : '-',
+      render: (d: string) => d ? formatDate(d) : '-',
     },
     {
       title: 'Acciones',
@@ -124,7 +114,7 @@ export default function KnowledgeBase() {
       render: (_, record) => (
         <Popconfirm
           title="¿Eliminar este documento?"
-          description="Se eliminaran todos los fragmentos indexados."
+          description="Se eliminarán todos los fragmentos indexados."
           onConfirm={() => handleDelete(record.sourceDocument)}
           okText="Eliminar"
           cancelText="Cancelar"
@@ -139,11 +129,11 @@ export default function KnowledgeBase() {
 
   return (
     <div>
-      <Title level={3}>Base de Conocimiento</Title>
+      <Title level={3} className="font-academic">Base de Conocimiento</Title>
 
-      <Card style={{ marginBottom: 24 }}>
+      <Card className="knowledge-base__upload-card">
         <Title level={5}>Subir Criterios de Evaluación</Title>
-        <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
+        <Text type="secondary" className="knowledge-base__upload-hint">
           Sube documentos PDF o DOCX con tus criterios de evaluación. El sistema
           los procesará y usará como referencia al revisar los capítulos.
         </Text>

@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Typography } from 'antd';
 import './AuthLayout.css';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 interface AuthLayoutProps {
   children: ReactNode;
@@ -25,9 +25,6 @@ export function AuthLayout({ children }: AuthLayoutProps) {
             alt="Universidad Privada Boliviana"
             className="auth-layout__upb-logo"
           />
-          <Title level={1} className="auth-layout__brand-title">
-            Thena
-          </Title>
           <Text className="auth-layout__brand-subtitle">
             Sistema de Revisión de Tesis
           </Text>

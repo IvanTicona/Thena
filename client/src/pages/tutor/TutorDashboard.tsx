@@ -5,8 +5,9 @@ import api from '../../services/api';
 import { ApiError } from '../../services/api-error';
 import { ThesisCard } from '../../components/ThesisCard';
 import type { ThesisDocument } from '../../types';
+import './TutorDashboard.css';
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 
 export default function TutorDashboard() {
   const [theses, setTheses] = useState<ThesisDocument[]>([]);
@@ -24,14 +25,10 @@ export default function TutorDashboard() {
   }, []);
 
   useEffect(() => {
-    thesisApi
-      .list()
-      .then((res) => setTheses(res.data))
-      .catch((err: unknown) => {
-        if (err instanceof ApiError) console.error(err.message);
-      })
-      .finally(() => setLoading(false));
-  }, []);
+    refetchTheses();
+  }, [refetchTheses]);
+
+  useEffect(() => { document.title = 'Panel del Tutor — Thena'; }, []);
 
   const handleApprove = (chapterId: string, chapterTitle: string) => {
     Modal.confirm({
@@ -78,17 +75,19 @@ export default function TutorDashboard() {
 
   return (
     <div>
-      <Title level={3}>Panel del Tutor</Title>
+      <Title level={3} className="font-academic">Panel del Tutor</Title>
 
       {loading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}>
+        <div className="tutor-dashboard__loading">
           <Spin size="large" />
         </div>
       ) : theses.length === 0 ? (
-        <Empty
-          description="No tienes proyectos asignados todavía"
-          style={{ marginTop: 48 }}
-        />
+        <div className="tutor-dashboard__empty">
+          <Empty description="No tienes proyectos asignados todavía" />
+          <Text type="secondary" className="tutor-dashboard__empty-hint">
+            Los estudiantes aparecerán aquí cuando te seleccionen como tutor al crear su proyecto.
+          </Text>
+        </div>
       ) : (
         theses.map((thesis) => (
           <ThesisCard

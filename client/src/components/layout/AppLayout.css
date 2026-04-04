@@ -48,6 +48,8 @@
 /* ── SIDER ───────────────────────────────────────────────── */
 .app-layout__sider {
   background: #ffffff !important;
+  border-right: 1px solid #f0f0f0;
+  overflow-y: auto;
 }
 
 /* ── MENU ────────────────────────────────────────────────── */
@@ -67,4 +69,15 @@
 .app-layout__footer {
   text-align: center;
   padding: 0 !important;
+}
+
+/* ── MENU TOGGLE (hamburger — mobile only) ───────────────── */
+.app-layout__menu-toggle {
+  display: none;
+}
+
+@media (max-width: 991px) {
+  .app-layout__menu-toggle {
+    display: inline-flex;
+  }
 }

@@ -23,6 +23,22 @@ export default function OnboardingPage() {
   const [loadingTutors, setLoadingTutors] = useState(true);
   const [form] = Form.useForm<OnboardingFormValues>();
 
+  // If student already has a thesis, skip onboarding
+  useEffect(() => {
+    thesisApi
+      .list()
+      .then((res) => {
+        if (res.data !== null && res.data !== undefined) {
+          navigate('/chapters', { replace: true });
+        }
+      })
+      .catch(() => {
+        // No thesis — stay on onboarding
+      });
+  }, [navigate]);
+
+  useEffect(() => { document.title = 'Configuración — Thena'; }, []);
+
   useEffect(() => {
     usersApi
       .getTutors()
@@ -66,7 +82,7 @@ export default function OnboardingPage() {
       <div className="auth-form-wrapper">
         {/* Heading — outside the card */}
         <div className="auth-form-heading">
-          <Title level={2} className="auth-form-title">
+          <Title level={2} className="auth-form-title font-academic">
             Configura tu Proyecto de Grado
           </Title>
           <Text className="auth-form-subtitle">
@@ -91,7 +107,6 @@ export default function OnboardingPage() {
             layout="vertical"
             onFinish={handleSubmit}
             requiredMark={false}
-            autoComplete="off"
           >
             <Form.Item
               name="title"

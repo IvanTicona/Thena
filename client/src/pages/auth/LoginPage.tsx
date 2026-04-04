@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Form, Input, Button, Typography, Card, Alert } from 'antd';
 import { MailOutlined, LockOutlined } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
@@ -20,6 +20,8 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [form] = Form.useForm<LoginFormValues>();
+
+  useEffect(() => { document.title = 'Iniciar Sesión — Thena'; }, []);
 
   const handleSubmit = async (values: LoginFormValues) => {
     setIsLoading(true);
@@ -44,7 +46,7 @@ export default function LoginPage() {
       <div className="auth-form-wrapper">
         {/* Heading — outside the card */}
         <div className="auth-form-heading">
-          <Title level={2} className="auth-form-title">
+          <Title level={2} className="auth-form-title font-academic">
             Bienvenido
           </Title>
           <Text className="auth-form-subtitle">Ingresá a tu cuenta</Text>
@@ -107,7 +109,7 @@ export default function LoginPage() {
                 loading={isLoading}
                 className="auth-submit-btn"
               >
-                {isLoading ? 'Cargando...' : 'Iniciar Sesión'}
+                {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
               </Button>
             </Form.Item>
           </Form>
