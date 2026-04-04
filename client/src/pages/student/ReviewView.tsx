@@ -1,13 +1,15 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import {
   Typography,
   Spin,
   Alert,
   Steps,
   Empty,
+  Button,
 } from 'antd';
 import { Allotment } from 'allotment';
-import { useParams } from 'react-router-dom';
+import { ArrowLeftOutlined } from '@ant-design/icons';
+import { useParams, useNavigate } from 'react-router-dom';
 import { usePolling } from '../../hooks/usePolling';
 import type {
   ReviewResult,
@@ -20,6 +22,7 @@ import ReviewSummaryCard from './components/ReviewSummaryCard';
 import ObservationCard from './components/ObservationCard';
 import ObservationFilters from './components/ObservationFilters';
 import DocumentPreview from './components/DocumentPreview';
+import './ReviewView.css';
 
 const { Title, Text } = Typography;
 
@@ -34,15 +37,15 @@ const agentStepStatus = (status: string): 'finish' | 'process' | 'wait' => {
 
 export default function ReviewView() {
   const { id: chapterId, jobId } = useParams<{ id: string; jobId: string }>();
+  const navigate = useNavigate();
   const [selectedObs, setSelectedObs] = useState<string | null>(null);
   const [typeFilter, setTypeFilter] = useState<AgentType | 'ALL'>('ALL');
   const [severityFilter, setSeverityFilter] = useState<Severity | 'ALL'>('ALL');
   const markdownRef = useRef<HTMLDivElement>(null);
 
-  // Suppress unused warning — chapterId is available for context if needed
-  void chapterId;
+  useEffect(() => { document.title = 'Revisión — Thena'; }, []);
 
-  const { data: review, loading } = usePolling<ReviewResult>({
+  const { data: review, loading, error } = usePolling<ReviewResult>({
     url: `/reviews/${jobId}`,
     interval: 3000,
     shouldStop: shouldStopPolling,
@@ -56,12 +59,23 @@ export default function ReviewView() {
     return (
       <Spin size="large" style={{ display: 'block', margin: '100px auto' }} />
     );
+
+  if (error)
+    return (
+      <Alert
+        type="error"
+        message="Error al cargar la revisión. Intentá de nuevo."
+        showIcon
+        className="review-view__alert"
+      />
+    );
+
   if (!review) return <Alert type="error" message="Revisión no encontrada" />;
 
   // Vista de procesamiento
   if (review.status === 'QUEUED' || review.status === 'PROCESSING') {
     return (
-      <div style={{ maxWidth: 600, margin: '60px auto', textAlign: 'center' }}>
+      <div className="review-view__processing">
         <Spin size="large" />
         <Title level={4} style={{ marginTop: 24 }}>
           {review.status === 'QUEUED'
@@ -72,7 +86,7 @@ export default function ReviewView() {
           Los agentes de IA están revisando tu capítulo.
         </Text>
         {review.agents && review.agents.length > 0 && (
-          <div style={{ marginTop: 24, textAlign: 'left' }}>
+          <div className="review-view__processing-steps">
             <Steps
               direction="vertical"
               current={-1}
@@ -89,8 +103,8 @@ export default function ReviewView() {
             />
           </div>
         )}
-        <Text type="secondary" style={{ marginTop: 16, display: 'block' }}>
-          Tiempo estimado: 2-5 minutos
+        <Text type="secondary" className="review-view__processing-hint">
+          El proceso puede tardar unos minutos.
         </Text>
       </div>
     );
@@ -103,7 +117,7 @@ export default function ReviewView() {
         message="La revisión ha fallado"
         description="Ocurrió un error durante el análisis. Intenta subir el documento nuevamente."
         showIcon
-        style={{ maxWidth: 600, margin: '60px auto' }}
+        className="review-view__alert"
       />
     );
   }
@@ -127,7 +141,15 @@ export default function ReviewView() {
   };
 
   return (
-    <div style={{ height: 'calc(100vh - 200px)' }}>
+    <div className="review-view">
+      <div className="review-view__back-row">
+        <Button
+          icon={<ArrowLeftOutlined />}
+          onClick={() => navigate(`/chapters/${chapterId}`)}
+        >
+          Volver al capítulo
+        </Button>
+      </div>
       <Allotment defaultSizes={[60, 40]}>
         {/* Panel izquierdo — Documento Markdown */}
         <Allotment.Pane minSize={300}>
@@ -141,16 +163,7 @@ export default function ReviewView() {
 
         {/* Panel derecho — Observaciones */}
         <Allotment.Pane minSize={320} preferredSize={420}>
-          <div
-            style={{
-              height: '100%',
-              overflow: 'auto',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 12,
-              paddingLeft: 16,
-            }}
-          >
+          <div className="review-view__obs-panel">
             {/* Resumen */}
             {review.report && <ReviewSummaryCard report={review.report} />}
 
@@ -163,7 +176,7 @@ export default function ReviewView() {
             />
 
             {/* Tarjetas de observaciones */}
-            <div style={{ flex: 1, overflow: 'auto' }}>
+            <div className="review-view__obs-list">
               {filtered.length === 0 ? (
                 <Empty description="No hay observaciones con estos filtros" />
               ) : (

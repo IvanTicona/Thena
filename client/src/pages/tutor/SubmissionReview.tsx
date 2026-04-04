@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import {
   Typography,
   Spin,
@@ -8,6 +8,7 @@ import {
   Modal,
   message,
   Empty,
+  Steps,
 } from 'antd';
 import { Allotment } from 'allotment';
 import { CheckOutlined, CloseOutlined, ArrowLeftOutlined } from '@ant-design/icons';
@@ -21,11 +22,18 @@ import ObservationFilters from '../student/components/ObservationFilters';
 import DocumentPreview from '../student/components/DocumentPreview';
 import api from '../../services/api';
 import { ApiError } from '../../services/api-error';
+import './SubmissionReview.css';
 
 const { Title, Text } = Typography;
 
 const shouldStopPolling = (data: ReviewResult) =>
   data.status === 'COMPLETED' || data.status === 'FAILED';
+
+const agentStepStatus = (status: string): 'finish' | 'process' | 'wait' => {
+  if (status === 'COMPLETED') return 'finish';
+  if (status === 'RUNNING') return 'process';
+  return 'wait';
+};
 
 export default function SubmissionReview() {
   const { submissionId } = useParams<{ submissionId: string }>();
@@ -38,12 +46,14 @@ export default function SubmissionReview() {
   const [severityFilter, setSeverityFilter] = useState<Severity | 'ALL'>('ALL');
   const markdownRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => { document.title = 'Revisión de Entrega — Thena'; }, []);
+
   // Use latest review by chapterId if available, otherwise by submissionId reference
   const reviewUrl = chapterId
     ? `/reviews/latest?chapterId=${chapterId}`
     : null;
 
-  const { data: review, loading } = usePolling<ReviewResult>({
+  const { data: review, loading, error } = usePolling<ReviewResult>({
     url: reviewUrl || `/reviews/latest?chapterId=${submissionId}`,
     interval: 3000,
     shouldStop: shouldStopPolling,
@@ -105,6 +115,17 @@ export default function SubmissionReview() {
       <Spin size="large" style={{ display: 'block', margin: '100px auto' }} />
     );
 
+  if (error) {
+    return (
+      <Alert
+        type="error"
+        message="Error al cargar la revisión. Intentá de nuevo."
+        showIcon
+        className="submission-review__alert"
+      />
+    );
+  }
+
   if (!reviewUrl) {
     return (
       <Alert
@@ -124,14 +145,14 @@ export default function SubmissionReview() {
         message="La revisión ha fallado"
         description="Ocurrió un error durante el análisis. El estudiante debe subir el documento nuevamente."
         showIcon
-        style={{ maxWidth: 600, margin: '60px auto' }}
+        className="submission-review__alert"
       />
     );
   }
 
   if (review.status === 'QUEUED' || review.status === 'PROCESSING') {
     return (
-      <div style={{ maxWidth: 600, margin: '60px auto', textAlign: 'center' }}>
+      <div className="submission-review__processing">
         <Spin size="large" />
         <Title level={4} style={{ marginTop: 24 }}>
           {review.status === 'QUEUED'
@@ -142,15 +163,21 @@ export default function SubmissionReview() {
           Los agentes de IA están revisando el capítulo. Esto puede tomar unos minutos.
         </Text>
         {review.agents && review.agents.length > 0 && (
-          <div style={{ marginTop: 24, textAlign: 'left' }}>
-            {review.agents.map((a) => (
-              <div
-                key={a.type}
-                style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0' }}
-              >
-                <Text>{AGENT_LABELS[a.type]}</Text>
-              </div>
-            ))}
+          <div className="submission-review__processing-steps">
+            <Steps
+              direction="vertical"
+              current={-1}
+              items={review.agents.map((a) => ({
+                title: AGENT_LABELS[a.type],
+                status: agentStepStatus(a.status),
+                description:
+                  a.status === 'COMPLETED'
+                    ? 'Completado'
+                    : a.status === 'RUNNING'
+                      ? 'En proceso...'
+                      : 'Pendiente',
+              }))}
+            />
           </div>
         )}
       </div>
@@ -176,17 +203,9 @@ export default function SubmissionReview() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 180px)' }}>
+    <div className="submission-review">
       {/* Barra de acciones superior */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 16,
-          padding: '8px 0',
-        }}
-      >
+      <div className="submission-review__action-bar">
         <Button
           icon={<ArrowLeftOutlined />}
           onClick={() => navigate('/tutor')}
@@ -214,7 +233,7 @@ export default function SubmissionReview() {
       </div>
 
       {/* Vista dividida */}
-      <div style={{ flex: 1, overflow: 'hidden' }}>
+      <div className="submission-review__split">
         <Allotment defaultSizes={[60, 40]}>
           {/* Panel izquierdo — Documento Markdown */}
           <Allotment.Pane minSize={300}>
@@ -228,16 +247,7 @@ export default function SubmissionReview() {
 
           {/* Panel derecho — Observaciones */}
           <Allotment.Pane minSize={320} preferredSize={420}>
-            <div
-              style={{
-                height: '100%',
-                overflow: 'auto',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 12,
-                paddingLeft: 16,
-              }}
-            >
+            <div className="submission-review__obs-panel">
               {/* Resumen */}
               {review.report && <ReviewSummaryCard report={review.report} />}
 
@@ -250,7 +260,7 @@ export default function SubmissionReview() {
               />
 
               {/* Tarjetas de observaciones */}
-              <div style={{ flex: 1, overflow: 'auto' }}>
+              <div className="submission-review__obs-list">
                 {filtered.length === 0 ? (
                   <Empty description="No hay observaciones con estos filtros" />
                 ) : (

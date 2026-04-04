@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Card, Row, Col, Tag, Typography, Spin, Empty } from 'antd';
+import { useEffect, useState, useCallback } from 'react';
+import { Card, Row, Col, Tag, Typography, Spin, Empty, Alert, Button } from 'antd';
 import {
   LockOutlined,
   EditOutlined,
@@ -10,6 +10,8 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import { ApiError } from '../../services/api-error';
 import type { Chapter, ChapterStatus } from '../../types';
+import { formatDate } from '../../utils/format';
+import './ChapterList.css';
 
 const { Title, Text } = Typography;
 
@@ -34,24 +36,51 @@ const STATUS_CONFIG: Record<
 export default function ChapterList() {
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  useEffect(() => {
+  const fetchChapters = useCallback(() => {
+    setLoading(true);
+    setError(null);
     api
       .get<Chapter[]>('/chapters')
       .then((res) => setChapters(res.data))
       .catch((err: ApiError) => {
-        console.error(err.message);
+        setError(err.message || 'Error al cargar los capítulos');
       })
       .finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    fetchChapters();
+  }, [fetchChapters]);
+
+  useEffect(() => { document.title = 'Mis Capítulos — Thena'; }, []);
+
   if (loading) return <Spin size="large" style={{ display: 'block', margin: '100px auto' }} />;
-  if (!chapters.length) return <Empty description="No hay capítulos asignados" />;
+
+  if (error) {
+    return (
+      <Alert
+        type="error"
+        message="Error al cargar los capítulos"
+        description={error}
+        showIcon
+        style={{ maxWidth: 600, margin: '60px auto' }}
+        action={
+          <Button size="small" onClick={fetchChapters}>
+            Reintentar
+          </Button>
+        }
+      />
+    );
+  }
+
+  if (!chapters.length) return <Empty description="No se encontraron capítulos para tu proyecto." />;
 
   return (
     <div>
-      <Title level={3}>Mis Capítulos</Title>
+      <Title level={3} className="font-academic">Mis Capítulos</Title>
       <Row gutter={[16, 16]}>
         {chapters.map((ch) => {
           const cfg = STATUS_CONFIG[ch.status];
@@ -62,19 +91,10 @@ export default function ChapterList() {
               <Card
                 hoverable={clickable}
                 onClick={() => clickable && navigate(`/chapters/${ch.id}`)}
-                style={{
-                  opacity: ch.status === 'LOCKED' ? 0.6 : 1,
-                  cursor: clickable ? 'pointer' : 'not-allowed',
-                }}
+                className={`chapter-list__card${ch.status === 'LOCKED' ? ' chapter-list__card--locked' : ''}`}
+                style={{ cursor: clickable ? 'pointer' : 'not-allowed' }}
               >
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: 8,
-                  }}
-                >
+                <div className="chapter-list__card-header">
                   <Text strong>
                     Capítulo {ch.number}
                   </Text>
@@ -86,12 +106,12 @@ export default function ChapterList() {
                   {ch.title}
                 </Title>
                 {ch.latestSubmission && (
-                  <Text type="secondary" style={{ fontSize: 12, marginTop: 8, display: 'block' }}>
+                  <Text type="secondary" className="chapter-list__submission-date">
                     Última entrega: v{ch.latestSubmission.versionNumber} -{' '}
-                    {new Date(ch.latestSubmission.submittedAt).toLocaleDateString('es-BO')}
+                    {formatDate(ch.latestSubmission.submittedAt)}
                   </Text>
                 )}
-                <Text type="secondary" style={{ fontSize: 12, display: 'block' }}>
+                <Text type="secondary" className="chapter-list__submission-count">
                   {ch.submissionCount} entrega{ch.submissionCount !== 1 ? 's' : ''}
                 </Text>
               </Card>

@@ -6,6 +6,7 @@ import type {
   ReviewResult,
   ThesisDocument,
   TutorSummary,
+  KnowledgeDoc,
 } from '../types';
 import { ApiError } from './api-error';
 
@@ -49,12 +50,15 @@ api.interceptors.response.use(
     const isAuthEndpoint =
       originalRequest?.url?.includes('/auth/login') ||
       originalRequest?.url?.includes('/auth/register');
+    // Skip hydration endpoint — a 401 on /users/me just means "not logged in"
+    const isHydrationEndpoint = originalRequest?.url?.includes('/users/me');
 
     if (
       error.response?.status === 401 &&
       !originalRequest._retried &&
       !isRefreshEndpoint &&
-      !isAuthEndpoint
+      !isAuthEndpoint &&
+      !isHydrationEndpoint
     ) {
       if (isRefreshing) {
         // Queue request until refresh completes
@@ -76,8 +80,13 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (refreshError) {
         drainPending(refreshError);
-        // Refresh failed — redirect to login
-        window.location.href = '/login';
+        // Refresh failed — redirect to login only if not already there
+        const isOnPublicPage =
+          window.location.pathname === '/login' ||
+          window.location.pathname === '/register';
+        if (!isOnPublicPage) {
+          window.location.href = '/login';
+        }
         return Promise.reject(ApiError.fromAxios(error));
       } finally {
         isRefreshing = false;
@@ -116,13 +125,6 @@ export const reviewsApi = {
   getByJobId: (jobId: string) => api.get<ReviewResult>(`/reviews/${jobId}`),
 };
 
-export interface KnowledgeDoc {
-  sourceDocument: string;
-  layer: 'TUTOR' | 'INSTITUTIONAL';
-  chunkCount: number;
-  lastUpdated: string;
-}
-
 export const knowledgeApi = {
   list: () => api.get<KnowledgeDoc[]>('/knowledge'),
   upload: (file: File, layer: string = 'TUTOR') => {
@@ -151,5 +153,8 @@ export const thesisApi = {
 export const usersApi = {
   getTutors: () => api.get<TutorSummary[]>('/users/tutors'),
 };
+
+// Re-export KnowledgeDoc type for consumers that import it from here
+export type { KnowledgeDoc } from '../types';
 
 export default api;

@@ -9,6 +9,7 @@ import {
   Spin,
   message,
   Alert,
+  Breadcrumb,
 } from 'antd';
 import {
   UploadOutlined,
@@ -16,10 +17,12 @@ import {
   EyeOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../../services/api';
 import { ApiError } from '../../services/api-error';
 import type { Chapter, Submission } from '../../types';
+import { formatDateTime } from '../../utils/format';
+import './ChapterDetail.css';
 
 const { Title, Text } = Typography;
 
@@ -34,8 +37,11 @@ export default function ChapterDetail() {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
     try {
       const [chRes] = await Promise.all([
         api.get<ChapterDetailData>(`/chapters/${id}`),
@@ -44,7 +50,7 @@ export default function ChapterDetail() {
       setSubmissions(chRes.data.submissions || []);
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : 'Error al cargar el capítulo';
-      console.error(msg);
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -53,6 +59,10 @@ export default function ChapterDetail() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  useEffect(() => {
+    document.title = chapter ? `${chapter.title} — Thena` : 'Cargando... — Thena';
+  }, [chapter]);
 
   const handleUpload = async (file: File) => {
     setUploading(true);
@@ -82,13 +92,31 @@ export default function ChapterDetail() {
   };
 
   if (loading) return <Spin size="large" style={{ display: 'block', margin: '100px auto' }} />;
+
+  if (error) {
+    return (
+      <Alert
+        type="error"
+        message="Error al cargar el capítulo"
+        description={error}
+        showIcon
+        className="chapter-detail__error-alert"
+        action={
+          <Button size="small" onClick={fetchData}>
+            Reintentar
+          </Button>
+        }
+      />
+    );
+  }
+
   if (!chapter) return <Alert type="error" message="Capítulo no encontrado" />;
 
-  const canUpload = chapter.status === 'DRAFT' || chapter.status === 'IN_REVIEW';
+  const canUpload = chapter.status === 'DRAFT';
 
   const columns: ColumnsType<Submission> = [
     {
-      title: 'Version',
+      title: 'Versión',
       dataIndex: 'versionNumber',
       key: 'version',
       render: (v: number) => `v${v}`,
@@ -99,7 +127,7 @@ export default function ChapterDetail() {
       key: 'file',
       render: (name: string) => (
         <span>
-          <FileWordOutlined style={{ marginRight: 4 }} />
+          <FileWordOutlined className="chapter-detail__file-icon" />
           {name}
         </span>
       ),
@@ -108,14 +136,7 @@ export default function ChapterDetail() {
       title: 'Fecha',
       dataIndex: 'submittedAt',
       key: 'date',
-      render: (d: string) =>
-        new Date(d).toLocaleDateString('es-BO', {
-          day: '2-digit',
-          month: 'short',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-        }),
+      render: (d: string) => formatDateTime(d),
     },
     {
       title: 'Estado',
@@ -153,7 +174,7 @@ export default function ChapterDetail() {
                 navigate(`/chapters/${id}/review/${job.id}`)
               }
             >
-              Ver Revision
+              Ver Revisión
             </Button>
           );
         }
@@ -177,14 +198,21 @@ export default function ChapterDetail() {
 
   return (
     <div>
-      <Title level={3}>
+      <Breadcrumb
+        className="chapter-detail__breadcrumb"
+        items={[
+          { title: <Link to="/chapters">Mis Capítulos</Link> },
+          { title: `Capítulo ${chapter.number}: ${chapter.title}` },
+        ]}
+      />
+      <Title level={3} className="font-academic">
         Capítulo {chapter.number}: {chapter.title}
       </Title>
 
       {canUpload && (
-        <Card style={{ marginBottom: 24 }}>
+        <Card className="chapter-detail__upload-card">
           <Title level={5}>Subir Documento</Title>
-          <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
+          <Text type="secondary" className="chapter-detail__upload-hint">
             Sube tu archivo DOCX para recibir retroalimentación.
           </Text>
           <Upload
@@ -202,13 +230,23 @@ export default function ChapterDetail() {
         </Card>
       )}
 
+      {chapter.status === 'IN_REVIEW' && (
+        <Alert
+          type="info"
+          message="Revisión en progreso"
+          description="Hay una revisión en progreso. Esperá el resultado antes de subir una nueva versión."
+          showIcon
+          className="chapter-detail__status-alert"
+        />
+      )}
+
       {chapter.status === 'LOCKED' && (
         <Alert
           type="warning"
           message="Este capítulo está bloqueado"
           description="Debes completar y aprobar el capítulo anterior antes de poder subir este capítulo."
           showIcon
-          style={{ marginBottom: 24 }}
+          className="chapter-detail__status-alert"
         />
       )}
 
@@ -218,7 +256,7 @@ export default function ChapterDetail() {
           message="Capítulo aprobado"
           description="Este capítulo ha sido aprobado por tu tutor."
           showIcon
-          style={{ marginBottom: 24 }}
+          className="chapter-detail__status-alert"
         />
       )}
 
