@@ -19,12 +19,17 @@ class ReviewRepository(ReviewRepositoryPort):
     # ── Read operations ─────────────────────────────────────────────
 
     def get_chapter_info(self, chapter_id: str) -> ChapterInfoDict:
-        """Fetch chapter metadata and associated tutor."""
+        """Fetch chapter metadata and associated tutor via thesis_documents."""
         with self._db_engine.connect() as conn:
             row = conn.execute(
                 text("""
-                    SELECT c.number AS chapter_number, c.title, c.student_id
+                    SELECT
+                        c.number AS chapter_number,
+                        c.title,
+                        td.student_id,
+                        td.tutor_id
                     FROM chapters c
+                    JOIN thesis_documents td ON c.thesis_id = td.id
                     WHERE c.id = CAST(:chapter_id AS uuid)
                 """),
                 {"chapter_id": chapter_id},
@@ -33,30 +38,23 @@ class ReviewRepository(ReviewRepositoryPort):
             if not row:
                 raise ValueError(f"Chapter {chapter_id} not found")
 
-            # Find the tutor (any user with TUTOR role for MVP)
-            tutor_row = conn.execute(
-                text("""
-                    SELECT id FROM users WHERE role = 'TUTOR' LIMIT 1
-                """)
-            ).fetchone()
-
             return {
                 "chapter_number": row.chapter_number,
                 "chapter_title": row.title,
                 "student_id": str(row.student_id),
-                "tutor_id": str(tutor_row.id) if tutor_row else None,
+                "tutor_id": str(row.tutor_id) if row.tutor_id else None,
             }
 
     def get_approved_chapters(self, chapter_id: str) -> list[PreviousChapterDict]:
-        """Get all previously approved chapters for the same student."""
+        """Get all previously approved chapters for the same thesis."""
         with self._db_engine.connect() as conn:
             result = conn.execute(
                 text("""
                     SELECT c.number AS chapter_number, c.title, s.markdown_content
                     FROM chapters c
                     JOIN submissions s ON s.chapter_id = c.id
-                    WHERE c.student_id = (
-                        SELECT student_id FROM chapters
+                    WHERE c.thesis_id = (
+                        SELECT thesis_id FROM chapters
                         WHERE id = CAST(:chapter_id AS uuid)
                     )
                     AND c.status = 'APPROVED'
@@ -133,13 +131,17 @@ class ReviewRepository(ReviewRepositoryPort):
             by_severity = self._count_by_severity(observations)
 
             report_id = str(uuid.uuid4())
-            self._insert_report(conn, report_id, job_id, summary, observations, by_severity)
+            self._insert_report(
+                conn, report_id, job_id, summary, observations, by_severity
+            )
 
             agent_result_ids = self._insert_agent_results(conn, job_id, agent_findings)
 
             self._insert_observations(conn, observations, agent_result_ids, report_id)
 
-        logger.info("Saved results for job %s: %d observations", job_id, len(observations))
+        logger.info(
+            "Saved results for job %s: %d observations", job_id, len(observations)
+        )
 
     # ── Private helpers ─────────────────────────────────────────────
 
@@ -157,17 +159,26 @@ class ReviewRepository(ReviewRepositoryPort):
             {"job_id": job_id},
         )
         conn.execute(
-            text("DELETE FROM agent_results WHERE review_job_id = CAST(:job_id AS uuid)"),
+            text(
+                "DELETE FROM agent_results WHERE review_job_id = CAST(:job_id AS uuid)"
+            ),
             {"job_id": job_id},
         )
         conn.execute(
-            text("DELETE FROM review_reports WHERE review_job_id = CAST(:job_id AS uuid)"),
+            text(
+                "DELETE FROM review_reports WHERE review_job_id = CAST(:job_id AS uuid)"
+            ),
             {"job_id": job_id},
         )
 
     @staticmethod
     def _count_by_severity(observations: list[FindingDict]) -> dict[str, int]:
-        by_severity: dict[str, int] = {"INFO": 0, "SUGGESTION": 0, "WARNING": 0, "ERROR": 0}
+        by_severity: dict[str, int] = {
+            "INFO": 0,
+            "SUGGESTION": 0,
+            "WARNING": 0,
+            "ERROR": 0,
+        }
         for obs in observations:
             sev = obs.get("severity", "INFO")
             if sev in by_severity:

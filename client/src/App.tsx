@@ -3,9 +3,11 @@ import esES from 'antd/locale/es_ES';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { StudentThesisGuard } from './components/StudentThesisGuard';
 import { AppLayout } from './components/layout/AppLayout';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
+import OnboardingPage from './pages/student/OnboardingPage';
 import ChapterList from './pages/student/ChapterList';
 import ChapterDetail from './pages/student/ChapterDetail';
 import ReviewView from './pages/student/ReviewView';
@@ -29,37 +31,32 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
 
+          {/* Onboarding — protected but outside AppLayout (uses AuthLayout) */}
+          <Route element={<ProtectedRoute allowedRoles={['STUDENT']} />}>
+            <Route path="/onboarding" element={<OnboardingPage />} />
+          </Route>
+
           {/* Protected routes — require authentication */}
           <Route element={<ProtectedRoute />}>
             <Route element={<AppLayout />}>
-              {/* Default redirect */}
+              {/* Default redirect based on role is handled by ProtectedRoute */}
               <Route path="/" element={<Navigate to="/chapters" replace />} />
 
-              {/* Student routes */}
+              {/* Student routes — guarded by thesis check */}
               <Route
-                path="/chapters"
                 element={
                   <ProtectedRoute allowedRoles={['STUDENT']}>
-                    <ChapterList />
+                    <StudentThesisGuard />
                   </ProtectedRoute>
                 }
-              />
-              <Route
-                path="/chapters/:id"
-                element={
-                  <ProtectedRoute allowedRoles={['STUDENT']}>
-                    <ChapterDetail />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/chapters/:id/review/:jobId"
-                element={
-                  <ProtectedRoute allowedRoles={['STUDENT']}>
-                    <ReviewView />
-                  </ProtectedRoute>
-                }
-              />
+              >
+                <Route path="/chapters" element={<ChapterList />} />
+                <Route path="/chapters/:id" element={<ChapterDetail />} />
+                <Route
+                  path="/chapters/:id/review/:jobId"
+                  element={<ReviewView />}
+                />
+              </Route>
 
               {/* Tutor routes */}
               <Route

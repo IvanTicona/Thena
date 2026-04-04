@@ -72,7 +72,8 @@ model User {
   updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
 
   // Relations
-  chapters         Chapter[]        @relation("StudentChapters")
+  thesis           ThesisDocument?  @relation("StudentThesis")
+  tutoredTheses    ThesisDocument[] @relation("TutorTheses")
   approvedChapters Chapter[]        @relation("ApprovedByTutor")
   submissions      Submission[]
   knowledgeChunks  KnowledgeChunk[]
@@ -80,23 +81,38 @@ model User {
   @@map("users")
 }
 
+model ThesisDocument {
+  id        String   @id @default(uuid()) @db.Uuid
+  title     String   @db.VarChar(500)
+  studentId String   @unique @map("student_id") @db.Uuid
+  tutorId   String?  @map("tutor_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  student  User      @relation("StudentThesis", fields: [studentId], references: [id])
+  tutor    User?     @relation("TutorTheses", fields: [tutorId], references: [id])
+  chapters Chapter[]
+
+  @@map("thesis_documents")
+}
+
 model Chapter {
   id         String        @id @default(uuid()) @db.Uuid
   number     Int           @db.SmallInt
   title      String        @db.VarChar(255)
   status     ChapterStatus @default(LOCKED)
-  studentId  String        @map("student_id") @db.Uuid
+  thesisId   String        @map("thesis_id") @db.Uuid
   approvedBy String?       @map("approved_by") @db.Uuid
   approvedAt DateTime?     @map("approved_at")
   createdAt  DateTime      @default(now()) @map("created_at")
   updatedAt  DateTime      @default(now()) @updatedAt @map("updated_at")
 
   // Relations
-  student     User         @relation("StudentChapters", fields: [studentId], references: [id])
-  approver    User?        @relation("ApprovedByTutor", fields: [approvedBy], references: [id])
+  thesis      ThesisDocument @relation(fields: [thesisId], references: [id])
+  approver    User?          @relation("ApprovedByTutor", fields: [approvedBy], references: [id])
   submissions Submission[]
 
-  @@unique([studentId, number])
+  @@unique([thesisId, number])
   @@map("chapters")
 }
 

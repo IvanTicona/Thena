@@ -4,6 +4,8 @@ import type {
   Chapter,
   Submission,
   ReviewResult,
+  ThesisDocument,
+  TutorSummary,
 } from '../types';
 import { ApiError } from './api-error';
 
@@ -133,6 +135,21 @@ export const knowledgeApi = {
   },
   delete: (sourceDocument: string) =>
     api.delete(`/knowledge/${encodeURIComponent(sourceDocument)}`),
+};
+
+export interface CreateThesisDto {
+  title: string;
+  tutorId?: string;
+}
+
+export const thesisApi = {
+  create: (data: CreateThesisDto) => api.post<ThesisDocument>('/theses', data),
+  list: () => api.get<ThesisDocument[]>('/theses'),
+  getById: (id: string) => api.get<ThesisDocument>(`/theses/${id}`),
+};
+
+export const usersApi = {
+  getTutors: () => api.get<TutorSummary[]>('/users/tutors'),
 };
 
 export default api;

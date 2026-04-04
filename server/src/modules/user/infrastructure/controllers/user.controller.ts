@@ -11,4 +11,9 @@ export class UserController {
   async getMe(@CurrentUser() user: JwtPayload) {
     return this.userService.findById(user.sub);
   }
+
+  @Get('tutors')
+  async getTutors() {
+    return this.userService.findTutors();
+  }
 }

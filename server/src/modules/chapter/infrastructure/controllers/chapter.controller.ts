@@ -25,8 +25,11 @@ export class ChapterController {
   }
 
   @Get(':id')
-  async findOne(@Param('id', ParseUUIDPipe) id: string) {
-    return this.chapterService.findById(id);
+  async findOne(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.chapterService.findById(id, user.sub, user.role);
   }
 
   @Patch(':id/approve')
@@ -50,6 +53,6 @@ export class ChapterController {
     if (user.role !== 'TUTOR') {
       throw new ForbiddenException('Only tutors can reject chapters');
     }
-    return this.chapterService.reject(id);
+    return this.chapterService.reject(id, user.sub);
   }
 }

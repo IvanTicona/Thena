@@ -92,3 +92,25 @@ export interface KnowledgeDoc {
   chunkCount: number;
   lastUpdated: string;
 }
+
+export interface TutorSummary {
+  id: string;
+  name: string;
+  email: string;
+}
+
+export interface ThesisDocument {
+  id: string;
+  title: string;
+  studentId: string;
+  tutorId: string | null;
+  tutor?: TutorSummary;
+  student?: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  chapters?: Chapter[];
+  createdAt: string;
+  updatedAt: string;
+}

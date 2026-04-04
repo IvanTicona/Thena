@@ -32,16 +32,17 @@ export class SubmissionService {
       );
     }
 
-    // Fetch chapter with ownership check
+    // Fetch chapter with thesis for ownership check
     const chapter = await this.prisma.client.chapter.findUnique({
       where: { id: chapterId },
+      include: { thesis: { select: { studentId: true } } },
     });
 
     if (!chapter) {
       throw new NotFoundException('Chapter not found');
     }
 
-    if (chapter.studentId !== studentId) {
+    if (chapter.thesis.studentId !== studentId) {
       throw new ForbiddenException('Chapter does not belong to this student');
     }
 

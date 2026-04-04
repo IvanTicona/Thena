@@ -1,54 +1,36 @@
-import { useEffect, useState } from 'react';
-import {
-  Typography,
-  Table,
-  Tag,
-  Button,
-  Spin,
-  Modal,
-  message,
-  Card,
-  Space,
-  Progress,
-} from 'antd';
-import {
-  CheckOutlined,
-  CloseOutlined,
-  EyeOutlined,
-} from '@ant-design/icons';
-import type { ColumnsType } from 'antd/es/table';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState, useCallback } from 'react';
+import { Typography, Spin, Modal, message, Empty } from 'antd';
+import { thesisApi } from '../../services/api';
 import api from '../../services/api';
 import { ApiError } from '../../services/api-error';
-import type { Chapter, ChapterStatus } from '../../types';
+import { ThesisCard } from '../../components/ThesisCard';
+import type { ThesisDocument } from '../../types';
 
 const { Title } = Typography;
 
-const STATUS_CONFIG: Record<ChapterStatus, { color: string; label: string }> = {
-  LOCKED: { color: 'default', label: 'Bloqueado' },
-  DRAFT: { color: 'blue', label: 'Borrador' },
-  IN_REVIEW: { color: 'processing', label: 'En Revisión' },
-  APPROVED: { color: 'success', label: 'Aprobado' },
-};
-
 export default function TutorDashboard() {
-  const [chapters, setChapters] = useState<Chapter[]>([]);
+  const [theses, setTheses] = useState<ThesisDocument[]>([]);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
 
-  const fetchChapters = () => {
+  const refetchTheses = useCallback(() => {
     setLoading(true);
-    api
-      .get<Chapter[]>('/chapters')
-      .then((res) => setChapters(res.data))
-      .catch((err: ApiError) => {
-        console.error(err.message);
+    thesisApi
+      .list()
+      .then((res) => setTheses(res.data))
+      .catch((err: unknown) => {
+        if (err instanceof ApiError) console.error(err.message);
       })
       .finally(() => setLoading(false));
-  };
+  }, []);
 
   useEffect(() => {
-    fetchChapters();
+    thesisApi
+      .list()
+      .then((res) => setTheses(res.data))
+      .catch((err: unknown) => {
+        if (err instanceof ApiError) console.error(err.message);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   const handleApprove = (chapterId: string, chapterTitle: string) => {
@@ -62,9 +44,11 @@ export default function TutorDashboard() {
         try {
           await api.patch(`/chapters/${chapterId}/approve`);
           message.success('Capítulo aprobado');
-          fetchChapters();
+          refetchTheses();
         } catch (err) {
-          message.error(err instanceof ApiError ? err.message : 'Error al aprobar el capítulo');
+          message.error(
+            err instanceof ApiError ? err.message : 'Error al aprobar el capítulo',
+          );
         }
       },
     });
@@ -82,124 +66,39 @@ export default function TutorDashboard() {
         try {
           await api.patch(`/chapters/${chapterId}/reject`);
           message.success('Capítulo rechazado');
-          fetchChapters();
+          refetchTheses();
         } catch (err) {
-          message.error(err instanceof ApiError ? err.message : 'Error al rechazar el capítulo');
+          message.error(
+            err instanceof ApiError ? err.message : 'Error al rechazar el capítulo',
+          );
         }
       },
     });
   };
 
-  const columns: ColumnsType<Chapter> = [
-    {
-      title: '#',
-      dataIndex: 'number',
-      key: 'number',
-      width: 60,
-    },
-    {
-      title: 'Capítulo',
-      dataIndex: 'title',
-      key: 'title',
-    },
-    {
-      title: 'Estado',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status: ChapterStatus) => {
-        const cfg = STATUS_CONFIG[status];
-        return <Tag color={cfg.color}>{cfg.label}</Tag>;
-      },
-    },
-    {
-      title: 'Entregas',
-      dataIndex: 'submissionCount',
-      key: 'submissions',
-    },
-    {
-      title: 'Última Entrega',
-      key: 'latest',
-      render: (_, record) => {
-        if (!record.latestSubmission) return '-';
-        return new Date(record.latestSubmission.submittedAt).toLocaleDateString(
-          'es-BO',
-          { day: '2-digit', month: 'short', year: 'numeric' },
-        );
-      },
-    },
-    {
-      title: 'Acciones',
-      key: 'actions',
-      render: (_, record) => (
-        <Space>
-          {record.status !== 'LOCKED' && record.latestSubmission && (
-            <Button
-              type="link"
-              icon={<EyeOutlined />}
-              onClick={() =>
-                navigate(
-                  `/tutor/submissions/${record.latestSubmission!.id}?chapterId=${record.id}`,
-                )
-              }
-            >
-              Ver revisión
-            </Button>
-          )}
-          {record.status === 'IN_REVIEW' && (
-            <>
-              <Button
-                type="primary"
-                size="small"
-                icon={<CheckOutlined />}
-                onClick={() => handleApprove(record.id, record.title)}
-              >
-                Aprobar
-              </Button>
-              <Button
-                danger
-                size="small"
-                icon={<CloseOutlined />}
-                onClick={() => handleReject(record.id, record.title)}
-              >
-                Rechazar
-              </Button>
-            </>
-          )}
-        </Space>
-      ),
-    },
-  ];
-
-  const approvedCount = chapters.filter((c) => c.status === 'APPROVED').length;
-
   return (
     <div>
       <Title level={3}>Panel del Tutor</Title>
 
-      {/* GAP 4: Progreso del estudiante */}
-      <Card style={{ marginBottom: 24 }}>
-        <Title level={5} style={{ marginBottom: 12 }}>
-          Progreso del Estudiante
-        </Title>
-        {loading ? (
-          <Spin size="small" />
-        ) : (
-          <Progress
-            percent={Math.round((approvedCount / 8) * 100)}
-            format={() => `${approvedCount}/8 capítulos aprobados`}
-          />
-        )}
-      </Card>
-
-      <Card>
-        <Table
-          dataSource={chapters}
-          columns={columns}
-          rowKey="id"
-          loading={loading}
-          pagination={false}
+      {loading ? (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}>
+          <Spin size="large" />
+        </div>
+      ) : theses.length === 0 ? (
+        <Empty
+          description="No tienes proyectos asignados todavía"
+          style={{ marginTop: 48 }}
         />
-      </Card>
+      ) : (
+        theses.map((thesis) => (
+          <ThesisCard
+            key={thesis.id}
+            thesis={thesis}
+            onApprove={handleApprove}
+            onReject={handleReject}
+          />
+        ))
+      )}
     </div>
   );
 }

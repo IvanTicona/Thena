@@ -8,15 +8,15 @@ const adapter = new PrismaPg({
 });
 const prisma = new PrismaClient({ adapter });
 
-const CHAPTERS = [
-  { number: 1, title: 'Marco Referencial' },
-  { number: 2, title: 'Marco Teorico' },
-  { number: 3, title: 'Marco Practico' },
-  { number: 4, title: 'Resultados' },
-  { number: 5, title: 'Conclusiones' },
-  { number: 6, title: 'Recomendaciones' },
-  { number: 7, title: 'Bibliografia' },
-  { number: 8, title: 'Anexos' },
+const CHAPTER_TITLES = [
+  'Marco Referencial',
+  'Marco Teórico',
+  'Marco Práctico',
+  'Resultados',
+  'Conclusiones',
+  'Recomendaciones',
+  'Bibliografía',
+  'Anexos',
 ];
 
 async function main() {
@@ -24,8 +24,9 @@ async function main() {
 
   const passwordHash = await bcrypt.hash('devpassword123', 10);
 
-  // Upsert users
-  const student = await prisma.user.upsert({
+  // ─── Users ───────────────────────────────────────────────────────────────────
+
+  const student1 = await prisma.user.upsert({
     where: { email: 'student@thena.dev' },
     update: { passwordHash },
     create: {
@@ -35,9 +36,33 @@ async function main() {
       passwordHash,
     },
   });
-  console.log(`  Student: ${student.name} (${student.id})`);
+  console.log(`  Student 1: ${student1.name} (${student1.id})`);
 
-  const tutor = await prisma.user.upsert({
+  const student2 = await prisma.user.upsert({
+    where: { email: 'student2@thena.dev' },
+    update: { passwordHash },
+    create: {
+      email: 'student2@thena.dev',
+      name: 'María Condori',
+      role: 'STUDENT',
+      passwordHash,
+    },
+  });
+  console.log(`  Student 2: ${student2.name} (${student2.id})`);
+
+  const student3 = await prisma.user.upsert({
+    where: { email: 'student3@thena.dev' },
+    update: { passwordHash },
+    create: {
+      email: 'student3@thena.dev',
+      name: 'Carlos Mamani',
+      role: 'STUDENT',
+      passwordHash,
+    },
+  });
+  console.log(`  Student 3: ${student3.name} (${student3.id})`);
+
+  const tutor1 = await prisma.user.upsert({
     where: { email: 'tutor@thena.dev' },
     update: { passwordHash },
     create: {
@@ -47,28 +72,95 @@ async function main() {
       passwordHash,
     },
   });
-  console.log(`  Tutor: ${tutor.name} (${tutor.id})`);
+  console.log(`  Tutor 1: ${tutor1.name} (${tutor1.id})`);
 
-  // Upsert chapters for the student
-  for (const ch of CHAPTERS) {
-    const chapter = await prisma.chapter.upsert({
-      where: {
-        studentId_number: {
-          studentId: student.id,
-          number: ch.number,
-        },
-      },
-      update: {},
-      create: {
-        number: ch.number,
-        title: ch.title,
-        status: ch.number === 1 ? 'DRAFT' : 'LOCKED',
-        studentId: student.id,
-      },
+  const tutor2 = await prisma.user.upsert({
+    where: { email: 'tutor2@thena.dev' },
+    update: { passwordHash },
+    create: {
+      email: 'tutor2@thena.dev',
+      name: 'Dra. Ana Flores',
+      role: 'TUTOR',
+      passwordHash,
+    },
+  });
+  console.log(`  Tutor 2: ${tutor2.name} (${tutor2.id})`);
+
+  // ─── ThesisDocuments + Chapters ──────────────────────────────────────────────
+
+  const thesesData = [
+    {
+      student: student1,
+      title: 'Sistema de Gestión Hospitalaria Basado en Microservicios',
+      tutor: tutor1,
+    },
+    {
+      student: student2,
+      title: 'Aplicación Móvil para Monitoreo de Cultivos con IoT',
+      tutor: tutor1,
+    },
+    {
+      student: student3,
+      title: 'Plataforma de Aprendizaje Adaptativo con Inteligencia Artificial',
+      tutor: null, // No tutor assigned
+    },
+  ];
+
+  for (const { student, title, tutor } of thesesData) {
+    // Check if thesis already exists for this student
+    const existingThesis = await prisma.thesisDocument.findUnique({
+      where: { studentId: student.id },
     });
-    console.log(
-      `  Chapter ${chapter.number}: ${chapter.title} [${chapter.status}]`,
-    );
+
+    let thesis;
+    if (existingThesis) {
+      thesis = await prisma.thesisDocument.update({
+        where: { id: existingThesis.id },
+        data: {
+          title,
+          tutorId: tutor?.id ?? null,
+        },
+      });
+      console.log(`  Updated thesis: "${title}" for ${student.name}`);
+    } else {
+      thesis = await prisma.thesisDocument.create({
+        data: {
+          title,
+          studentId: student.id,
+          tutorId: tutor?.id ?? null,
+        },
+      });
+      console.log(`  Created thesis: "${title}" for ${student.name}`);
+    }
+
+    // Create chapters for this thesis (ch1=DRAFT, ch2-8=LOCKED)
+    for (let i = 0; i < CHAPTER_TITLES.length; i++) {
+      const chapterNumber = i + 1;
+      const chapterTitle = CHAPTER_TITLES[i];
+
+      const existing = await prisma.chapter.findUnique({
+        where: {
+          thesisId_number: {
+            thesisId: thesis.id,
+            number: chapterNumber,
+          },
+        },
+      });
+
+      if (!existing) {
+        const chapter = await prisma.chapter.create({
+          data: {
+            number: chapterNumber,
+            title: chapterTitle,
+            status: chapterNumber === 1 ? 'DRAFT' : 'LOCKED',
+            thesisId: thesis.id,
+          },
+        });
+        console.log(
+          `    Chapter ${chapter.number}: ${chapter.title} [${chapter.status}]`,
+        );
+      }
+    }
   }
 
   console.log('Seed completed.');

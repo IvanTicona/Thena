@@ -8,6 +8,12 @@ interface UserSummary {
   role: string;
 }
 
+interface TutorSummary {
+  id: string;
+  name: string;
+  email: string;
+}
+
 @Injectable()
 export class UserService {
   constructor(private readonly prisma: PrismaService) {}
@@ -19,6 +25,14 @@ export class UserService {
   async findAll(): Promise<UserSummary[]> {
     return this.prisma.client.user.findMany({
       select: { id: true, name: true, role: true },
+    });
+  }
+
+  async findTutors(): Promise<TutorSummary[]> {
+    return this.prisma.client.user.findMany({
+      where: { role: 'TUTOR' },
+      select: { id: true, name: true, email: true },
+      orderBy: { name: 'asc' },
     });
   }
 }
