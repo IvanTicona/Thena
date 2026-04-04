@@ -1,0 +1,53 @@
+/* ========================================================
+   ReviewView — Student split-view review page
+   ======================================================== */
+
+/* ── ROOT PANEL ──────────────────────────────────────────── */
+.review-view {
+  height: var(--review-panel-height);
+}
+
+/* ── BACK BUTTON ROW ─────────────────────────────────────── */
+.review-view__back-row {
+  margin-bottom: 12px;
+}
+
+/* ── OBSERVATIONS PANEL ──────────────────────────────────── */
+.review-view__obs-panel {
+  height: 100%;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+/* ── OBSERVATIONS LIST ───────────────────────────────────── */
+.review-view__obs-list {
+  flex: 1;
+  overflow: auto;
+}
+
+/* ── PROCESSING STATE ────────────────────────────────────── */
+.review-view__processing {
+  max-width: 600px;
+  margin: 60px auto;
+  text-align: center;
+}
+
+.review-view__processing-steps {
+  margin-top: 24px;
+  text-align: left;
+}
+
+.review-view__processing-hint {
+  margin-top: 16px;
+  display: block;
+}
+
+/* ── ERROR STATES ────────────────────────────────────────── */
+.review-view__alert {
+  max-width: 600px;
+  margin: 60px auto;
+}

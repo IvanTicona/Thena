@@ -1,0 +1,58 @@
+/* ========================================================
+   ThesisCard — Tutor thesis progress card
+   ======================================================== */
+
+/* ── CARD ────────────────────────────────────────────────── */
+.thesis-card {
+  margin-bottom: 16px;
+}
+
+/* ── HEADER ROW ──────────────────────────────────────────── */
+.thesis-card__header {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+/* ── AVATAR ──────────────────────────────────────────────── */
+.thesis-card__avatar {
+  background-color: #06175d;
+  flex-shrink: 0;
+}
+
+/* ── STUDENT INFO ────────────────────────────────────────── */
+.thesis-card__student-info {
+  flex: 1;
+  min-width: 200px;
+}
+
+.thesis-card__thesis-title {
+  margin-top: 4px;
+  font-size: 14px;
+  color: #374151;
+}
+
+/* ── PROGRESS ────────────────────────────────────────────── */
+.thesis-card__progress {
+  min-width: 200px;
+  flex-shrink: 0;
+}
+
+/* ── TOGGLE BUTTON ───────────────────────────────────────── */
+.thesis-card__toggle-btn {
+  flex-shrink: 0;
+}
+
+/* ── CHAPTER LIST ────────────────────────────────────────── */
+.thesis-card__chapters {
+  margin-top: 16px;
+  border-top: 1px solid #f0f0f0;
+  padding-top: 16px;
+}
+
+/* ── CHAPTER NUMBER LABEL ────────────────────────────────── */
+.thesis-card__chapter-number {
+  color: #6b7280;
+  font-size: 12px;
+}

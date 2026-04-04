@@ -1,0 +1,34 @@
+/* ========================================================
+   ChapterDetail — Student chapter detail view
+   ======================================================== */
+
+/* ── BREADCRUMB ──────────────────────────────────────────── */
+.chapter-detail__breadcrumb {
+  margin-bottom: 16px;
+}
+
+/* ── ERROR ALERT ─────────────────────────────────────────── */
+.chapter-detail__error-alert {
+  max-width: 600px;
+  margin: 60px auto;
+}
+
+/* ── UPLOAD CARD ─────────────────────────────────────────── */
+.chapter-detail__upload-card {
+  margin-bottom: 24px;
+}
+
+.chapter-detail__upload-hint {
+  display: block;
+  margin-bottom: 16px;
+}
+
+/* ── STATUS ALERTS ───────────────────────────────────────── */
+.chapter-detail__status-alert {
+  margin-bottom: 24px;
+}
+
+/* ── TABLE ICONS ─────────────────────────────────────────── */
+.chapter-detail__file-icon {
+  margin-right: 4px;
+}

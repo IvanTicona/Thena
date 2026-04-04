@@ -1,5 +1,12 @@
 /* Global styles for Thena */
 
+/* ── CSS CUSTOM PROPERTIES ───────────────────────────────── */
+:root {
+  --header-height: 64px;
+  --content-padding: 24px;
+  --review-panel-height: calc(100vh - var(--header-height) - var(--content-padding) * 2 - 48px);
+}
+
 /* CSS Reset — minimal */
 *,
 *::before,
@@ -27,4 +34,10 @@ body {
 /* Smooth scrolling */
 html {
   scroll-behavior: smooth;
+}
+
+/* ThesisCard — wrap action buttons on small screens */
+.ant-list-item-action {
+  flex-wrap: wrap;
+  gap: 8px;
 }

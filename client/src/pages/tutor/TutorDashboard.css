@@ -1,0 +1,21 @@
+/* ========================================================
+   TutorDashboard — Tutor overview with thesis list
+   ======================================================== */
+
+/* ── LOADING CONTAINER ───────────────────────────────────── */
+.tutor-dashboard__loading {
+  display: flex;
+  justify-content: center;
+  padding: 48px;
+}
+
+/* ── EMPTY STATE ─────────────────────────────────────────── */
+.tutor-dashboard__empty {
+  text-align: center;
+  margin-top: 48px;
+}
+
+.tutor-dashboard__empty-hint {
+  display: block;
+  margin-top: 8px;
+}

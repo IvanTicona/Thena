@@ -2,7 +2,7 @@ import { Card, Tag, Typography } from 'antd';
 import type { ReviewReport, Severity } from '../../../types';
 import { SEVERITY_CONFIG } from './observation-config';
 
-const { Title, Paragraph } = Typography;
+const { Title, Paragraph, Text } = Typography;
 
 interface ReviewSummaryCardProps {
   report: ReviewReport;
@@ -19,6 +19,9 @@ export default function ReviewSummaryCard({ report }: ReviewSummaryCardProps) {
       >
         {report.summaryText}
       </Paragraph>
+      <Text strong style={{ display: 'block', marginBottom: 8 }}>
+        {report.totalObservations} observaciones en total
+      </Text>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         {(
           Object.entries(report.bySeverity) as [Severity, number][]

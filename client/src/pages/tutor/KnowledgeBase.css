@@ -1,0 +1,18 @@
+/* ========================================================
+   KnowledgeBase — Tutor knowledge document management
+   ======================================================== */
+
+/* ── UPLOAD CARD ─────────────────────────────────────────── */
+.knowledge-base__upload-card {
+  margin-bottom: 24px;
+}
+
+.knowledge-base__upload-hint {
+  display: block;
+  margin-bottom: 16px;
+}
+
+/* ── TABLE ICONS ─────────────────────────────────────────── */
+.knowledge-base__file-icon {
+  margin-right: 8px;
+}

@@ -4,6 +4,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import type { Observation, Severity } from '../../../types';
+import './DocumentPreview.css';
 
 const HIGHLIGHT_COLORS: Record<Severity, string> = {
   ERROR: '#fff1f0',
@@ -72,17 +73,7 @@ const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
     }, [markdownContent, observations]);
 
     return (
-      <div
-        ref={ref}
-        style={{
-          flex: 1,
-          overflow: 'auto',
-          background: '#fff',
-          padding: 24,
-          borderRadius: 8,
-          border: '1px solid #f0f0f0',
-        }}
-      >
+      <div ref={ref} className="document-preview">
         {processedContent ? (
           <div className="markdown-body">
             <ReactMarkdown
@@ -106,13 +97,10 @@ const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
                       <mark
                         data-obs-id={obsId}
                         onClick={() => onHighlightClick?.(obsId)}
+                        className="document-preview__highlight"
                         style={{
                           backgroundColor: HIGHLIGHT_COLORS[severity] ?? '#fffbe6',
                           borderBottom: `2px solid ${HIGHLIGHT_BORDER[severity] ?? '#ffe58f'}`,
-                          borderRadius: 2,
-                          padding: '0 2px',
-                          cursor: 'pointer',
-                          transition: 'filter 0.15s',
                         }}
                       >
                         {children}

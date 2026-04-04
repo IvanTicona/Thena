@@ -12,6 +12,7 @@ import {
 import { UserOutlined, EyeOutlined, DownOutlined, UpOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import type { ThesisDocument, ChapterStatus, Chapter } from '../types';
+import './ThesisCard.css';
 
 const { Text, Title } = Typography;
 
@@ -42,14 +43,14 @@ export function ThesisCard({ thesis, onApprove, onReject }: ThesisCardProps) {
 
   return (
     <Card
-      style={{ marginBottom: 16 }}
+      className="thesis-card"
       styles={{ body: { padding: '20px 24px' } }}
     >
       {/* Header row — student info + progress */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
-        <Avatar size={48} icon={<UserOutlined />} style={{ backgroundColor: '#06175d', flexShrink: 0 }} />
+      <div className="thesis-card__header">
+        <Avatar size={48} icon={<UserOutlined />} className="thesis-card__avatar" />
 
-        <div style={{ flex: 1, minWidth: 200 }}>
+        <div className="thesis-card__student-info">
           <Title level={5} style={{ margin: 0, color: '#111827' }}>
             {studentName}
           </Title>
@@ -58,12 +59,12 @@ export function ThesisCard({ thesis, onApprove, onReject }: ThesisCardProps) {
               {studentEmail}
             </Text>
           )}
-          <div style={{ marginTop: 4 }}>
-            <Text style={{ fontSize: 14, color: '#374151' }}>{thesis.title}</Text>
+          <div className="thesis-card__thesis-title">
+            <Text>{thesis.title}</Text>
           </div>
         </div>
 
-        <div style={{ minWidth: 200, flexShrink: 0 }}>
+        <div className="thesis-card__progress">
           <Progress
             percent={progressPercent}
             format={() => `${approvedCount}/${totalCount} aprobados`}
@@ -75,7 +76,7 @@ export function ThesisCard({ thesis, onApprove, onReject }: ThesisCardProps) {
           type="text"
           icon={expanded ? <UpOutlined /> : <DownOutlined />}
           onClick={() => setExpanded(!expanded)}
-          style={{ flexShrink: 0 }}
+          className="thesis-card__toggle-btn"
         >
           {expanded ? 'Ocultar capítulos' : 'Ver capítulos'}
         </Button>
@@ -83,7 +84,7 @@ export function ThesisCard({ thesis, onApprove, onReject }: ThesisCardProps) {
 
       {/* Expandable chapter list */}
       {expanded && (
-        <div style={{ marginTop: 16, borderTop: '1px solid #f0f0f0', paddingTop: 16 }}>
+        <div className="thesis-card__chapters">
           {chapters.length === 0 ? (
             <Text type="secondary">No hay capítulos registrados.</Text>
           ) : (
@@ -135,7 +136,7 @@ export function ThesisCard({ thesis, onApprove, onReject }: ThesisCardProps) {
                     <List.Item.Meta
                       title={
                         <Space size="small">
-                          <Text style={{ color: '#6b7280', fontSize: 12 }}>
+                          <Text className="thesis-card__chapter-number">
                             Cap. {chapter.number}
                           </Text>
                           <Text>{chapter.title}</Text>

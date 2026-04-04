@@ -1,0 +1,21 @@
+/* ========================================================
+   DocumentPreview — Markdown document with observation highlights
+   ======================================================== */
+
+/* ── CONTAINER ───────────────────────────────────────────── */
+.document-preview {
+  flex: 1;
+  overflow: auto;
+  background: #fff;
+  padding: 24px;
+  border-radius: 8px;
+  border: 1px solid #f0f0f0;
+}
+
+/* ── HIGHLIGHT MARK ──────────────────────────────────────── */
+.document-preview__highlight {
+  border-radius: 2px;
+  padding: 0 2px;
+  cursor: pointer;
+  transition: filter 0.15s;
+}

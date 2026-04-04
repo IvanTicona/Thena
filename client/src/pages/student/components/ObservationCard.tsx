@@ -47,7 +47,7 @@ export default function ObservationCard({ observation, isSelected, onClick }: Ob
         </Paragraph>
       )}
       {observation.textFragment && (
-        <div
+        <blockquote
           style={{
             marginTop: 8,
             padding: '4px 8px',
@@ -55,10 +55,11 @@ export default function ObservationCard({ observation, isSelected, onClick }: Ob
             borderLeft: `3px solid ${cfg.color}`,
             fontSize: 12,
             color: '#666',
+            margin: '8px 0 0 0',
           }}
         >
-          "{observation.textFragment}"
-        </div>
+          {observation.textFragment}
+        </blockquote>
       )}
       {observation.sourceReference && (
         <Tooltip
