@@ -50,7 +50,7 @@ export default function LoginPage() {
           <Text className="auth-form-subtitle">Ingresá a tu cuenta</Text>
         </div>
 
-        <Card className="auth-card">
+        <Card className="auth-card" bordered={false}>
           {errorMsg && (
             <Alert
               message={errorMsg}

@@ -21,6 +21,7 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/useAuth';
 import api from '../../services/api';
 import type { Chapter, ChapterStatus } from '../../types';
+import './AppLayout.css';
 
 const { Header, Sider, Content, Footer } = Layout;
 const { Title, Text } = Typography;
@@ -110,23 +111,14 @@ export function AppLayout() {
   ];
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <Header
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          background: '#fff',
-          borderBottom: '1px solid #f0f0f0',
-          padding: '0 24px',
-        }}
-      >
+    <Layout className="app-layout">
+      <Header className="app-layout__header">
         <Title
           level={4}
-          style={{ margin: 0, cursor: 'pointer' }}
+          className="app-layout__brand"
           onClick={() => navigate(isStudent ? '/chapters' : '/tutor')}
         >
-          THENA
+          Thena
         </Title>
 
         <Space align="center" size={12}>
@@ -138,9 +130,9 @@ export function AppLayout() {
             <Button
               type="text"
               icon={<UserOutlined />}
-              style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+              className="app-layout__user-btn"
             >
-              <Text style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <Text className="app-layout__user-name">
                 {user?.name ?? 'Usuario'}
               </Text>
             </Button>
@@ -149,22 +141,22 @@ export function AppLayout() {
       </Header>
 
       <Layout>
-        <Sider width={220} style={{ background: '#fff' }}>
+        <Sider width={220} className="app-layout__sider">
           <Menu
             mode="inline"
             selectedKeys={[selectedKey]}
             items={menuItems}
             onClick={({ key }) => navigate(key)}
-            style={{ borderRight: 0, paddingTop: 8 }}
+            className="app-layout__menu"
           />
         </Sider>
 
-        <Content style={{ padding: 24, minHeight: 360, background: '#f5f5f5' }}>
+        <Content className="app-layout__content">
           <Outlet />
         </Content>
       </Layout>
 
-      <Footer style={{ textAlign: 'center', padding: '8px 24px' }}>
+      <Footer className="app-layout__footer">
         <Alert
           message="Toda retroalimentación generada es orientación preliminar, no una corrección definitiva ni una calificación."
           type="info"

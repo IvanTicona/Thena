@@ -61,22 +61,12 @@
   text-align: center;
 }
 
-.auth-layout__logo-container {
-  width: 80px;
-  height: 80px;
-  background-color: rgba(255, 255, 255, 0.15);
-  border-radius: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 8px;
-}
-
-.auth-layout__logo-letter {
-  font-size: 40px;
-  font-weight: 700;
-  color: #ffffff;
-  line-height: 1;
+.auth-layout__upb-logo {
+  height: 44px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto 16px auto;
 }
 
 .auth-layout__brand-title.ant-typography {
@@ -123,15 +113,10 @@
   margin-bottom: 32px;
 }
 
-.auth-layout__logo-container--mobile {
-  width: 48px;
-  height: 48px;
-  background-color: #06175d;
-  border-radius: 14px;
-}
-
-.auth-layout__logo-container--mobile .auth-layout__logo-letter {
-  font-size: 24px;
+.auth-layout__upb-logo--mobile {
+  height: 32px;
+  width: auto;
+  object-fit: contain;
 }
 
 .auth-layout__mobile-brand {

@@ -1,0 +1,70 @@
+/* ========================================================
+   AppLayout — Main application shell
+   Header / Sider / Content / Footer
+   ======================================================== */
+
+/* ── ROOT LAYOUT ─────────────────────────────────────────── */
+.app-layout {
+  min-height: 100vh;
+}
+
+/* ── HEADER ──────────────────────────────────────────────── */
+.app-layout__header {
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  background: #ffffff !important;
+  border-bottom: 1px solid #f0f0f0;
+  padding: 0 24px !important;
+}
+
+.app-layout__brand.ant-typography {
+  margin: 0 !important;
+  cursor: pointer;
+  color: #06175d !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.5px;
+  transition: opacity 0.15s ease;
+}
+
+.app-layout__brand.ant-typography:hover {
+  opacity: 0.75;
+}
+
+/* ── USER BUTTON ─────────────────────────────────────────── */
+.app-layout__user-btn {
+  display: flex !important;
+  align-items: center;
+  gap: 6px;
+}
+
+.app-layout__user-name {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── SIDER ───────────────────────────────────────────────── */
+.app-layout__sider {
+  background: #ffffff !important;
+}
+
+/* ── MENU ────────────────────────────────────────────────── */
+.app-layout__menu {
+  border-right: 0 !important;
+  padding-top: 8px;
+}
+
+/* ── CONTENT ─────────────────────────────────────────────── */
+.app-layout__content {
+  padding: 24px;
+  min-height: 360px;
+  background: #f5f5f5;
+}
+
+/* ── FOOTER ──────────────────────────────────────────────── */
+.app-layout__footer {
+  text-align: center;
+  padding: 0 !important;
+}

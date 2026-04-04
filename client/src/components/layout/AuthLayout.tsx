@@ -20,9 +20,11 @@ export function AuthLayout({ children }: AuthLayoutProps) {
 
         {/* Brand */}
         <div className="auth-layout__brand">
-          <div className="auth-layout__logo-container">
-            <span className="auth-layout__logo-letter">T</span>
-          </div>
+          <img
+            src="/upb_logo.svg"
+            alt="Universidad Privada Boliviana"
+            className="auth-layout__upb-logo"
+          />
           <Title level={1} className="auth-layout__brand-title">
             Thena
           </Title>
@@ -39,9 +41,11 @@ export function AuthLayout({ children }: AuthLayoutProps) {
       <div className="auth-layout__right">
         {/* Mobile logo — only visible on small screens */}
         <div className="auth-layout__mobile-logo">
-          <div className="auth-layout__logo-container auth-layout__logo-container--mobile">
-            <span className="auth-layout__logo-letter">T</span>
-          </div>
+          <img
+            src="/upb_logo.svg"
+            alt="Universidad Privada Boliviana"
+            className="auth-layout__upb-logo--mobile"
+          />
           <span className="auth-layout__mobile-brand">Thena</span>
         </div>
 

@@ -22,6 +22,7 @@ function App() {
       theme={{
         token: {
           colorPrimary: '#06175d',
+          fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
         },
       }}
     >

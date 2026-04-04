@@ -58,7 +58,7 @@ export default function RegisterPage() {
           </Text>
         </div>
 
-        <Card className="auth-card">
+        <Card className="auth-card" bordered={false}>
           {errorMsg && (
             <Alert
               message={errorMsg}
