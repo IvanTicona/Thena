@@ -59,18 +59,24 @@ export class AuthService {
   }
 
   generateTokens(payload: JwtPayload): AuthTokens {
-    const accessToken = this.jwtService.sign(payload, {
-      secret: this.config.get<string>('JWT_ACCESS_SECRET', 'changeme-access'),
-      expiresIn: this.config.get<string>('JWT_ACCESS_EXPIRY', '15m'),
-    });
+    const accessToken = this.jwtService.sign(
+      { ...payload },
+      {
+        secret: this.config.get<string>('JWT_ACCESS_SECRET', 'changeme-access'),
+        expiresIn: this.config.get('JWT_ACCESS_EXPIRY', '15m') as any,
+      },
+    );
 
-    const refreshToken = this.jwtService.sign(payload, {
-      secret: this.config.get<string>(
-        'JWT_REFRESH_SECRET',
-        'changeme-refresh',
-      ),
-      expiresIn: this.config.get<string>('JWT_REFRESH_EXPIRY', '7d'),
-    });
+    const refreshToken = this.jwtService.sign(
+      { ...payload },
+      {
+        secret: this.config.get<string>(
+          'JWT_REFRESH_SECRET',
+          'changeme-refresh',
+        ),
+        expiresIn: this.config.get('JWT_REFRESH_EXPIRY', '7d') as any,
+      },
+    );
 
     return { accessToken, refreshToken };
   }
@@ -90,10 +96,13 @@ export class AuthService {
       role: user.role,
     };
 
-    const accessToken = this.jwtService.sign(payload, {
-      secret: this.config.get<string>('JWT_ACCESS_SECRET', 'changeme-access'),
-      expiresIn: this.config.get<string>('JWT_ACCESS_EXPIRY', '15m'),
-    });
+    const accessToken = this.jwtService.sign(
+      { ...payload },
+      {
+        secret: this.config.get<string>('JWT_ACCESS_SECRET', 'changeme-access'),
+        expiresIn: this.config.get('JWT_ACCESS_EXPIRY', '15m') as any,
+      },
+    );
 
     return { accessToken };
   }

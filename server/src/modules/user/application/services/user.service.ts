@@ -8,7 +8,7 @@ interface UserSummary {
   role: string;
 }
 
-interface TutorSummary {
+export interface TutorSummary {
   id: string;
   name: string;
   email: string;

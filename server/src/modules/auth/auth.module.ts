@@ -22,7 +22,7 @@ import { RolesGuard } from './infrastructure/guards/roles.guard.js';
       useFactory: (config: ConfigService) => ({
         secret: config.get<string>('JWT_ACCESS_SECRET', 'changeme-access'),
         signOptions: {
-          expiresIn: config.get<string>('JWT_ACCESS_EXPIRY', '15m'),
+          expiresIn: config.get('JWT_ACCESS_EXPIRY', '15m') as any,
         },
       }),
     }),
