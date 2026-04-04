@@ -5,13 +5,11 @@ import {
   Tag,
   Typography,
   Alert,
-  Badge,
   Button,
   Space,
   Dropdown,
 } from 'antd';
 import {
-  BookOutlined,
   DashboardOutlined,
   DatabaseOutlined,
   LogoutOutlined,
@@ -21,7 +19,7 @@ import {
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/useAuth';
 import api from '../../services/api';
-import { CHAPTER_STATUS } from '../../utils/status';
+import { ChapterTimeline } from './ChapterTimeline';
 import type { Chapter } from '../../types';
 import './AppLayout.css';
 
@@ -54,29 +52,6 @@ export function AppLayout() {
     navigate('/login', { replace: true });
   };
 
-  const studentMenuItems =
-    chapters.length > 0
-      ? chapters.map((ch) => ({
-          key: `/chapters/${ch.id}`,
-          icon: (
-            <Badge
-              dot
-              color={CHAPTER_STATUS[ch.status].dotColor}
-              offset={[2, 0]}
-            >
-              <BookOutlined />
-            </Badge>
-          ),
-          label: `Cap. ${ch.number}: ${ch.title}`,
-        }))
-      : [
-          {
-            key: '/chapters',
-            icon: <BookOutlined />,
-            label: 'Mis Capítulos',
-          },
-        ];
-
   const tutorMenuItems = [
     {
       key: '/tutor',
@@ -90,11 +65,9 @@ export function AppLayout() {
     },
   ];
 
-  const menuItems = isStudent ? studentMenuItems : tutorMenuItems;
-
-  const selectedKey =
-    menuItems.find((item) => location.pathname.startsWith(item.key))?.key ||
-    menuItems[0]?.key;
+  const tutorSelectedKey =
+    tutorMenuItems.find((item) => location.pathname.startsWith(item.key))?.key ||
+    tutorMenuItems[0]?.key;
 
   const userMenuItems = [
     {
@@ -148,7 +121,7 @@ export function AppLayout() {
 
       <Layout>
         <Sider
-          width={220}
+          width={240}
           className="app-layout__sider"
           breakpoint="lg"
           collapsedWidth={0}
@@ -156,13 +129,17 @@ export function AppLayout() {
           collapsed={siderCollapsed}
           onCollapse={setSiderCollapsed}
         >
-          <Menu
-            mode="inline"
-            selectedKeys={[selectedKey]}
-            items={menuItems}
-            onClick={({ key }) => navigate(key)}
-            className="app-layout__menu"
-          />
+          {isStudent ? (
+            <ChapterTimeline chapters={chapters} />
+          ) : (
+            <Menu
+              mode="inline"
+              selectedKeys={[tutorSelectedKey]}
+              items={tutorMenuItems}
+              onClick={({ key }) => navigate(key)}
+              className="app-layout__menu"
+            />
+          )}
         </Sider>
 
         <Content className="app-layout__content">

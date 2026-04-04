@@ -1,0 +1,118 @@
+/* ========================================================
+   ChapterTimeline — Vertical progress timeline for sidebar
+   ======================================================== */
+
+.chapter-timeline {
+  padding: 16px 12px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 0; /* items control their own spacing via connector */
+}
+
+/* ── ITEM (row: dot + content) ───────────────────────────── */
+.chapter-timeline__item {
+  display: flex;
+  gap: 12px;
+  cursor: pointer;
+  border-radius: 8px;
+  padding: 6px 8px 6px 4px;
+  transition: background-color 0.15s ease;
+}
+
+.chapter-timeline__item:hover {
+  background-color: #f0f2f8;
+}
+
+.chapter-timeline__item--active {
+  background-color: #e8ebf5;
+}
+
+.chapter-timeline__item--active:hover {
+  background-color: #dde1f0;
+}
+
+.chapter-timeline__item--locked {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.chapter-timeline__item--locked:hover {
+  background-color: transparent;
+}
+
+/* ── NODE COLUMN (dot + connector line) ──────────────────── */
+.chapter-timeline__node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  width: 28px;
+}
+
+/* ── DOT ─────────────────────────────────────────────────── */
+.chapter-timeline__dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  background: #ffffff;
+  flex-shrink: 0;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.chapter-timeline__item--active .chapter-timeline__dot {
+  transform: scale(1.1);
+  box-shadow: 0 0 0 3px rgba(6, 23, 93, 0.12);
+}
+
+.chapter-timeline__item--approved .chapter-timeline__dot {
+  background-color: #52c41a;
+  border-color: #52c41a;
+  color: #ffffff !important;
+}
+
+/* ── CONNECTOR LINE ──────────────────────────────────────── */
+.chapter-timeline__connector {
+  width: 2px;
+  flex-grow: 1;
+  min-height: 12px;
+  border-radius: 1px;
+}
+
+/* ── CONTENT (text area) ─────────────────────────────────── */
+.chapter-timeline__content {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 2px 0 10px;
+  min-width: 0; /* allow text truncation */
+}
+
+.chapter-timeline__number {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  line-height: 1.2;
+}
+
+.chapter-timeline__title {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.chapter-timeline__item--active .chapter-timeline__title {
+  color: #06175d;
+  font-weight: 600;
+}
+
+.chapter-timeline__label {
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.2;
+}
