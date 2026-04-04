@@ -8,7 +8,7 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
 
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import create_engine
 
@@ -22,7 +22,9 @@ _worker_thread: threading.Thread | None = None
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # Startup
-    logger.info("Thena Engine starting | LLM: %s/%s", settings.LLM_PROVIDER, settings.LLM_MODEL)
+    logger.info(
+        "Thena Engine starting | LLM: %s/%s", settings.LLM_PROVIDER, settings.LLM_MODEL
+    )
 
     db_engine = create_engine(settings.DATABASE_URL)
     app.state.db_engine = db_engine
@@ -55,11 +57,24 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[settings.CORS_ORIGIN],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+def verify_api_key(request: Request) -> None:
+    """Dependency that validates X-Internal-Api-Key header.
+    Skipped for /health endpoint.
+    """
+    # Skip validation if no key is configured (dev fallback)
+    if not settings.INTERNAL_API_KEY:
+        return
+
+    api_key = request.headers.get("X-Internal-Api-Key", "")
+    if api_key != settings.INTERNAL_API_KEY:
+        raise HTTPException(status_code=403, detail="Forbidden: invalid API key")
 
 
 @app.get("/health")
@@ -67,7 +82,7 @@ async def health_check() -> dict[str, str]:
     return {"status": "ok", "service": "engine"}
 
 
-@app.post("/knowledge/ingest")
+@app.post("/knowledge/ingest", dependencies=[Depends(verify_api_key)])
 async def ingest_knowledge(
     request: Request,
     file: UploadFile = File(...),
@@ -110,7 +125,10 @@ async def ingest_knowledge(
             raise HTTPException(400, f"Unsupported file extension: {ext}")
 
         from src.application.pipelines.chunker import chunk_text
-        from src.application.pipelines.embedding import embed_and_store, delete_by_source
+        from src.application.pipelines.embedding import (
+            embed_and_store,
+            delete_by_source,
+        )
 
         db_engine = request.app.state.db_engine
 
@@ -140,7 +158,7 @@ async def ingest_knowledge(
         raise HTTPException(500, f"Ingestion failed: {str(e)}")
 
 
-@app.delete("/knowledge/{source_document}")
+@app.delete("/knowledge/{source_document}", dependencies=[Depends(verify_api_key)])
 async def delete_knowledge(request: Request, source_document: str) -> dict[str, str]:
     """Delete all chunks for a given source document."""
     from src.application.pipelines.embedding import delete_by_source

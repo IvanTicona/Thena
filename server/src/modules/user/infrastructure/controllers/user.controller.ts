@@ -1,18 +1,14 @@
-import { Controller, Get, Req } from '@nestjs/common';
+import { Controller, Get } from '@nestjs/common';
 import { UserService } from '../../application/services/user.service.js';
-import { AuthenticatedRequest } from '../../../../shared/mock-auth/mock-auth.middleware.js';
+import { CurrentUser } from '../../../../modules/auth/infrastructure/decorators/current-user.decorator.js';
+import { JwtPayload } from '../../../../modules/auth/domain/auth.types.js';
 
 @Controller('users')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Get('me')
-  async getMe(@Req() req: AuthenticatedRequest) {
-    return this.userService.findById(req.user.id);
-  }
-
-  @Get()
-  async findAll(): Promise<{ id: string; name: string; role: string }[]> {
-    return this.userService.findAll();
+  async getMe(@CurrentUser() user: JwtPayload) {
+    return this.userService.findById(user.sub);
   }
 }

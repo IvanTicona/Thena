@@ -25,12 +25,16 @@ class Settings(BaseSettings):
         description="MinIO server port",
     )
     MINIO_ACCESS_KEY: str = Field(default="thena", description="MinIO access key")
-    MINIO_SECRET_KEY: str = Field(default="thena-secret", description="MinIO secret key")
+    MINIO_SECRET_KEY: str = Field(
+        default="thena-secret", description="MinIO secret key"
+    )
     MINIO_BUCKET: str = Field(
         default="thena-documents",
         description="MinIO bucket for uploaded thesis documents",
     )
-    MINIO_USE_SSL: bool = Field(default=False, description="Use SSL for MinIO connections")
+    MINIO_USE_SSL: bool = Field(
+        default=False, description="Use SSL for MinIO connections"
+    )
 
     # LLM
     LLM_PROVIDER: str = Field(
@@ -79,6 +83,16 @@ class Settings(BaseSettings):
     # API Keys (optional, depends on provider)
     OPENAI_API_KEY: str = Field(default="", description="OpenAI API key")
     GOOGLE_API_KEY: str = Field(default="", description="Google AI API key")
+
+    # Security
+    INTERNAL_API_KEY: str = Field(
+        default="",
+        description="Shared key for NestJS↔Engine inter-service auth (X-Internal-Api-Key header)",
+    )
+    CORS_ORIGIN: str = Field(
+        default="http://localhost:3000",
+        description="Allowed origin for CORS (NestJS server URL)",
+    )
 
     model_config = {"env_file": ".env", "extra": "ignore"}
 

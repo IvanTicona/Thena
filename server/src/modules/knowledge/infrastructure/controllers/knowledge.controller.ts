@@ -5,7 +5,6 @@ import {
   Delete,
   Param,
   Query,
-  Req,
   UseInterceptors,
   UploadedFile,
   ParseFilePipe,
@@ -15,15 +14,16 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { KnowledgeService } from '../../application/services/knowledge.service.js';
-import { AuthenticatedRequest } from '../../../../shared/mock-auth/mock-auth.middleware.js';
+import { CurrentUser } from '../../../../modules/auth/infrastructure/decorators/current-user.decorator.js';
+import { JwtPayload } from '../../../../modules/auth/domain/auth.types.js';
 
 @Controller('knowledge')
 export class KnowledgeController {
   constructor(private readonly knowledgeService: KnowledgeService) {}
 
   @Get()
-  async list(@Req() req: AuthenticatedRequest, @Query('layer') layer?: string) {
-    const userId = req.user?.id ?? null;
+  async list(@CurrentUser() user: JwtPayload, @Query('layer') layer?: string) {
+    const userId = user?.sub ?? null;
     // Tutors see their own + institutional; if no user, show institutional only
     return this.knowledgeService.listByOwner(
       layer === 'INSTITUTIONAL' ? null : userId,
@@ -34,7 +34,7 @@ export class KnowledgeController {
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
   async upload(
-    @Req() req: AuthenticatedRequest,
+    @CurrentUser() user: JwtPayload,
     @UploadedFile(
       new ParseFilePipe({
         validators: [
@@ -49,8 +49,8 @@ export class KnowledgeController {
     file: Express.Multer.File,
     @Query('layer') layer: string = 'TUTOR',
   ) {
-    const userId = req.user?.id ?? null;
-    const effectiveLayer = req.user?.role === 'TUTOR' ? layer : 'INSTITUTIONAL';
+    const userId = user?.sub ?? null;
+    const effectiveLayer = user?.role === 'TUTOR' ? layer : 'INSTITUTIONAL';
     const ownerId = effectiveLayer === 'TUTOR' ? userId : null;
 
     return this.knowledgeService.upload(file, effectiveLayer, ownerId);
@@ -58,19 +58,19 @@ export class KnowledgeController {
 
   @Delete('chunk/:id')
   async deleteChunk(
-    @Req() req: AuthenticatedRequest,
+    @CurrentUser() user: JwtPayload,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
-    const userId = req.user?.id ?? null;
+    const userId = user?.sub ?? null;
     return this.knowledgeService.deleteById(id, userId);
   }
 
   @Delete(':sourceDocument')
   async delete(
-    @Req() req: AuthenticatedRequest,
+    @CurrentUser() user: JwtPayload,
     @Param('sourceDocument') sourceDocument: string,
   ) {
-    const userId = req.user?.id ?? null;
+    const userId = user?.sub ?? null;
     return this.knowledgeService.deleteBySource(sourceDocument, userId);
   }
 }

@@ -2,7 +2,6 @@ import {
   Controller,
   Post,
   Body,
-  Req,
   ForbiddenException,
   UseInterceptors,
   UploadedFile,
@@ -12,7 +11,8 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { SubmissionService } from '../../application/services/submission.service.js';
 import { CreateSubmissionDto } from '../../application/dtos/create-submission.dto.js';
-import { AuthenticatedRequest } from '../../../../shared/mock-auth/mock-auth.middleware.js';
+import { CurrentUser } from '../../../../modules/auth/infrastructure/decorators/current-user.decorator.js';
+import { JwtPayload } from '../../../../modules/auth/domain/auth.types.js';
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 
@@ -30,11 +30,11 @@ export class SubmissionController {
     )
     file: Express.Multer.File,
     @Body() dto: CreateSubmissionDto,
-    @Req() req: AuthenticatedRequest,
+    @CurrentUser() user: JwtPayload,
   ) {
-    if (req.user.role !== 'STUDENT') {
+    if (user.role !== 'STUDENT') {
       throw new ForbiddenException('Only students can submit chapters');
     }
-    return this.submissionService.create(req.user.id, dto.chapterId, file);
+    return this.submissionService.create(user.sub, dto.chapterId, file);
   }
 }

@@ -4,7 +4,6 @@ import {
   Patch,
   Param,
   Body,
-  Req,
   ForbiddenException,
   ParseUUIDPipe,
 } from '@nestjs/common';
@@ -13,15 +12,16 @@ import {
   ApproveChapterDto,
   RejectChapterDto,
 } from '../../application/dtos/chapter-action.dto.js';
-import { AuthenticatedRequest } from '../../../../shared/mock-auth/mock-auth.middleware.js';
+import { CurrentUser } from '../../../../modules/auth/infrastructure/decorators/current-user.decorator.js';
+import { JwtPayload } from '../../../../modules/auth/domain/auth.types.js';
 
 @Controller('chapters')
 export class ChapterController {
   constructor(private readonly chapterService: ChapterService) {}
 
   @Get()
-  async findAll(@Req() req: AuthenticatedRequest) {
-    return this.chapterService.findAllForUser(req.user.id, req.user.role);
+  async findAll(@CurrentUser() user: JwtPayload) {
+    return this.chapterService.findAllForUser(user.sub, user.role);
   }
 
   @Get(':id')
@@ -33,21 +33,21 @@ export class ChapterController {
   async approve(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() _dto: ApproveChapterDto,
-    @Req() req: AuthenticatedRequest,
+    @CurrentUser() user: JwtPayload,
   ) {
-    if (req.user.role !== 'TUTOR') {
+    if (user.role !== 'TUTOR') {
       throw new ForbiddenException('Only tutors can approve chapters');
     }
-    return this.chapterService.approve(id, req.user.id);
+    return this.chapterService.approve(id, user.sub);
   }
 
   @Patch(':id/reject')
   async reject(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() _dto: RejectChapterDto,
-    @Req() req: AuthenticatedRequest,
+    @CurrentUser() user: JwtPayload,
   ) {
-    if (req.user.role !== 'TUTOR') {
+    if (user.role !== 'TUTOR') {
       throw new ForbiddenException('Only tutors can reject chapters');
     }
     return this.chapterService.reject(id);

@@ -1,0 +1,81 @@
+/* ========================================================
+   Auth pages — shared styles for Login and Register
+   ======================================================== */
+
+.auth-form-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* Heading block — outside the card */
+.auth-form-heading {
+  margin-bottom: 24px;
+}
+
+.auth-form-title.ant-typography {
+  margin: 0 0 4px !important;
+  font-size: 28px !important;
+  font-weight: 700 !important;
+  color: #111827;
+}
+
+.auth-form-subtitle.ant-typography {
+  font-size: 14px !important;
+  color: #6b7280;
+}
+
+/* White card with strong shadow */
+.auth-card.ant-card {
+  border-radius: 16px !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12) !important;
+  border: none !important;
+}
+
+.auth-card .ant-card-body {
+  padding: 32px !important;
+}
+
+/* Input icon color */
+.auth-input-icon {
+  color: #9ca3af;
+}
+
+/* Primary button override — navy color */
+.auth-submit-btn.ant-btn-primary {
+  background-color: #06175d !important;
+  border-color: #06175d !important;
+}
+
+.auth-submit-btn.ant-btn-primary:hover:not(:disabled) {
+  background-color: #04124a !important;
+  border-color: #04124a !important;
+}
+
+.auth-submit-btn.ant-btn-primary:focus-visible {
+  outline-color: #06175d;
+}
+
+/* Alternate link row */
+.auth-alt-link {
+  margin-top: 20px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.auth-alt-link a {
+  color: #06175d;
+  font-weight: 500;
+}
+
+.auth-alt-link a:hover {
+  color: #04124a;
+  text-decoration: underline;
+}
+
+/* Footer text */
+.auth-footer {
+  margin-top: 32px;
+  text-align: center;
+  font-size: 12px;
+}

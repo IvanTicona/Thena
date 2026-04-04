@@ -1,0 +1,158 @@
+/* ========================================================
+   AuthLayout — Split-screen 50/50 auth layout
+   LEFT: navy decorative panel
+   RIGHT: form area
+   ======================================================== */
+
+.auth-layout {
+  display: flex;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+/* ── LEFT PANEL ─────────────────────────────────────────── */
+.auth-layout__left {
+  position: relative;
+  flex: 0 0 50%;
+  background-color: #06175d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* Decorative circles — pure CSS */
+.auth-layout__circle {
+  position: absolute;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  pointer-events: none;
+}
+
+.auth-layout__circle--lg {
+  width: 480px;
+  height: 480px;
+  top: -120px;
+  right: -120px;
+}
+
+.auth-layout__circle--md {
+  width: 320px;
+  height: 320px;
+  bottom: -80px;
+  left: -80px;
+}
+
+.auth-layout__circle--sm {
+  width: 200px;
+  height: 200px;
+  bottom: 60px;
+  right: 40px;
+}
+
+/* Brand block — centered in left panel */
+.auth-layout__brand {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.auth-layout__logo-container {
+  width: 80px;
+  height: 80px;
+  background-color: rgba(255, 255, 255, 0.15);
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.auth-layout__logo-letter {
+  font-size: 40px;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1;
+}
+
+.auth-layout__brand-title.ant-typography {
+  color: #ffffff !important;
+  margin: 0 !important;
+  font-size: 48px !important;
+  font-weight: 700 !important;
+  letter-spacing: -1px;
+}
+
+.auth-layout__brand-subtitle.ant-typography {
+  color: rgba(255, 255, 255, 0.85) !important;
+  font-size: 16px !important;
+  margin-top: 4px;
+}
+
+.auth-layout__brand-institution.ant-typography {
+  color: rgba(255, 255, 255, 0.6) !important;
+  font-size: 13px !important;
+}
+
+/* ── RIGHT PANEL ─────────────────────────────────────────── */
+.auth-layout__right {
+  flex: 1;
+  background-color: #f5f5f5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  overflow-y: auto;
+}
+
+.auth-layout__content {
+  width: 100%;
+  max-width: 440px;
+}
+
+/* ── MOBILE LOGO (hidden on desktop) ─────────────────────── */
+.auth-layout__mobile-logo {
+  display: none;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.auth-layout__logo-container--mobile {
+  width: 48px;
+  height: 48px;
+  background-color: #06175d;
+  border-radius: 14px;
+}
+
+.auth-layout__logo-container--mobile .auth-layout__logo-letter {
+  font-size: 24px;
+}
+
+.auth-layout__mobile-brand {
+  font-size: 22px;
+  font-weight: 700;
+  color: #06175d;
+}
+
+/* ── RESPONSIVE ───────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .auth-layout__left {
+    display: none;
+  }
+
+  .auth-layout__right {
+    flex: 1;
+    justify-content: flex-start;
+    padding-top: 48px;
+  }
+
+  .auth-layout__mobile-logo {
+    display: flex;
+  }
+}

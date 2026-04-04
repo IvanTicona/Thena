@@ -1,17 +1,29 @@
 import { useEffect, useState } from 'react';
-import { Layout, Menu, Select, Tag, Typography, Alert, Badge } from 'antd';
+import {
+  Layout,
+  Menu,
+  Tag,
+  Typography,
+  Alert,
+  Badge,
+  Button,
+  Space,
+  Dropdown,
+} from 'antd';
 import {
   BookOutlined,
   DashboardOutlined,
   DatabaseOutlined,
+  LogoutOutlined,
+  UserOutlined,
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { useUser } from '../../context/UserContext';
+import { useAuth } from '../../contexts/useAuth';
 import api from '../../services/api';
 import type { Chapter, ChapterStatus } from '../../types';
 
 const { Header, Sider, Content, Footer } = Layout;
-const { Title } = Typography;
+const { Title, Text } = Typography;
 
 const STATUS_DOT: Record<ChapterStatus, string> = {
   LOCKED: '#d9d9d9',
@@ -21,11 +33,11 @@ const STATUS_DOT: Record<ChapterStatus, string> = {
 };
 
 export function AppLayout() {
-  const { currentUser, users, switchUser } = useUser();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
-  const isStudent = currentUser.role === 'STUDENT';
+  const isStudent = user?.role === 'STUDENT';
 
   const [chapters, setChapters] = useState<Chapter[]>([]);
 
@@ -38,7 +50,12 @@ export function AppLayout() {
           // Silencioso — el sidebar se queda vacío si falla
         });
     }
-  }, [isStudent, currentUser.id]);
+  }, [isStudent, user?.id]);
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login', { replace: true });
+  };
 
   const studentMenuItems =
     chapters.length > 0
@@ -82,6 +99,16 @@ export function AppLayout() {
     menuItems.find((item) => location.pathname.startsWith(item.key))?.key ||
     menuItems[0]?.key;
 
+  const userMenuItems = [
+    {
+      key: 'logout',
+      icon: <LogoutOutlined />,
+      label: 'Cerrar Sesión',
+      danger: true,
+      onClick: handleLogout,
+    },
+  ];
+
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Header
@@ -101,20 +128,24 @@ export function AppLayout() {
         >
           THENA
         </Title>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+
+        <Space align="center" size={12}>
           <Tag color={isStudent ? 'blue' : 'green'}>
             {isStudent ? 'Estudiante' : 'Tutor'}
           </Tag>
-          <Select
-            value={currentUser.id}
-            onChange={switchUser}
-            style={{ width: 200 }}
-            options={users.map((u) => ({
-              value: u.id,
-              label: `${u.name} (${u.role === 'STUDENT' ? 'Estudiante' : 'Tutor'})`,
-            }))}
-          />
-        </div>
+
+          <Dropdown menu={{ items: userMenuItems }} trigger={['click']} placement="bottomRight">
+            <Button
+              type="text"
+              icon={<UserOutlined />}
+              style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+            >
+              <Text style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {user?.name ?? 'Usuario'}
+              </Text>
+            </Button>
+          </Dropdown>
+        </Space>
       </Header>
 
       <Layout>

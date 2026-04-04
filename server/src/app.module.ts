@@ -2,8 +2,8 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { BullModule } from '@nestjs/bullmq';
 import { PrismaModule } from './shared/prisma/prisma.module.js';
-import { MockAuthModule } from './shared/mock-auth/mock-auth.module.js';
 import { StorageModule } from './shared/storage/storage.module.js';
+import { AuthModule } from './modules/auth/auth.module.js';
 import { UserModule } from './modules/user/user.module.js';
 import { ChapterModule } from './modules/chapter/chapter.module.js';
 import { SubmissionModule } from './modules/submission/submission.module.js';
@@ -18,7 +18,7 @@ import { KnowledgeModule } from './modules/knowledge/knowledge.module.js';
     }),
 
     PrismaModule,
-    MockAuthModule,
+    AuthModule,
     StorageModule,
 
     BullModule.forRootAsync({
