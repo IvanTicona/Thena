@@ -10,6 +10,7 @@ import { SubmissionModule } from './modules/submission/submission.module.js';
 import { ReviewModule } from './modules/review/review.module.js';
 import { KnowledgeModule } from './modules/knowledge/knowledge.module.js';
 import { ThesisModule } from './modules/thesis/thesis.module.js';
+import { HealthModule } from './shared/health/health.module.js';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { ThesisModule } from './modules/thesis/thesis.module.js';
     ReviewModule,
     KnowledgeModule,
     ThesisModule,
+    HealthModule,
   ],
   controllers: [],
   providers: [],

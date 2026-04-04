@@ -1,10 +1,15 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, Logger } from '@nestjs/common';
 import * as cookieParser from 'cookie-parser';
+import helmet from 'helmet';
 import { AppModule } from './app.module.js';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const logger = new Logger('Bootstrap');
+
+  // Security hardening — helmet adds essential HTTP security headers
+  app.use(helmet());
 
   app.use(cookieParser());
 
@@ -23,8 +28,11 @@ async function bootstrap() {
     credentials: true,
   });
 
+  // Graceful shutdown — drains BullMQ and closes DB connections on SIGTERM
+  app.enableShutdownHooks();
+
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
-  console.log(`Thena API running on port ${port}`);
+  logger.log(`Thena API running on port ${port}`);
 }
 bootstrap();

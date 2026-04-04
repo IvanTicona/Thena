@@ -10,7 +10,8 @@ logging.basicConfig(
 
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import create_engine
+from fastapi.responses import JSONResponse
+from sqlalchemy import create_engine, text
 
 from src.config import settings
 
@@ -78,8 +79,23 @@ def verify_api_key(request: Request) -> None:
 
 
 @app.get("/health")
-async def health_check() -> dict[str, str]:
-    return {"status": "ok", "service": "engine"}
+async def health_check(request: Request) -> dict:
+    db_status = "ok"
+    try:
+        db_engine = request.app.state.db_engine
+        with db_engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+    except Exception:
+        logger.warning("Health check: DB probe failed")
+        db_status = "error"
+
+    if db_status != "ok":
+        return JSONResponse(
+            status_code=503,
+            content={"status": "error", "services": {"db": db_status}},
+        )
+
+    return {"status": "ok", "services": {"db": db_status}}
 
 
 @app.post("/knowledge/ingest", dependencies=[Depends(verify_api_key)])
