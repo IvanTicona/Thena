@@ -88,7 +88,6 @@ export function ChapterTimeline({ chapters }: ChapterTimelineProps) {
               <Text
                 className="chapter-timeline__title"
                 type={status === 'LOCKED' ? 'secondary' : undefined}
-                ellipsis={{ tooltip: ch.title }}
               >
                 {ch.title}
               </Text>

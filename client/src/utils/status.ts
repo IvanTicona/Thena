@@ -11,7 +11,7 @@ export const CHAPTER_STATUS: Record<
   { label: string; tagColor: string; dotColor: string }
 > = {
   LOCKED:    { label: 'Bloqueado',   tagColor: 'default',    dotColor: '#d9d9d9' },
-  DRAFT:     { label: 'Borrador',    tagColor: 'blue',       dotColor: '#1677ff' },
+  DRAFT:     { label: 'Borrador',    tagColor: 'blue',       dotColor: '#06175d' },
   IN_REVIEW: { label: 'En Revisión', tagColor: 'processing', dotColor: '#faad14' },
   APPROVED:  { label: 'Aprobado',    tagColor: 'success',    dotColor: '#52c41a' },
 };
