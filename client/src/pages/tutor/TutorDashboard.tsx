@@ -75,7 +75,7 @@ export default function TutorDashboard() {
 
   return (
     <div>
-      <Title level={3} className="font-academic">Panel del Tutor</Title>
+      <Title level={3}>Panel del Tutor</Title>
 
       {loading ? (
         <div className="tutor-dashboard__loading">

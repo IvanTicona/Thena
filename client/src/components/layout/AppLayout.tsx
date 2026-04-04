@@ -21,18 +21,12 @@ import {
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/useAuth';
 import api from '../../services/api';
-import type { Chapter, ChapterStatus } from '../../types';
+import { CHAPTER_STATUS } from '../../utils/status';
+import type { Chapter } from '../../types';
 import './AppLayout.css';
 
 const { Header, Sider, Content, Footer } = Layout;
 const { Title, Text } = Typography;
-
-const STATUS_DOT: Record<ChapterStatus, string> = {
-  LOCKED: '#d9d9d9',
-  DRAFT: '#1677ff',
-  IN_REVIEW: '#faad14',
-  APPROVED: '#52c41a',
-};
 
 export function AppLayout() {
   const { user, logout } = useAuth();
@@ -67,7 +61,7 @@ export function AppLayout() {
           icon: (
             <Badge
               dot
-              color={STATUS_DOT[ch.status]}
+              color={CHAPTER_STATUS[ch.status].dotColor}
               offset={[2, 0]}
             >
               <BookOutlined />

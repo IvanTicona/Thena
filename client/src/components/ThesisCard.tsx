@@ -11,17 +11,11 @@ import {
 } from 'antd';
 import { UserOutlined, EyeOutlined, DownOutlined, UpOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import type { ThesisDocument, ChapterStatus, Chapter } from '../types';
+import type { ThesisDocument, Chapter } from '../types';
+import { CHAPTER_STATUS } from '../utils/status';
 import './ThesisCard.css';
 
 const { Text, Title } = Typography;
-
-const STATUS_CONFIG: Record<ChapterStatus, { color: string; label: string }> = {
-  LOCKED: { color: 'default', label: 'Bloqueado' },
-  DRAFT: { color: 'blue', label: 'Borrador' },
-  IN_REVIEW: { color: 'processing', label: 'En Revisión' },
-  APPROVED: { color: 'success', label: 'Aprobado' },
-};
 
 interface ThesisCardProps {
   thesis: ThesisDocument;
@@ -92,7 +86,7 @@ export function ThesisCard({ thesis, onApprove, onReject }: ThesisCardProps) {
               dataSource={chapters}
               size="small"
               renderItem={(chapter) => {
-                const cfg = STATUS_CONFIG[chapter.status];
+                const cfg = CHAPTER_STATUS[chapter.status];
                 return (
                   <List.Item
                     actions={[
@@ -140,7 +134,7 @@ export function ThesisCard({ thesis, onApprove, onReject }: ThesisCardProps) {
                             Cap. {chapter.number}
                           </Text>
                           <Text>{chapter.title}</Text>
-                          <Tag color={cfg.color}>{cfg.label}</Tag>
+                          <Tag color={cfg.tagColor}>{cfg.label}</Tag>
                         </Space>
                       }
                     />

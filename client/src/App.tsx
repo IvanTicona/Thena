@@ -24,6 +24,14 @@ function App() {
           colorPrimary: '#06175d',
           fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
         },
+        components: {
+          Menu: {
+            itemSelectedBg: '#e8ebf5',
+            itemSelectedColor: '#06175d',
+            itemHoverBg: '#f0f2f8',
+            itemActiveBg: '#dde1f0',
+          },
+        },
       }}
     >
       <AuthProvider>

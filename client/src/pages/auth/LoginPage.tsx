@@ -46,7 +46,7 @@ export default function LoginPage() {
       <div className="auth-form-wrapper">
         {/* Heading — outside the card */}
         <div className="auth-form-heading">
-          <Title level={2} className="auth-form-title font-academic">
+          <Title level={2} className="auth-form-title">
             Bienvenido
           </Title>
           <Text className="auth-form-subtitle">Ingresá a tu cuenta</Text>

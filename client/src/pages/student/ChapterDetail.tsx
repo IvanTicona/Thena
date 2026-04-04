@@ -17,7 +17,7 @@ import {
   EyeOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import { ApiError } from '../../services/api-error';
 import type { Chapter, Submission } from '../../types';
@@ -201,11 +201,11 @@ export default function ChapterDetail() {
       <Breadcrumb
         className="chapter-detail__breadcrumb"
         items={[
-          { title: <Link to="/chapters">Mis Capítulos</Link> },
+          { title: 'Mis Capítulos' },
           { title: `Capítulo ${chapter.number}: ${chapter.title}` },
         ]}
       />
-      <Title level={3} className="font-academic">
+      <Title level={3}>
         Capítulo {chapter.number}: {chapter.title}
       </Title>
 

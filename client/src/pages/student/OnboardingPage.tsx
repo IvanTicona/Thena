@@ -82,7 +82,7 @@ export default function OnboardingPage() {
       <div className="auth-form-wrapper">
         {/* Heading — outside the card */}
         <div className="auth-form-heading">
-          <Title level={2} className="auth-form-title font-academic">
+          <Title level={2} className="auth-form-title">
             Configura tu Proyecto de Grado
           </Title>
           <Text className="auth-form-subtitle">

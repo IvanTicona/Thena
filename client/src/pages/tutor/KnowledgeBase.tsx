@@ -129,7 +129,7 @@ export default function KnowledgeBase() {
 
   return (
     <div>
-      <Title level={3} className="font-academic">Base de Conocimiento</Title>
+      <Title level={3}>Base de Conocimiento</Title>
 
       <Card className="knowledge-base__upload-card">
         <Title level={5}>Subir Criterios de Evaluación</Title>
