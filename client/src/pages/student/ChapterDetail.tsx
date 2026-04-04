@@ -9,7 +9,6 @@ import {
   Spin,
   message,
   Alert,
-  Breadcrumb,
 } from 'antd';
 import {
   UploadOutlined,
@@ -198,13 +197,6 @@ export default function ChapterDetail() {
 
   return (
     <div>
-      <Breadcrumb
-        className="chapter-detail__breadcrumb"
-        items={[
-          { title: 'Mis Capítulos' },
-          { title: `Capítulo ${chapter.number}: ${chapter.title}` },
-        ]}
-      />
       <Title level={3}>
         Capítulo {chapter.number}: {chapter.title}
       </Title>

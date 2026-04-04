@@ -2,11 +2,6 @@
    ChapterDetail — Student chapter detail view
    ======================================================== */
 
-/* ── BREADCRUMB ──────────────────────────────────────────── */
-.chapter-detail__breadcrumb {
-  margin-bottom: 16px;
-}
-
 /* ── ERROR ALERT ─────────────────────────────────────────── */
 .chapter-detail__error-alert {
   max-width: 600px;

@@ -50,6 +50,15 @@
   background: #ffffff !important;
   border-right: 1px solid #f0f0f0;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Ensure the sider's inner wrapper stretches full height (Ant Design injects a div) */
+.app-layout__sider > .ant-layout-sider-children {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
 }
 
 /* ── MENU ────────────────────────────────────────────────── */
