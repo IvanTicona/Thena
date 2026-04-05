@@ -6,18 +6,11 @@ import {
 } from '@ant-design/icons';
 import { Typography } from 'antd';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { CHAPTER_STATUS } from '../../utils/status';
+import { CHAPTER_STATUS, STATUS_ICON } from '../../utils/status';
 import type { Chapter, ChapterStatus } from '../../types';
 import './ChapterTimeline.css';
 
 const { Text } = Typography;
-
-const STATUS_ICON: Record<ChapterStatus, React.ReactNode> = {
-  LOCKED: <LockOutlined />,
-  DRAFT: <EditOutlined />,
-  IN_REVIEW: <SyncOutlined spin />,
-  APPROVED: <CheckCircleFilled />,
-};
 
 interface ChapterTimelineProps {
   chapters: Chapter[];

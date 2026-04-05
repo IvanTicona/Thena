@@ -99,7 +99,7 @@ api.interceptors.response.use(
 
 // --- Typed API functions ---
 
-interface ChapterDetailData extends Chapter {
+export interface ChapterDetailData extends Chapter {
   submissions?: Submission[];
 }
 

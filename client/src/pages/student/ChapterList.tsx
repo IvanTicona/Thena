@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Spin, Alert, Button } from 'antd';
 import { Navigate } from 'react-router-dom';
-import api from '../../services/api';
+import { chaptersApi } from '../../services/api';
 import { ApiError } from '../../services/api-error';
 import type { Chapter } from '../../types';
 
@@ -19,8 +19,8 @@ export default function ChapterList() {
 
   const fetchChapters = useCallback(() => {
     setError(null);
-    api
-      .get<Chapter[]>('/chapters')
+    chaptersApi
+      .list()
       .then((res) => setChapters(res.data))
       .catch((err: ApiError) => {
         setError(err.message || 'Error al cargar los capítulos');

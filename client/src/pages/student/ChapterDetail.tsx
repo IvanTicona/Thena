@@ -19,19 +19,15 @@ import {
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { useParams, useNavigate } from 'react-router-dom';
-import api from '../../services/api';
+import { chaptersApi, submissionsApi, type ChapterDetailData } from '../../services/api';
 import { ApiError } from '../../services/api-error';
-import type { Chapter, Submission } from '../../types';
-import { CHAPTER_STATUS } from '../../utils/status';
+import type { Submission } from '../../types';
+import { CHAPTER_STATUS, JOB_STATUS } from '../../utils/status';
 import { formatDateTime } from '../../utils/format';
 import './ChapterDetail.css';
 
 const { Title, Text } = Typography;
 const { Dragger } = Upload;
-
-interface ChapterDetailData extends Chapter {
-  submissions?: Submission[];
-}
 
 export default function ChapterDetail() {
   const { id } = useParams<{ id: string }>();
@@ -47,7 +43,7 @@ export default function ChapterDetail() {
     setLoading(true);
     setError(null);
     try {
-      const res = await api.get<ChapterDetailData>(`/chapters/${id}`);
+      const res = await chaptersApi.getById(id!);
       setChapter(res.data);
       setSubmissions(res.data.submissions || []);
     } catch (err) {
@@ -68,15 +64,10 @@ export default function ChapterDetail() {
 
   const handleUpload = async (file: File) => {
     setUploading(true);
-    const formData = new FormData();
-    formData.append('file', file);
     if (!id) return;
-    formData.append('chapterId', id);
 
     try {
-      const res = await api.post('/submissions', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      const res = await submissionsApi.upload(id, file);
       message.success('Documento subido correctamente');
 
       const jobId = res.data.reviewJob?.id;
@@ -156,19 +147,8 @@ export default function ChapterDetail() {
       width: 140,
       render: (_, record) => {
         const status = record.reviewJob?.status ?? 'QUEUED';
-        const colors: Record<string, string> = {
-          QUEUED: 'default',
-          PROCESSING: 'processing',
-          COMPLETED: 'success',
-          FAILED: 'error',
-        };
-        const labels: Record<string, string> = {
-          QUEUED: 'En Cola',
-          PROCESSING: 'Procesando',
-          COMPLETED: 'Completado',
-          FAILED: 'Fallido',
-        };
-        return <Tag color={colors[status]}>{labels[status]}</Tag>;
+        const cfg = JOB_STATUS[status];
+        return <Tag color={cfg.tagColor}>{cfg.label}</Tag>;
       },
     },
     {

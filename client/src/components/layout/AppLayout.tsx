@@ -20,7 +20,7 @@ import {
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/useAuth';
-import api from '../../services/api';
+import { chaptersApi } from '../../services/api';
 import { ChapterTimeline } from './ChapterTimeline';
 import type { Chapter } from '../../types';
 import './AppLayout.css';
@@ -47,8 +47,8 @@ export function AppLayout() {
 
   useEffect(() => {
     if (isStudent) {
-      api
-        .get<Chapter[]>('/chapters')
+      chaptersApi
+        .list()
         .then((res) => setChapters(res.data))
         .catch(() => {
           // Silencioso — el sidebar se queda vacío si falla

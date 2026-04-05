@@ -11,9 +11,9 @@ import {
 import {
   FileTextOutlined,
 } from '@ant-design/icons';
-import { chaptersApi } from '../../services/api';
-import type { Chapter, JobStatus, Submission } from '../../types';
-import { CHAPTER_STATUS } from '../../utils/status';
+import { chaptersApi, type ChapterDetailData } from '../../services/api';
+import type { Chapter, Submission } from '../../types';
+import { CHAPTER_STATUS, JOB_STATUS, getSubmissionDisplayStatus } from '../../utils/status';
 import { formatDate } from '../../utils/format';
 import './HistoryPage.css';
 
@@ -25,40 +25,6 @@ interface SubmissionWithContext extends Submission {
   chapterNumber: number;
   chapterTitle: string;
   chapterStatus: string;
-}
-
-interface ChapterDetailData extends Chapter {
-  submissions?: Submission[];
-}
-
-/* ── Constants ───────────────────────────────────────────── */
-
-const REVIEW_STATUS_LABELS: Record<JobStatus, string> = {
-  QUEUED: 'En Cola',
-  PROCESSING: 'En Revisión',
-  COMPLETED: 'Revisado',
-  FAILED: 'Fallido',
-};
-
-const REVIEW_STATUS_COLORS: Record<JobStatus, string> = {
-  QUEUED: 'default',
-  PROCESSING: 'processing',
-  COMPLETED: 'success',
-  FAILED: 'error',
-};
-
-/* ── Helpers ─────────────────────────────────────────────── */
-
-function getSubmissionDisplayStatus(
-  sub: Submission,
-): { label: string; color: string } {
-  if (!sub.reviewJob) {
-    return { label: 'Sin revisión', color: 'default' };
-  }
-  return {
-    label: REVIEW_STATUS_LABELS[sub.reviewJob.status],
-    color: REVIEW_STATUS_COLORS[sub.reviewJob.status],
-  };
 }
 
 /* ── Component ───────────────────────────────────────────── */
@@ -148,10 +114,10 @@ export default function HistoryPage() {
 
   const statusOptions = [
     { value: 'all', label: 'Todos los estados' },
-    { value: 'QUEUED', label: 'En Cola' },
-    { value: 'PROCESSING', label: 'En Revisión' },
-    { value: 'COMPLETED', label: 'Revisado' },
-    { value: 'FAILED', label: 'Fallido' },
+    ...Object.entries(JOB_STATUS).map(([key, cfg]) => ({
+      value: key,
+      label: cfg.label,
+    })),
   ];
 
   if (loading) {
@@ -230,7 +196,7 @@ export default function HistoryPage() {
       ) : (
         <div className="history-page__list">
           {filtered.map((sub) => {
-            const { label, color } = getSubmissionDisplayStatus(sub);
+            const { label, color } = getSubmissionDisplayStatus(sub.reviewJob);
             const chCfg = CHAPTER_STATUS[sub.chapterStatus as keyof typeof CHAPTER_STATUS];
             return (
               <Card

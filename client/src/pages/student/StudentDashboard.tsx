@@ -11,16 +11,14 @@ import {
 import {
   CheckCircleOutlined,
   ClockCircleOutlined,
-  EditOutlined,
   FileTextOutlined,
-  LockOutlined,
   WarningOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/useAuth';
 import { thesisApi } from '../../services/api';
 import type { Chapter, ChapterStatus, ThesisDocument } from '../../types';
-import { CHAPTER_STATUS } from '../../utils/status';
+import { CHAPTER_STATUS, STATUS_ICON } from '../../utils/status';
 import { formatDate } from '../../utils/format';
 import './StudentDashboard.css';
 
@@ -31,13 +29,6 @@ const { Title, Text } = Typography;
 function getFirstName(fullName: string): string {
   return fullName.split(' ')[0];
 }
-
-const STATUS_ICON: Record<ChapterStatus, React.ReactNode> = {
-  LOCKED: <LockOutlined />,
-  DRAFT: <EditOutlined />,
-  IN_REVIEW: <ClockCircleOutlined />,
-  APPROVED: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
-};
 
 interface StatCardProps {
   icon: React.ReactNode;
