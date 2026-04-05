@@ -169,3 +169,24 @@
 .chapter-detail__file-icon {
   margin-right: 4px;
 }
+
+/* ── MOBILE ──────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .chapter-detail__header {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .chapter-detail__dragger-heading {
+    font-size: 15px;
+  }
+
+  .chapter-detail__dragger-sub {
+    font-size: 13px;
+  }
+
+  /* Allow table to scroll horizontally */
+  .chapter-detail__history-card .ant-table-wrapper {
+    overflow-x: auto;
+  }
+}

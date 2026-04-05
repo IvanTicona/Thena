@@ -16,6 +16,8 @@
   background: #ffffff !important;
   border-bottom: 1px solid #f0f0f0;
   padding: 0 24px !important;
+  height: auto !important;
+  min-height: 64px;
 }
 
 /* Left cluster: hamburger + logo + brand */
@@ -89,6 +91,7 @@
   display: flex !important;
   align-items: center;
   gap: 6px;
+  margin-left: auto;
 }
 
 .app-layout__user-name {
@@ -131,14 +134,119 @@
   background: #f5f5f5;
 }
 
-/* ── FOOTER ──────────────────────────────────────────────── */
-
-/* ── MENU TOGGLE (hamburger — mobile only, only when sidebar is visible) ── */
+/* ── MENU TOGGLE (hamburger) ─────────────────────────────── */
 .app-layout__menu-toggle {
   display: none;
 }
 
-@media (max-width: 991px) {
+/* ── SIDEBAR OVERLAY BACKDROP (mobile only) ──────────────── */
+.app-layout__sider-backdrop {
+  display: none;
+}
+
+/* ========================================================
+   MOBILE BREAKPOINT — max-width: 768px
+   ======================================================== */
+@media (max-width: 768px) {
+  /* ── HEADER — two rows via flex-wrap ────────────────────── */
+  .app-layout__header {
+    flex-wrap: wrap;
+    padding: 0 12px !important;
+    gap: 0;
+    min-height: auto;
+  }
+
+  /* First row items take their natural width, nav takes full second row */
+  .app-layout__header-left {
+    height: 48px;
+  }
+
+  /* ── NAV TABS — full-width second row ──────────────────── */
+  .app-layout__nav {
+    order: 10; /* push to end = second row */
+    width: 100%;
+    margin-left: 0;
+    padding-left: 0;
+    border-left: none;
+    border-top: 1px solid #f0f0f0;
+    gap: 0;
+    justify-content: center;
+    padding: 6px 0;
+  }
+
+  .app-layout__nav-item {
+    padding: 4px 16px 6px;
+    font-size: 13px;
+  }
+
+  /* Hide user name on mobile, show only icon */
+  .app-layout__user-name {
+    display: none;
+  }
+
+  .app-layout__user-btn {
+    height: 48px;
+  }
+
+  /* Hide logo on mobile to save space */
+  .app-layout__logo {
+    display: none;
+  }
+
+  /* ── HAMBURGER always visible on mobile ────────────────── */
+  .app-layout__menu-toggle {
+    display: inline-flex;
+  }
+
+  /* ── CONTENT — reduce padding ──────────────────────────── */
+  .app-layout__content {
+    padding: 16px 12px;
+  }
+
+  /* ── SIDER — overlay mode on mobile ────────────────────── */
+  .app-layout__sider {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 100;
+    box-shadow: 4px 0 16px rgba(0, 0, 0, 0.15);
+    transition: transform 0.25s ease;
+    transform: translateX(0);
+  }
+
+  /* When Ant Design collapses the sider (width=0), slide it out */
+  .app-layout__sider.ant-layout-sider-collapsed {
+    transform: translateX(-100%);
+    box-shadow: none;
+  }
+
+  .app-layout__sider--hidden {
+    transform: translateX(-100%);
+    box-shadow: none;
+  }
+
+  /* Backdrop behind the sidebar overlay */
+  .app-layout__sider-backdrop {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 99;
+    background: rgba(0, 0, 0, 0.3);
+    transition: opacity 0.25s ease;
+  }
+
+  .app-layout__sider-backdrop--hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+/* ── TABLET BREAKPOINT — 769px to 991px ──────────────────── */
+@media (min-width: 769px) and (max-width: 991px) {
   .app-layout__menu-toggle {
     display: inline-flex;
   }

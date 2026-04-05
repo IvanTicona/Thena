@@ -75,3 +75,10 @@ html {
   color: #9ca3af;
   margin-bottom: 6px;
 }
+
+/* ── MOBILE OVERRIDES ────────────────────────────────────── */
+@media (max-width: 768px) {
+  :root {
+    --content-padding: 12px;
+  }
+}

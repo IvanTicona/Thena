@@ -79,7 +79,7 @@ function AppLayoutInner({ chapters }: { chapters: Chapter[] }) {
   return (
     <Layout className="app-layout">
       <Header className="app-layout__header">
-        {/* Left: hamburger + logo + brand + student nav tabs */}
+        {/* Top row: hamburger + logo + brand */}
         <div className="app-layout__header-left">
           {showSidebar && (
             <Button
@@ -98,35 +98,36 @@ function AppLayoutInner({ chapters }: { chapters: Chapter[] }) {
           >
             THENA
           </Title>
-
-          {isStudent && (
-            <nav className="app-layout__nav" aria-label="Navegación principal">
-              {STUDENT_NAV.map((item) => {
-                const isActive =
-                  item.key === '/chapters'
-                    ? location.pathname.startsWith('/chapters')
-                    : location.pathname === item.key ||
-                      location.pathname.startsWith(item.key + '/');
-                return (
-                  <button
-                    key={item.key}
-                    type="button"
-                    className={[
-                      'app-layout__nav-item',
-                      isActive ? 'app-layout__nav-item--active' : '',
-                    ]
-                      .filter(Boolean)
-                      .join(' ')}
-                    onClick={() => handleNavClick(item.key)}
-                    aria-current={isActive ? 'page' : undefined}
-                  >
-                    <span>{item.label}</span>
-                  </button>
-                );
-              })}
-            </nav>
-          )}
         </div>
+
+        {/* Center: student nav tabs (separate element for mobile wrapping) */}
+        {isStudent && (
+          <nav className="app-layout__nav" aria-label="Navegación principal">
+            {STUDENT_NAV.map((item) => {
+              const isActive =
+                item.key === '/chapters'
+                  ? location.pathname.startsWith('/chapters')
+                  : location.pathname === item.key ||
+                    location.pathname.startsWith(item.key + '/');
+              return (
+                <button
+                  key={item.key}
+                  type="button"
+                  className={[
+                    'app-layout__nav-item',
+                    isActive ? 'app-layout__nav-item--active' : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
+                  onClick={() => handleNavClick(item.key)}
+                  aria-current={isActive ? 'page' : undefined}
+                >
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+        )}
 
         {/* Right: user dropdown */}
         <Dropdown
@@ -144,19 +145,31 @@ function AppLayoutInner({ chapters }: { chapters: Chapter[] }) {
         {/* Sidebar: ChapterTimeline for students (always mounted, width transitions),
             standard Menu for tutors */}
         {isStudent ? (
-          <Sider
-            width={showSidebar ? 240 : 0}
-            className={[
-              'app-layout__sider',
-              showSidebar ? '' : 'app-layout__sider--hidden',
-            ].filter(Boolean).join(' ')}
-            trigger={null}
-            collapsed={showSidebar ? siderCollapsed : true}
-            collapsedWidth={0}
-            onCollapse={setSiderCollapsed}
-          >
-            <ChapterTimeline chapters={chapters} />
-          </Sider>
+          <>
+            {/* Backdrop overlay for mobile sidebar */}
+            {showSidebar && (
+              <div
+                className={[
+                  'app-layout__sider-backdrop',
+                  siderCollapsed ? 'app-layout__sider-backdrop--hidden' : '',
+                ].filter(Boolean).join(' ')}
+                onClick={() => setSiderCollapsed(true)}
+              />
+            )}
+            <Sider
+              width={showSidebar ? 240 : 0}
+              className={[
+                'app-layout__sider',
+                showSidebar ? '' : 'app-layout__sider--hidden',
+              ].filter(Boolean).join(' ')}
+              trigger={null}
+              collapsed={showSidebar ? siderCollapsed : true}
+              collapsedWidth={0}
+              onCollapse={setSiderCollapsed}
+            >
+              <ChapterTimeline chapters={chapters} />
+            </Sider>
+          </>
         ) : (
           <Sider
             width={240}
