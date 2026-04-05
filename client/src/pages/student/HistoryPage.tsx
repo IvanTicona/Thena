@@ -94,7 +94,7 @@ export default function HistoryPage() {
   ];
 
   if (loading) {
-    return <Spin size="large" className="history-page__spinner" />;
+    return <Spin size="large" className="u-spinner-centered" />;
   }
 
   return (
@@ -163,7 +163,7 @@ export default function HistoryPage() {
 
       {/* Submissions list */}
       {filtered.length === 0 ? (
-        <Card className="history-page__empty">
+        <Card className="u-empty-state">
           <Text type="secondary">No hay entregas con los filtros seleccionados.</Text>
         </Card>
       ) : (

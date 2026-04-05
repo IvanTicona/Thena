@@ -8,11 +8,6 @@
   margin: 0 auto;
 }
 
-.history-page__spinner {
-  display: block;
-  margin: 100px auto;
-}
-
 /* ── HEADER ──────────────────────────────────────────────── */
 .history-page__header {
   margin-bottom: 24px;
@@ -144,10 +139,4 @@
 .history-page__list-item-date {
   font-size: 12px;
   white-space: nowrap;
-}
-
-/* ── EMPTY ───────────────────────────────────────────────── */
-.history-page__empty {
-  text-align: center;
-  padding: 40px;
 }

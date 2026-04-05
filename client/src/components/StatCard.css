@@ -1,0 +1,31 @@
+/* ========================================================
+   StatCard — Reusable stat card (icon + value + label)
+   ======================================================== */
+
+.stat-card {
+  height: 100%;
+}
+
+.stat-card__inner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.stat-card__icon {
+  font-size: 28px;
+  flex-shrink: 0;
+}
+
+.stat-card__value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1;
+}
+
+.stat-card__label {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 4px;
+}
