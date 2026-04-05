@@ -20,6 +20,34 @@ export class SubmissionService {
     @InjectQueue('review') private readonly reviewQueue: Queue,
   ) {}
 
+  async findAllForStudent(studentId: string) {
+    return this.prisma.client.submission.findMany({
+      where: { studentId },
+      orderBy: { submittedAt: 'desc' },
+      select: {
+        id: true,
+        chapterId: true,
+        versionNumber: true,
+        fileName: true,
+        submittedAt: true,
+        chapter: {
+          select: {
+            id: true,
+            number: true,
+            title: true,
+            status: true,
+          },
+        },
+        reviewJob: {
+          select: {
+            id: true,
+            status: true,
+          },
+        },
+      },
+    });
+  }
+
   async create(
     studentId: string,
     chapterId: string,

@@ -11,27 +11,17 @@ import {
 import {
   FileTextOutlined,
 } from '@ant-design/icons';
-import { chaptersApi, type ChapterDetailData } from '../../services/api';
-import type { Chapter, Submission } from '../../types';
+import { submissionsApi, type SubmissionWithChapter } from '../../services/api';
 import { CHAPTER_STATUS, JOB_STATUS, getSubmissionDisplayStatus } from '../../utils/status';
 import { formatDate } from '../../utils/format';
 import './HistoryPage.css';
 
 const { Title, Text } = Typography;
 
-/* ── Types ───────────────────────────────────────────────── */
-
-interface SubmissionWithContext extends Submission {
-  chapterNumber: number;
-  chapterTitle: string;
-  chapterStatus: string;
-}
-
 /* ── Component ───────────────────────────────────────────── */
 
 export default function HistoryPage() {
-  const [allSubmissions, setAllSubmissions] = useState<SubmissionWithContext[]>([]);
-  const [chapters, setChapters] = useState<Chapter[]>([]);
+  const [allSubmissions, setAllSubmissions] = useState<SubmissionWithChapter[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [filterChapter, setFilterChapter] = useState<string>('all');
@@ -42,36 +32,8 @@ export default function HistoryPage() {
 
     async function load() {
       try {
-        const chaptersRes = await chaptersApi.list();
-        const chapterList = chaptersRes.data;
-        setChapters(chapterList);
-
-        // Fetch all chapter details in parallel to get full submission lists
-        const details = await Promise.all(
-          chapterList.map((ch) => chaptersApi.getById(ch.id)),
-        );
-
-        const combined: SubmissionWithContext[] = [];
-        details.forEach((res) => {
-          const detail = res.data as ChapterDetailData;
-          const subs = detail.submissions ?? [];
-          subs.forEach((sub) => {
-            combined.push({
-              ...sub,
-              chapterNumber: detail.number,
-              chapterTitle: detail.title,
-              chapterStatus: detail.status,
-            });
-          });
-        });
-
-        // Sort by date desc
-        combined.sort(
-          (a, b) =>
-            new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime(),
-        );
-
-        setAllSubmissions(combined);
+        const res = await submissionsApi.listMine();
+        setAllSubmissions(res.data);
       } catch {
         // Silencioso — la lista queda vacía
       } finally {
@@ -81,6 +43,17 @@ export default function HistoryPage() {
 
     load();
   }, []);
+
+  /* ── Unique chapters for filter dropdown ─────────────────── */
+  const uniqueChapters = useMemo(() => {
+    const map = new Map<string, { id: string; number: number; title: string }>();
+    allSubmissions.forEach((sub) => {
+      if (!map.has(sub.chapter.id)) {
+        map.set(sub.chapter.id, sub.chapter);
+      }
+    });
+    return Array.from(map.values()).sort((a, b) => a.number - b.number);
+  }, [allSubmissions]);
 
   /* ── Stats ─────────────────────────────────────────────── */
   const totalCount = allSubmissions.length;
@@ -106,7 +79,7 @@ export default function HistoryPage() {
   /* ── Chapter options for filter ─────────────────────────── */
   const chapterOptions = [
     { value: 'all', label: 'Todos los capítulos' },
-    ...chapters.map((ch) => ({
+    ...uniqueChapters.map((ch) => ({
       value: ch.id,
       label: `Cap. ${ch.number}: ${ch.title}`,
     })),
@@ -197,7 +170,7 @@ export default function HistoryPage() {
         <div className="history-page__list">
           {filtered.map((sub) => {
             const { label, color } = getSubmissionDisplayStatus(sub.reviewJob);
-            const chCfg = CHAPTER_STATUS[sub.chapterStatus as keyof typeof CHAPTER_STATUS];
+            const chCfg = CHAPTER_STATUS[sub.chapter.status as keyof typeof CHAPTER_STATUS];
             return (
               <Card
                 key={sub.id}
@@ -211,7 +184,7 @@ export default function HistoryPage() {
                       {sub.fileName}
                     </Text>
                     <Text type="secondary" className="history-page__list-item-meta">
-                      Cap. {sub.chapterNumber}: {sub.chapterTitle} · v{sub.versionNumber}
+                      Cap. {sub.chapter.number}: {sub.chapter.title} · v{sub.versionNumber}
                     </Text>
                   </div>
                   <div className="history-page__list-item-right">

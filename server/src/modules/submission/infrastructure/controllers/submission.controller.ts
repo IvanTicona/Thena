@@ -1,5 +1,6 @@
 import {
   Controller,
+  Get,
   Post,
   Body,
   ForbiddenException,
@@ -19,6 +20,14 @@ const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 @Controller('submissions')
 export class SubmissionController {
   constructor(private readonly submissionService: SubmissionService) {}
+
+  @Get('mine')
+  async listMine(@CurrentUser() user: JwtPayload) {
+    if (user.role !== 'STUDENT') {
+      throw new ForbiddenException('Only students can access their submissions');
+    }
+    return this.submissionService.findAllForStudent(user.sub);
+  }
 
   @Post()
   @UseInterceptors(FileInterceptor('file'))
