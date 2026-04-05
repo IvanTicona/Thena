@@ -1,44 +1,20 @@
-import { useEffect, useState, useCallback } from 'react';
 import { Spin, Alert, Button } from 'antd';
 import { Navigate } from 'react-router-dom';
-import { chaptersApi } from '../../services/api';
-import { ApiError } from '../../services/api-error';
-import type { Chapter } from '../../types';
+import { useChapters } from '../../contexts/ChaptersContext';
 
 /**
  * ChapterList — redirects to the first actionable chapter.
  *
- * The sidebar already shows the full chapter list with status dots,
- * so rendering them again here would be redundant. Instead we redirect
- * to the first chapter the student can work on (DRAFT or IN_REVIEW),
- * or the first chapter if none are actionable yet.
+ * Uses the shared ChaptersContext (already loaded by AppLayout)
+ * instead of making its own API call.
  */
 export default function ChapterList() {
-  const [chapters, setChapters] = useState<Chapter[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const { chapters, loading, error, refetch } = useChapters();
 
-  const fetchChapters = useCallback(() => {
-    setError(null);
-    chaptersApi
-      .list()
-      .then((res) => setChapters(res.data))
-      .catch((err: ApiError) => {
-        setError(err.message || 'Error al cargar los capítulos');
-      });
-  }, []);
-
-  useEffect(() => {
-    fetchChapters();
-  }, [fetchChapters]);
-
-  useEffect(() => { document.title = 'Mis Capítulos — Thena'; }, []);
-
-  // Loading
-  if (!chapters && !error) {
+  if (loading) {
     return <Spin size="large" style={{ display: 'block', margin: '100px auto' }} />;
   }
 
-  // Error
   if (error) {
     return (
       <Alert
@@ -48,7 +24,7 @@ export default function ChapterList() {
         showIcon
         style={{ maxWidth: 600, margin: '60px auto' }}
         action={
-          <Button size="small" onClick={fetchChapters}>
+          <Button size="small" onClick={refetch}>
             Reintentar
           </Button>
         }
@@ -56,9 +32,15 @@ export default function ChapterList() {
     );
   }
 
-  // No chapters at all (shouldn't happen after onboarding)
   if (!chapters || chapters.length === 0) {
-    return <Alert type="info" title="No se encontraron capítulos para tu proyecto." showIcon style={{ maxWidth: 600, margin: '60px auto' }} />;
+    return (
+      <Alert
+        type="info"
+        title="No se encontraron capítulos para tu proyecto."
+        showIcon
+        style={{ maxWidth: 600, margin: '60px auto' }}
+      />
+    );
   }
 
   // Find the first actionable chapter (DRAFT or IN_REVIEW), fallback to first chapter

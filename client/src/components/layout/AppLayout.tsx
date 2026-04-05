@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   Layout,
   Menu,
@@ -20,7 +20,7 @@ import {
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/useAuth';
-import { chaptersApi } from '../../services/api';
+import { ChaptersProvider, useChapters } from '../../contexts/ChaptersContext';
 import { ChapterTimeline } from './ChapterTimeline';
 import type { Chapter } from '../../types';
 import './AppLayout.css';
@@ -34,7 +34,7 @@ const STUDENT_NAV = [
   { key: '/history', icon: <HistoryOutlined />, label: 'Historial' },
 ];
 
-export function AppLayout() {
+function AppLayoutInner({ chapters }: { chapters: Chapter[] }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -42,19 +42,7 @@ export function AppLayout() {
   const isStudent = user?.role === 'STUDENT';
   const showSidebar = isStudent && location.pathname.startsWith('/chapters');
 
-  const [chapters, setChapters] = useState<Chapter[]>([]);
   const [siderCollapsed, setSiderCollapsed] = useState(false);
-
-  useEffect(() => {
-    if (isStudent) {
-      chaptersApi
-        .list()
-        .then((res) => setChapters(res.data))
-        .catch(() => {
-          // Silencioso — el sidebar se queda vacío si falla
-        });
-    }
-  }, [isStudent, user?.id]);
 
   const handleLogout = async () => {
     await logout();
@@ -79,6 +67,20 @@ export function AppLayout() {
       onClick: handleLogout,
     },
   ];
+
+  /* ── "Revisión AI" smart navigation ───────────────────── */
+  const handleNavClick = (key: string) => {
+    if (key === '/chapters' && chapters.length > 0) {
+      // Navigate directly to first actionable chapter, skip ChapterList redirect
+      const actionable = chapters.find(
+        (ch) => ch.status === 'DRAFT' || ch.status === 'IN_REVIEW',
+      );
+      const target = actionable || chapters[0];
+      navigate(`/chapters/${target.id}`);
+    } else {
+      navigate(key);
+    }
+  };
 
   return (
     <Layout className="app-layout">
@@ -123,7 +125,7 @@ export function AppLayout() {
                   ]
                     .filter(Boolean)
                     .join(' ')}
-                  onClick={() => navigate(item.key)}
+                  onClick={() => handleNavClick(item.key)}
                   aria-current={isActive ? 'page' : undefined}
                 >
                   {item.icon}
@@ -192,4 +194,32 @@ export function AppLayout() {
       </Footer>
     </Layout>
   );
+}
+
+function StudentAppLayout() {
+  const { chapters } = useChapters();
+  return <AppLayoutInner chapters={chapters} />;
+}
+
+function TutorAppLayout() {
+  return <AppLayoutInner chapters={[]} />;
+}
+
+/**
+ * AppLayout wraps the inner layout with ChaptersProvider for students.
+ * Tutors skip the provider since they don't need shared chapter state.
+ */
+export function AppLayout() {
+  const { user } = useAuth();
+  const isStudent = user?.role === 'STUDENT';
+
+  if (isStudent) {
+    return (
+      <ChaptersProvider enabled>
+        <StudentAppLayout />
+      </ChaptersProvider>
+    );
+  }
+
+  return <TutorAppLayout />;
 }
