@@ -1,13 +1,7 @@
-import {
-  CheckCircleFilled,
-  EditOutlined,
-  LockOutlined,
-  SyncOutlined,
-} from '@ant-design/icons';
 import { Typography } from 'antd';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { CHAPTER_STATUS, STATUS_ICON } from '../../utils/status';
-import type { Chapter, ChapterStatus } from '../../types';
+import type { Chapter } from '../../types';
 import './ChapterTimeline.css';
 
 const { Text } = Typography;
@@ -25,9 +19,17 @@ export function ChapterTimeline({ chapters }: ChapterTimelineProps) {
       {chapters.map((ch, index) => {
         const status = ch.status;
         const cfg = CHAPTER_STATUS[status];
+        const isFirst = index === 0;
         const isLast = index === chapters.length - 1;
         const isActive = location.pathname.startsWith(`/chapters/${ch.id}`);
         const isClickable = status !== 'LOCKED';
+
+        // Previous chapter's connector color (for the top-half line)
+        const prevStatus = !isFirst ? chapters[index - 1].status : null;
+        const prevCfg = prevStatus ? CHAPTER_STATUS[prevStatus] : null;
+        const topConnectorColor = prevStatus === 'APPROVED' && prevCfg
+          ? prevCfg.dotColor
+          : '#e5e7eb';
 
         return (
           <div
@@ -50,27 +52,34 @@ export function ChapterTimeline({ chapters }: ChapterTimelineProps) {
             }}
             aria-current={isActive ? 'step' : undefined}
           >
-            {/* Dot node */}
-            <div className="chapter-timeline__node">
+            {/* Top half connector (from previous item) */}
+            {!isFirst && (
               <div
-                className="chapter-timeline__dot"
-                style={{ borderColor: cfg.dotColor, color: cfg.dotColor }}
-              >
-                {STATUS_ICON[status]}
-              </div>
-              {/* Connector line to next item */}
-              {!isLast && (
-                <div
-                  className="chapter-timeline__connector"
-                  style={{
-                    backgroundColor:
-                      status === 'APPROVED' ? cfg.dotColor : '#e5e7eb',
-                  }}
-                />
-              )}
+                className="chapter-timeline__connector-top"
+                style={{ backgroundColor: topConnectorColor }}
+              />
+            )}
+
+            {/* Bottom half connector (to next item) */}
+            {!isLast && (
+              <div
+                className="chapter-timeline__connector"
+                style={{
+                  backgroundColor:
+                    status === 'APPROVED' ? cfg.dotColor : '#e5e7eb',
+                }}
+              />
+            )}
+
+            {/* Dot */}
+            <div
+              className="chapter-timeline__dot"
+              style={{ backgroundColor: cfg.dotColor, color: '#ffffff' }}
+            >
+              {STATUS_ICON[status]}
             </div>
 
-            {/* Text content */}
+            {/* Text content — compact: number + title only */}
             <div className="chapter-timeline__content">
               <Text
                 className="chapter-timeline__number"
@@ -81,11 +90,9 @@ export function ChapterTimeline({ chapters }: ChapterTimelineProps) {
               <Text
                 className="chapter-timeline__title"
                 type={status === 'LOCKED' ? 'secondary' : undefined}
+                ellipsis
               >
                 {ch.title}
-              </Text>
-              <Text className="chapter-timeline__label" style={{ color: cfg.dotColor }}>
-                {cfg.label}
               </Text>
             </div>
           </div>

@@ -235,7 +235,7 @@ export default function StudentDashboard() {
                   const cfg = CHAPTER_STATUS[ch.status];
                   const isLocked = ch.status === 'LOCKED';
                   return (
-                    <Col key={ch.id} xs={24} sm={12}>
+                    <Col key={ch.id} xs={24} sm={12} lg={8}>
                       <Card
                         className={[
                           'student-dashboard__chapter-card',

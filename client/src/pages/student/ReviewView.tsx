@@ -57,7 +57,7 @@ export default function ReviewView() {
 
   if (loading)
     return (
-      <Spin size="large" style={{ display: 'block', margin: '100px auto' }} />
+      <Spin size="large" className="u-spinner-centered" />
     );
 
   if (error)

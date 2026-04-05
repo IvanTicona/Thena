@@ -166,7 +166,7 @@ export default function ChapterDetail() {
       dataIndex: 'submittedAt',
       key: 'date',
       render: (d: string) => formatDateTime(d),
-      width: 160,
+      width: 200,
     },
     {
       title: 'Estado',

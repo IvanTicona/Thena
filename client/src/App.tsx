@@ -40,7 +40,7 @@ function App() {
       }}
     >
       <AuthProvider>
-        <Suspense fallback={<Spin size="large" className="u-spinner-centered" />}>
+        <Suspense fallback={<Spin size="large" className="u-spinner-fullscreen" />}>
           <Routes>
           {/* Public auth routes — redirect to dashboard if already authenticated */}
           <Route element={<PublicOnlyRoute />}>

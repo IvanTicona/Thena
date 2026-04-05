@@ -2,10 +2,8 @@ import { useState } from 'react';
 import {
   Layout,
   Menu,
-  Tag,
   Typography,
   Button,
-  Space,
   Dropdown,
 } from 'antd';
 import {
@@ -13,7 +11,6 @@ import {
   DatabaseOutlined,
   LogoutOutlined,
   MenuOutlined,
-  SafetyOutlined,
   UserOutlined,
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
@@ -27,8 +24,8 @@ const { Header, Sider, Content } = Layout;
 const { Title, Text } = Typography;
 
 const STUDENT_NAV = [
-  { key: '/dashboard', icon: <DashboardOutlined />, label: 'Dashboard' },
-  { key: '/chapters', icon: <SafetyOutlined />, label: 'Revisión' },
+  { key: '/dashboard', label: 'Dashboard' },
+  { key: '/chapters', label: 'Revisión' },
 ];
 
 function AppLayoutInner({ chapters }: { chapters: Chapter[] }) {
@@ -82,7 +79,7 @@ function AppLayoutInner({ chapters }: { chapters: Chapter[] }) {
   return (
     <Layout className="app-layout">
       <Header className="app-layout__header">
-        {/* Left: hamburger (only when sidebar is visible, mobile only) + logo + brand */}
+        {/* Left: hamburger + logo + brand + student nav tabs */}
         <div className="app-layout__header-left">
           {showSidebar && (
             <Button
@@ -101,53 +98,46 @@ function AppLayoutInner({ chapters }: { chapters: Chapter[] }) {
           >
             THENA
           </Title>
+
+          {isStudent && (
+            <nav className="app-layout__nav" aria-label="Navegación principal">
+              {STUDENT_NAV.map((item) => {
+                const isActive =
+                  item.key === '/chapters'
+                    ? location.pathname.startsWith('/chapters')
+                    : location.pathname === item.key ||
+                      location.pathname.startsWith(item.key + '/');
+                return (
+                  <button
+                    key={item.key}
+                    type="button"
+                    className={[
+                      'app-layout__nav-item',
+                      isActive ? 'app-layout__nav-item--active' : '',
+                    ]
+                      .filter(Boolean)
+                      .join(' ')}
+                    onClick={() => handleNavClick(item.key)}
+                    aria-current={isActive ? 'page' : undefined}
+                  >
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
+            </nav>
+          )}
         </div>
 
-        {/* Center: student horizontal nav tabs */}
-        {isStudent && (
-          <nav className="app-layout__nav" aria-label="Navegación principal">
-            {STUDENT_NAV.map((item) => {
-              const isActive =
-                item.key === '/chapters'
-                  ? location.pathname.startsWith('/chapters')
-                  : location.pathname === item.key ||
-                    location.pathname.startsWith(item.key + '/');
-              return (
-                <button
-                  key={item.key}
-                  type="button"
-                  className={[
-                    'app-layout__nav-item',
-                    isActive ? 'app-layout__nav-item--active' : '',
-                  ]
-                    .filter(Boolean)
-                    .join(' ')}
-                  onClick={() => handleNavClick(item.key)}
-                  aria-current={isActive ? 'page' : undefined}
-                >
-                  {item.icon}
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
-          </nav>
-        )}
-
-        {/* Right: role tag + user dropdown */}
-        <Space align="center" size={12}>
-          <Tag color={isStudent ? 'blue' : 'green'}>
-            {isStudent ? 'Estudiante' : 'Tutor'}
-          </Tag>
-          <Dropdown
-            menu={{ items: userMenuItems }}
-            trigger={['click']}
-            placement="bottomRight"
-          >
-            <Button type="text" icon={<UserOutlined />} className="app-layout__user-btn">
-              <Text className="app-layout__user-name">{user?.name ?? 'Usuario'}</Text>
-            </Button>
-          </Dropdown>
-        </Space>
+        {/* Right: user dropdown */}
+        <Dropdown
+          menu={{ items: userMenuItems }}
+          trigger={['click']}
+          placement="bottomRight"
+        >
+          <Button type="text" icon={<UserOutlined />} className="app-layout__user-btn">
+            <Text className="app-layout__user-name">{user?.name ?? 'Usuario'}</Text>
+          </Button>
+        </Dropdown>
       </Header>
 
       <Layout>

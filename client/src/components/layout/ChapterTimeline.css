@@ -8,23 +8,25 @@
   flex-direction: column;
   flex-grow: 1;
   min-height: 0;
+  overflow-y: auto;
 }
 
 /* ── ITEM (row: dot + content) ───────────────────────────── */
 .chapter-timeline__item {
   display: flex;
+  align-items: center;
   gap: 12px;
   cursor: pointer;
   border-radius: 8px;
-  padding: 6px 8px 6px 4px;
+  padding: 8px 8px 8px 6px;
   transition: background-color 0.15s ease;
-  flex: 1 1 0;
-  min-height: 0;
+  flex: 1 0 0;
+  min-height: 48px;
+  position: relative;
 }
 
-/* Last item doesn't need to stretch (no connector after it) */
 .chapter-timeline__item:last-child {
-  flex: 0 0 auto;
+  flex-grow: 1;
 }
 
 .chapter-timeline__item:hover {
@@ -41,71 +43,81 @@
 
 .chapter-timeline__item--locked {
   cursor: not-allowed;
-  opacity: 0.7;
+  opacity: 0.55;
 }
 
 .chapter-timeline__item--locked:hover {
   background-color: transparent;
 }
 
-/* ── NODE COLUMN (dot + connector line) ──────────────────── */
-.chapter-timeline__node {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex-shrink: 0;
-  width: 28px;
-}
-
-/* ── DOT ─────────────────────────────────────────────────── */
+/* ── DOT — solid fill, centered with text ────────────────── */
 .chapter-timeline__dot {
-  width: 28px;
-  height: 28px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
-  border: 2px solid;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
-  background: #ffffff;
+  font-size: 11px;
   flex-shrink: 0;
+  position: relative;
+  z-index: 1;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .chapter-timeline__item--active .chapter-timeline__dot {
-  transform: scale(1.1);
-  box-shadow: 0 0 0 3px rgba(6, 23, 93, 0.12);
+  transform: scale(1.15);
+  box-shadow: 0 0 0 3px rgba(6, 23, 93, 0.15);
 }
 
-.chapter-timeline__item--approved .chapter-timeline__dot {
-  background-color: #52c41a;
-  border-color: #52c41a;
-  color: #ffffff !important;
+/* LOCKED dot — lighter, outlined feel */
+.chapter-timeline__item--locked .chapter-timeline__dot {
+  background-color: #e5e7eb !important;
+  color: #9ca3af !important;
 }
 
-/* ── CONNECTOR LINE ──────────────────────────────────────── */
+/* ── CONNECTOR LINE (absolute — from dot center to bottom of item) ── */
 .chapter-timeline__connector {
-  width: 2px;
-  flex-grow: 1;
-  min-height: 12px;
-  border-radius: 1px;
+  position: absolute;
+  width: 3px;
+  left: calc(6px + 11px - 1.5px); /* item padding-left + half dot - half connector */
+  top: 50%;
+  bottom: -1px; /* extend 1px to connect seamlessly with next item's top connector */
+  border-radius: 2px;
+  z-index: 0;
+}
+
+/* Top half connector (inherits color from previous item's connector via same bg) */
+.chapter-timeline__item:not(:first-child) .chapter-timeline__connector-top {
+  position: absolute;
+  width: 3px;
+  left: calc(6px + 11px - 1.5px);
+  top: -1px;
+  height: calc(50% + 1px);
+  border-radius: 2px;
+  z-index: 0;
 }
 
 /* ── CONTENT (text area) ─────────────────────────────────── */
 .chapter-timeline__content {
   display: flex;
   flex-direction: column;
-  gap: 1px;
-  padding: 2px 0 10px;
-  min-width: 0; /* allow text truncation */
+  justify-content: center;
+  min-width: 0;
+  padding: 0;
 }
 
 .chapter-timeline__number {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   line-height: 1.2;
+  color: #9ca3af;
+}
+
+.chapter-timeline__item--active .chapter-timeline__number {
+  color: #06175d;
 }
 
 .chapter-timeline__title {
@@ -117,10 +129,4 @@
 .chapter-timeline__item--active .chapter-timeline__title {
   color: #06175d;
   font-weight: 600;
-}
-
-.chapter-timeline__label {
-  font-size: 11px;
-  font-weight: 500;
-  line-height: 1.2;
 }

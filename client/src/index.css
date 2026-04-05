@@ -43,8 +43,20 @@ html {
 
 /** Centered full-page spinner */
 .u-spinner-centered {
-  display: block;
-  margin: 100px auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+  width: 100%;
+}
+
+/** Full-viewport centered spinner (for Suspense / top-level fallback) */
+.u-spinner-fullscreen {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  width: 100%;
 }
 
 /** Centered empty-state container */
