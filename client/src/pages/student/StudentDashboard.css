@@ -8,11 +8,6 @@
   margin: 0 auto;
 }
 
-.student-dashboard__spinner {
-  display: block;
-  margin: 100px auto;
-}
-
 /* ── WELCOME ─────────────────────────────────────────────── */
 .student-dashboard__welcome {
   margin-bottom: 24px;
@@ -42,13 +37,8 @@
 }
 
 .student-dashboard__project-label {
-  display: block;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 1px;
   color: rgba(255, 255, 255, 0.65);
   margin-bottom: 8px;
-  text-transform: uppercase;
 }
 
 .student-dashboard__project-title.ant-typography {
@@ -117,34 +107,6 @@
   margin-bottom: 24px;
 }
 
-.student-dashboard__stat-card {
-  height: 100%;
-}
-
-.student-dashboard__stat-card-inner {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.student-dashboard__stat-icon {
-  font-size: 28px;
-  flex-shrink: 0;
-}
-
-.student-dashboard__stat-value {
-  font-size: 28px;
-  font-weight: 700;
-  color: #111827;
-  line-height: 1;
-}
-
-.student-dashboard__stat-label {
-  font-size: 12px;
-  color: #6b7280;
-  margin-top: 4px;
-}
-
 /* ── SECTIONS ────────────────────────────────────────────── */
 .student-dashboard__section {
   margin-bottom: 24px;
@@ -175,10 +137,6 @@
 
 .student-dashboard__chapter-card-cap {
   font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 1px;
-  color: #9ca3af;
-  text-transform: uppercase;
   margin-bottom: 8px;
 }
 
@@ -203,40 +161,6 @@
   margin-top: 4px;
 }
 
-/* ── ACTIVITY CARD ───────────────────────────────────────── */
-.student-dashboard__activity-card {
-  padding: 0;
-}
-
-.student-dashboard__activity-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 0;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.student-dashboard__activity-item:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
-}
-
-.student-dashboard__activity-icon {
-  font-size: 18px;
-  color: #06175d;
-  flex-shrink: 0;
-}
-
-.student-dashboard__activity-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.student-dashboard__activity-meta {
-  display: block;
-  font-size: 12px;
-}
-
 /* ── TIPS CARD ───────────────────────────────────────────── */
 .student-dashboard__tips-card .ant-card-body {
   padding: 16px 24px;
@@ -249,10 +173,4 @@
 
 .student-dashboard__tip:last-child {
   margin-bottom: 0;
-}
-
-/* ── EMPTY ───────────────────────────────────────────────── */
-.student-dashboard__empty-card {
-  text-align: center;
-  padding: 40px;
 }

@@ -11,15 +11,15 @@ import {
 import {
   CheckCircleOutlined,
   ClockCircleOutlined,
-  FileTextOutlined,
+  EditOutlined,
   WarningOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/useAuth';
 import { thesisApi } from '../../services/api';
-import type { Chapter, ChapterStatus, ThesisDocument } from '../../types';
+import type { Chapter, ThesisDocument } from '../../types';
 import { CHAPTER_STATUS, STATUS_ICON } from '../../utils/status';
-import { formatDate } from '../../utils/format';
+import { StatCard } from '../../components/StatCard';
 import './StudentDashboard.css';
 
 const { Title, Text } = Typography;
@@ -28,29 +28,6 @@ const { Title, Text } = Typography;
 
 function getFirstName(fullName: string): string {
   return fullName.split(' ')[0];
-}
-
-interface StatCardProps {
-  icon: React.ReactNode;
-  value: number;
-  label: string;
-  color: string;
-}
-
-function StatCard({ icon, value, label, color }: StatCardProps) {
-  return (
-    <Card className="student-dashboard__stat-card" size="small">
-      <div className="student-dashboard__stat-card-inner">
-        <div className="student-dashboard__stat-icon" style={{ color }}>
-          {icon}
-        </div>
-        <div>
-          <div className="student-dashboard__stat-value">{value}</div>
-          <div className="student-dashboard__stat-label">{label}</div>
-        </div>
-      </div>
-    </Card>
-  );
 }
 
 export default function StudentDashboard() {
@@ -69,7 +46,7 @@ export default function StudentDashboard() {
   }, []);
 
   if (loading) {
-    return <Spin size="large" className="student-dashboard__spinner" />;
+    return <Spin size="large" className="u-spinner-centered" />;
   }
 
   const chapters: Chapter[] = thesis?.chapters ?? [];
@@ -77,17 +54,9 @@ export default function StudentDashboard() {
   const approved = chapters.filter((c) => c.status === 'APPROVED').length;
   const withObservations = chapters.filter((c) => c.status === 'DRAFT' && c.submissionCount > 0).length;
   const inReview = chapters.filter((c) => c.status === 'IN_REVIEW').length;
-  const totalSubmissions = chapters.reduce((acc, c) => acc + c.submissionCount, 0);
+  const drafts = chapters.filter((c) => c.status === 'DRAFT').length;
   const total = chapters.length;
   const percent = total > 0 ? Math.round((approved / total) * 100) : 0;
-
-  const recentChapters = [...chapters]
-    .filter((c) => c.latestSubmission != null)
-    .sort((a, b) =>
-      new Date(b.latestSubmission!.submittedAt).getTime() -
-      new Date(a.latestSubmission!.submittedAt).getTime(),
-    )
-    .slice(0, 5);
 
   return (
     <div className="student-dashboard">
@@ -106,7 +75,7 @@ export default function StudentDashboard() {
           {/* Project summary card */}
           <div className="student-dashboard__project-card">
             <div className="student-dashboard__project-header">
-              <Text className="student-dashboard__project-label">PROYECTO DE GRADO</Text>
+              <Text className="u-eyebrow-label student-dashboard__project-label">PROYECTO DE GRADO</Text>
               <Title level={4} className="student-dashboard__project-title">
                 {thesis.title}
               </Title>
@@ -167,9 +136,9 @@ export default function StudentDashboard() {
             </Col>
             <Col xs={12} sm={6}>
               <StatCard
-                icon={<FileTextOutlined />}
-                value={totalSubmissions}
-                label="Total Entregas"
+                icon={<EditOutlined />}
+                value={drafts}
+                label="Pendientes"
                 color="#4b5563"
               />
             </Col>
@@ -197,7 +166,7 @@ export default function StudentDashboard() {
                       size="small"
                       onClick={() => !isLocked && navigate(`/chapters/${ch.id}`)}
                     >
-                      <div className="student-dashboard__chapter-card-cap">
+                      <div className="u-eyebrow-label student-dashboard__chapter-card-cap">
                         CAP. {ch.number}
                       </div>
                       <div
@@ -228,35 +197,6 @@ export default function StudentDashboard() {
               })}
             </Row>
           </div>
-
-          {/* Recent activity */}
-          {recentChapters.length > 0 && (
-            <div className="student-dashboard__section">
-              <Title level={5} className="student-dashboard__section-title">
-                Actividad Reciente
-              </Title>
-              <Card className="student-dashboard__activity-card">
-                {recentChapters.map((ch) => {
-                  const sub = ch.latestSubmission!;
-                  const cfg = CHAPTER_STATUS[ch.status];
-                  return (
-                    <div key={ch.id} className="student-dashboard__activity-item">
-                      <FileTextOutlined className="student-dashboard__activity-icon" />
-                      <div className="student-dashboard__activity-info">
-                        <Text strong>
-                          Cap. {ch.number}: {ch.title}
-                        </Text>
-                        <Text type="secondary" className="student-dashboard__activity-meta">
-                          Versión {sub.versionNumber} · {formatDate(sub.submittedAt)}
-                        </Text>
-                      </div>
-                      <Tag color={cfg.tagColor}>{cfg.label}</Tag>
-                    </div>
-                  );
-                })}
-              </Card>
-            </div>
-          )}
 
           {/* Tips card */}
           <div className="student-dashboard__section">
@@ -291,7 +231,7 @@ export default function StudentDashboard() {
           </div>
         </>
       ) : (
-        <Card className="student-dashboard__empty-card">
+        <Card className="u-empty-state">
           <Text type="secondary">No tenés un proyecto de grado registrado.</Text>
         </Card>
       )}

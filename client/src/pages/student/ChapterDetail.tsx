@@ -6,11 +6,9 @@ import {
   Card,
   Table,
   Tag,
-  Tabs,
   Spin,
   message,
   Alert,
-  Empty,
 } from 'antd';
 import {
   FileWordOutlined,
@@ -37,7 +35,6 @@ export default function ChapterDetail() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('upload');
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -84,7 +81,7 @@ export default function ChapterDetail() {
   };
 
   if (loading) {
-    return <Spin size="large" style={{ display: 'block', margin: '100px auto' }} />;
+    return <Spin size="large" className="u-spinner-centered" />;
   }
 
   if (error) {
@@ -108,11 +105,6 @@ export default function ChapterDetail() {
 
   const canUpload = chapter.status === 'DRAFT';
   const statusCfg = CHAPTER_STATUS[chapter.status];
-
-  const latestCompletedReview = submissions
-    .slice()
-    .reverse()
-    .find((s) => s.reviewJob?.status === 'COMPLETED');
 
   /* ── Table columns ─────────────────────────────────────── */
   const columns: ColumnsType<Submission> = [
@@ -186,9 +178,9 @@ export default function ChapterDetail() {
     },
   ];
 
-  /* ── Tab content ────────────────────────────────────────── */
-  const uploadTabContent = (
-    <div className="chapter-detail__tab-upload">
+  /* ── Page content (upload + submissions table) ──────────── */
+  const pageContent = (
+    <div className="chapter-detail__content">
       {/* Status alerts */}
       {chapter.status === 'IN_REVIEW' && (
         <Alert
@@ -269,58 +261,12 @@ export default function ChapterDetail() {
     </div>
   );
 
-  const feedbackTabContent = (
-    <div className="chapter-detail__tab-feedback">
-      {latestCompletedReview ? (
-        <Card className="chapter-detail__feedback-card">
-          <Text type="secondary" className="chapter-detail__feedback-hint">
-            Última revisión completada — v{latestCompletedReview.versionNumber}
-          </Text>
-          <div className="chapter-detail__feedback-actions">
-            <Button
-              type="primary"
-              icon={<EyeOutlined />}
-              onClick={() =>
-                navigate(
-                  `/chapters/${id}/review/${latestCompletedReview.reviewJob!.id}`,
-                )
-              }
-              style={{ background: '#06175d', borderColor: '#06175d' }}
-            >
-              Ver Retroalimentación Completa
-            </Button>
-          </div>
-        </Card>
-      ) : (
-        <Card className="chapter-detail__feedback-empty">
-          <Empty
-            description="Aún no hay retroalimentación. Subí un documento para recibir tu primera revisión."
-            image={Empty.PRESENTED_IMAGE_SIMPLE}
-          />
-        </Card>
-      )}
-    </div>
-  );
-
-  const tabItems = [
-    {
-      key: 'upload',
-      label: 'Subir Documento',
-      children: uploadTabContent,
-    },
-    {
-      key: 'feedback',
-      label: 'Retroalimentación AI',
-      children: feedbackTabContent,
-    },
-  ];
-
   return (
     <div className="chapter-detail">
       {/* Chapter header */}
       <div className="chapter-detail__header">
         <div className="chapter-detail__header-text">
-          <span className="chapter-detail__chapter-label">CAPÍTULO {chapter.number}</span>
+          <span className="u-eyebrow-label">CAPÍTULO {chapter.number}</span>
           <Title level={3} className="chapter-detail__chapter-title">
             {chapter.title}
           </Title>
@@ -333,13 +279,8 @@ export default function ChapterDetail() {
         </Tag>
       </div>
 
-      {/* Tabs */}
-      <Tabs
-        activeKey={activeTab}
-        onChange={setActiveTab}
-        items={tabItems}
-        className="chapter-detail__tabs"
-      />
+      {/* Content */}
+      {pageContent}
     </div>
   );
 }
