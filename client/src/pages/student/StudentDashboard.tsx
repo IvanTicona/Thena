@@ -91,7 +91,7 @@ export default function StudentDashboard() {
   const percent = total > 0 ? Math.round((approved / total) * 100) : 0;
 
   const recentChapters = [...chapters]
-    .filter((c) => c.latestSubmission !== null)
+    .filter((c) => c.latestSubmission != null)
     .sort((a, b) =>
       new Date(b.latestSubmission!.submittedAt).getTime() -
       new Date(a.latestSubmission!.submittedAt).getTime(),

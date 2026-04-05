@@ -100,7 +100,7 @@ export default function ChapterDetail() {
     return (
       <Alert
         type="error"
-        message="Error al cargar el capítulo"
+        title="Error al cargar el capítulo"
         description={error}
         showIcon
         className="chapter-detail__error-alert"
@@ -113,7 +113,7 @@ export default function ChapterDetail() {
     );
   }
 
-  if (!chapter) return <Alert type="error" message="Capítulo no encontrado" />;
+  if (!chapter) return <Alert type="error" title="Capítulo no encontrado" />;
 
   const canUpload = chapter.status === 'DRAFT';
   const statusCfg = CHAPTER_STATUS[chapter.status];
@@ -213,7 +213,7 @@ export default function ChapterDetail() {
       {chapter.status === 'IN_REVIEW' && (
         <Alert
           type="info"
-          message="Revisión en progreso"
+          title="Revisión en progreso"
           description="Hay una revisión en progreso. Esperá el resultado antes de subir una nueva versión."
           showIcon
           className="chapter-detail__status-alert"
@@ -222,7 +222,7 @@ export default function ChapterDetail() {
       {chapter.status === 'LOCKED' && (
         <Alert
           type="warning"
-          message="Este capítulo está bloqueado"
+          title="Este capítulo está bloqueado"
           description="Debés completar y aprobar el capítulo anterior antes de poder subir este capítulo."
           showIcon
           className="chapter-detail__status-alert"
@@ -231,7 +231,7 @@ export default function ChapterDetail() {
       {chapter.status === 'APPROVED' && (
         <Alert
           type="success"
-          message="Capítulo aprobado"
+          title="Capítulo aprobado"
           description="Este capítulo ha sido aprobado por tu tutor."
           showIcon
           className="chapter-detail__status-alert"

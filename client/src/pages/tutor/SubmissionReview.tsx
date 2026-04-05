@@ -119,7 +119,7 @@ export default function SubmissionReview() {
     return (
       <Alert
         type="error"
-        message="Error al cargar la revisión. Intentá de nuevo."
+        title="Error al cargar la revisión. Intentá de nuevo."
         showIcon
         className="submission-review__alert"
       />
@@ -130,19 +130,19 @@ export default function SubmissionReview() {
     return (
       <Alert
         type="error"
-        message="Parámetros inválidos"
+        title="Parámetros inválidos"
         description="No se pudo determinar el capítulo asociado a esta entrega."
       />
     );
   }
 
-  if (!review) return <Alert type="error" message="Revisión no encontrada" />;
+  if (!review) return <Alert type="error" title="Revisión no encontrada" />;
 
   if (review.status === 'FAILED') {
     return (
       <Alert
         type="error"
-        message="La revisión ha fallado"
+        title="La revisión ha fallado"
         description="Ocurrió un error durante el análisis. El estudiante debe subir el documento nuevamente."
         showIcon
         className="submission-review__alert"

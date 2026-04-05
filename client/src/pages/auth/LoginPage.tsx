@@ -55,7 +55,7 @@ export default function LoginPage() {
         <Card className="auth-card" bordered={false}>
           {errorMsg && (
             <Alert
-              message={errorMsg}
+              title={errorMsg}
               type="error"
               showIcon
               closable

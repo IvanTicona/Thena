@@ -43,7 +43,7 @@ export default function ChapterList() {
     return (
       <Alert
         type="error"
-        message="Error al cargar los capítulos"
+        title="Error al cargar los capítulos"
         description={error}
         showIcon
         style={{ maxWidth: 600, margin: '60px auto' }}
@@ -58,7 +58,7 @@ export default function ChapterList() {
 
   // No chapters at all (shouldn't happen after onboarding)
   if (!chapters || chapters.length === 0) {
-    return <Alert type="info" message="No se encontraron capítulos para tu proyecto." showIcon style={{ maxWidth: 600, margin: '60px auto' }} />;
+    return <Alert type="info" title="No se encontraron capítulos para tu proyecto." showIcon style={{ maxWidth: 600, margin: '60px auto' }} />;
   }
 
   // Find the first actionable chapter (DRAFT or IN_REVIEW), fallback to first chapter

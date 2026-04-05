@@ -67,7 +67,7 @@ export function StudentThesisGuard() {
       >
         <Alert
           type="error"
-          message="Hubo un error al verificar tu proyecto. Intentá de nuevo."
+          title="Hubo un error al verificar tu proyecto. Intentá de nuevo."
           showIcon
           style={{ maxWidth: 480 }}
           action={

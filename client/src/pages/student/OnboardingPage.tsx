@@ -93,7 +93,7 @@ export default function OnboardingPage() {
         <Card className="auth-card">
           {errorMsg && (
             <Alert
-              message={errorMsg}
+              title={errorMsg}
               type="error"
               showIcon
               closable

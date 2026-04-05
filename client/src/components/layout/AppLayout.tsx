@@ -184,7 +184,7 @@ export function AppLayout() {
 
       <Footer className="app-layout__footer">
         <Alert
-          message="Toda retroalimentación generada es orientación preliminar, no una corrección definitiva ni una calificación."
+          title="Toda retroalimentación generada es orientación preliminar, no una corrección definitiva ni una calificación."
           type="info"
           showIcon
           banner

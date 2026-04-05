@@ -64,13 +64,13 @@ export default function ReviewView() {
     return (
       <Alert
         type="error"
-        message="Error al cargar la revisión. Intentá de nuevo."
+        title="Error al cargar la revisión. Intentá de nuevo."
         showIcon
         className="review-view__alert"
       />
     );
 
-  if (!review) return <Alert type="error" message="Revisión no encontrada" />;
+  if (!review) return <Alert type="error" title="Revisión no encontrada" />;
 
   // Vista de procesamiento
   if (review.status === 'QUEUED' || review.status === 'PROCESSING') {
@@ -114,7 +114,7 @@ export default function ReviewView() {
     return (
       <Alert
         type="error"
-        message="La revisión ha fallado"
+        title="La revisión ha fallado"
         description="Ocurrió un error durante el análisis. Intenta subir el documento nuevamente."
         showIcon
         className="review-view__alert"

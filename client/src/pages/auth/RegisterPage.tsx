@@ -63,7 +63,7 @@ export default function RegisterPage() {
         <Card className="auth-card" bordered={false}>
           {errorMsg && (
             <Alert
-              message={errorMsg}
+              title={errorMsg}
               type="error"
               showIcon
               closable
