@@ -104,6 +104,12 @@
   overflow-y: auto;
   display: flex;
   flex-direction: column;
+  transition: width 0.25s ease, min-width 0.25s ease, max-width 0.25s ease;
+}
+
+.app-layout__sider--hidden {
+  border-right: none;
+  overflow: hidden;
 }
 
 /* Ensure the sider's inner wrapper stretches full height (Ant Design injects a div) */

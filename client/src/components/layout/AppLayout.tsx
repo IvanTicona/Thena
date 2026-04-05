@@ -154,8 +154,23 @@ function AppLayoutInner({ chapters }: { chapters: Chapter[] }) {
       </Header>
 
       <Layout>
-        {/* Sidebar: ChapterTimeline only for students on /chapters/*, always visible for tutors */}
-        {(showSidebar || !isStudent) && (
+        {/* Sidebar: ChapterTimeline for students (always mounted, width transitions),
+            standard Menu for tutors */}
+        {isStudent ? (
+          <Sider
+            width={showSidebar ? 240 : 0}
+            className={[
+              'app-layout__sider',
+              showSidebar ? '' : 'app-layout__sider--hidden',
+            ].filter(Boolean).join(' ')}
+            trigger={null}
+            collapsed={showSidebar ? siderCollapsed : true}
+            collapsedWidth={0}
+            onCollapse={setSiderCollapsed}
+          >
+            <ChapterTimeline chapters={chapters} />
+          </Sider>
+        ) : (
           <Sider
             width={240}
             className="app-layout__sider"
@@ -165,17 +180,13 @@ function AppLayoutInner({ chapters }: { chapters: Chapter[] }) {
             collapsed={siderCollapsed}
             onCollapse={setSiderCollapsed}
           >
-            {isStudent ? (
-              <ChapterTimeline chapters={chapters} />
-            ) : (
-              <Menu
-                mode="inline"
-                selectedKeys={[tutorSelectedKey]}
-                items={tutorMenuItems}
-                onClick={({ key }) => navigate(key)}
-                className="app-layout__menu"
-              />
-            )}
+            <Menu
+              mode="inline"
+              selectedKeys={[tutorSelectedKey]}
+              items={tutorMenuItems}
+              onClick={({ key }) => navigate(key)}
+              className="app-layout__menu"
+            />
           </Sider>
         )}
 
