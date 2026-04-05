@@ -25,10 +25,9 @@ export function StudentThesisGuard() {
     setError(false);
 
     thesisApi
-      .list()
-      .then((res) => {
-        // findMine returns a single object or null (not an array)
-        setHasThesis(res.data !== null && res.data !== undefined);
+      .findMine()
+      .then((thesis) => {
+        setHasThesis(thesis !== null);
       })
       .catch(() => {
         setError(true);

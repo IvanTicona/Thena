@@ -148,6 +148,20 @@ export const thesisApi = {
   create: (data: CreateThesisDto) => api.post<ThesisDocument>('/theses', data),
   list: () => api.get<ThesisDocument[]>('/theses'),
   getById: (id: string) => api.get<ThesisDocument>(`/theses/${id}`),
+
+  /**
+   * For students: GET /theses returns a single object or null (not an array).
+   * NestJS serializes null as an empty response body, which Axios may parse
+   * as "" instead of null. This helper normalizes the result.
+   */
+  findMine: async (): Promise<ThesisDocument | null> => {
+    const res = await api.get<ThesisDocument | null>('/theses');
+    const data = res.data;
+    if (data && typeof data === 'object' && 'id' in data) {
+      return data;
+    }
+    return null;
+  },
 };
 
 export const usersApi = {

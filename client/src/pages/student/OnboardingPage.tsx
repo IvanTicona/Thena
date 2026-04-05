@@ -26,9 +26,9 @@ export default function OnboardingPage() {
   // If student already has a thesis, skip onboarding
   useEffect(() => {
     thesisApi
-      .list()
-      .then((res) => {
-        if (res.data !== null && res.data !== undefined) {
+      .findMine()
+      .then((thesis) => {
+        if (thesis !== null) {
           navigate('/chapters', { replace: true });
         }
       })
