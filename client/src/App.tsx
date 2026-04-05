@@ -8,9 +8,11 @@ import { AppLayout } from './components/layout/AppLayout';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import OnboardingPage from './pages/student/OnboardingPage';
+import StudentDashboard from './pages/student/StudentDashboard';
 import ChapterList from './pages/student/ChapterList';
 import ChapterDetail from './pages/student/ChapterDetail';
 import ReviewView from './pages/student/ReviewView';
+import HistoryPage from './pages/student/HistoryPage';
 import TutorDashboard from './pages/tutor/TutorDashboard';
 import KnowledgeBase from './pages/tutor/KnowledgeBase';
 import SubmissionReview from './pages/tutor/SubmissionReview';
@@ -48,8 +50,8 @@ function App() {
           {/* Protected routes — require authentication */}
           <Route element={<ProtectedRoute />}>
             <Route element={<AppLayout />}>
-              {/* Default redirect based on role is handled by ProtectedRoute */}
-              <Route path="/" element={<Navigate to="/chapters" replace />} />
+              {/* Default redirect to dashboard */}
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
               {/* Student routes — guarded by thesis check */}
               <Route
@@ -59,12 +61,14 @@ function App() {
                   </ProtectedRoute>
                 }
               >
+                <Route path="/dashboard" element={<StudentDashboard />} />
                 <Route path="/chapters" element={<ChapterList />} />
                 <Route path="/chapters/:id" element={<ChapterDetail />} />
                 <Route
                   path="/chapters/:id/review/:jobId"
                   element={<ReviewView />}
                 />
+                <Route path="/history" element={<HistoryPage />} />
               </Route>
 
               {/* Tutor routes */}

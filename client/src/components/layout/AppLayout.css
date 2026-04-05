@@ -18,6 +18,18 @@
   padding: 0 24px !important;
 }
 
+/* Left cluster: hamburger + logo + brand */
+.app-layout__header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.app-layout__logo {
+  height: 24px;
+}
+
 .app-layout__brand.ant-typography {
   margin: 0 !important;
   cursor: pointer;
@@ -29,6 +41,46 @@
 
 .app-layout__brand.ant-typography:hover {
   opacity: 0.75;
+}
+
+/* ── STUDENT NAVIGATION TABS ─────────────────────────────── */
+.app-layout__nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.app-layout__nav-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
+  border: none;
+  border-radius: 20px;
+  background: transparent;
+  color: #4b5563;
+  font-size: 14px;
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+  white-space: nowrap;
+}
+
+.app-layout__nav-item:hover {
+  background: #f0f2f8;
+  color: #06175d;
+}
+
+.app-layout__nav-item--active {
+  background: #06175d;
+  color: #ffffff;
+}
+
+.app-layout__nav-item--active:hover {
+  background: #06175d;
+  color: #ffffff;
+  opacity: 0.9;
 }
 
 /* ── USER BUTTON ─────────────────────────────────────────── */
@@ -80,7 +132,7 @@
   padding: 0 !important;
 }
 
-/* ── MENU TOGGLE (hamburger — mobile only) ───────────────── */
+/* ── MENU TOGGLE (hamburger — mobile only, only when sidebar is visible) ── */
 .app-layout__menu-toggle {
   display: none;
 }
@@ -88,5 +140,13 @@
 @media (max-width: 991px) {
   .app-layout__menu-toggle {
     display: inline-flex;
+  }
+
+  .app-layout__nav-item span {
+    display: none;
+  }
+
+  .app-layout__nav-item {
+    padding: 6px 12px;
   }
 }

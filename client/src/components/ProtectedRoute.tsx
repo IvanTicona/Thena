@@ -31,7 +31,7 @@ export function ProtectedRoute({ allowedRoles, children }: ProtectedRouteProps) 
 
   if (allowedRoles && user && !allowedRoles.includes(user.role)) {
     // Redirect to their default page based on role
-    const defaultPath = user.role === 'STUDENT' ? '/chapters' : '/tutor';
+    const defaultPath = user.role === 'STUDENT' ? '/dashboard' : '/tutor';
     return <Navigate to={defaultPath} replace />;
   }
 

@@ -8,6 +8,47 @@
   margin: 60px auto;
 }
 
+/* ── PAGE HEADER ─────────────────────────────────────────── */
+.chapter-detail__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.chapter-detail__header-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.chapter-detail__chapter-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #9ca3af;
+  margin-bottom: 6px;
+}
+
+.chapter-detail__chapter-title.ant-typography {
+  margin: 0 !important;
+  color: #111827;
+}
+
+.chapter-detail__status-tag {
+  flex-shrink: 0;
+  font-size: 13px;
+  padding: 2px 10px;
+}
+
+/* ── TABS ────────────────────────────────────────────────── */
+.chapter-detail__tabs .ant-tabs-nav {
+  margin-bottom: 16px;
+}
+
 /* ── UPLOAD CARD ─────────────────────────────────────────── */
 .chapter-detail__upload-card {
   margin-bottom: 24px;
@@ -18,12 +59,70 @@
   margin-bottom: 16px;
 }
 
+/* ── DRAGGER ─────────────────────────────────────────────── */
+.chapter-detail__dragger .ant-upload-drag {
+  border-color: #06175d !important;
+  border-radius: 8px;
+}
+
+.chapter-detail__dragger-heading {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+  margin: 8px 0 4px;
+}
+
+.chapter-detail__dragger-sub {
+  color: #6b7280;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.chapter-detail__dragger-btn {
+  margin-bottom: 16px;
+}
+
+.chapter-detail__dragger-hint {
+  color: #9ca3af;
+  font-size: 12px;
+  margin: 0;
+}
+
 /* ── STATUS ALERTS ───────────────────────────────────────── */
 .chapter-detail__status-alert {
   margin-bottom: 24px;
 }
 
+/* ── HISTORY CARD ────────────────────────────────────────── */
+.chapter-detail__history-card {
+  margin-top: 0;
+}
+
 /* ── TABLE ICONS ─────────────────────────────────────────── */
 .chapter-detail__file-icon {
   margin-right: 4px;
+}
+
+/* ── FEEDBACK TAB ────────────────────────────────────────── */
+.chapter-detail__tab-feedback {
+  max-width: 600px;
+}
+
+.chapter-detail__feedback-card {
+  text-align: center;
+  padding: 16px;
+}
+
+.chapter-detail__feedback-hint {
+  display: block;
+  margin-bottom: 16px;
+}
+
+.chapter-detail__feedback-actions {
+  margin-top: 8px;
+}
+
+.chapter-detail__feedback-empty {
+  text-align: center;
+  padding: 40px;
 }
