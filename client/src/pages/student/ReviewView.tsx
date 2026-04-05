@@ -83,7 +83,7 @@ export default function ReviewView() {
             : 'Analizando tu documento...'}
         </Title>
         <Text type="secondary">
-          Los agentes de IA están revisando tu capítulo.
+          Thena está revisando tu capítulo.
         </Text>
         {review.agents && review.agents.length > 0 && (
           <div className="review-view__processing-steps">

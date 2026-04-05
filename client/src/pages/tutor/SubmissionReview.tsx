@@ -160,7 +160,7 @@ export default function SubmissionReview() {
             : 'Analizando el documento...'}
         </Title>
         <Text type="secondary">
-          Los agentes de IA están revisando el capítulo. Esto puede tomar unos minutos.
+          Thena está revisando el capítulo. Esto puede tomar unos minutos.
         </Text>
         {review.agents && review.agents.length > 0 && (
           <div className="submission-review__processing-steps">

@@ -3,6 +3,7 @@ import esES from 'antd/locale/es_ES';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { PublicOnlyRoute } from './components/PublicOnlyRoute';
 import { StudentThesisGuard } from './components/StudentThesisGuard';
 import { AppLayout } from './components/layout/AppLayout';
 import LoginPage from './pages/auth/LoginPage';
@@ -12,7 +13,6 @@ import StudentDashboard from './pages/student/StudentDashboard';
 import ChapterList from './pages/student/ChapterList';
 import ChapterDetail from './pages/student/ChapterDetail';
 import ReviewView from './pages/student/ReviewView';
-import HistoryPage from './pages/student/HistoryPage';
 import TutorDashboard from './pages/tutor/TutorDashboard';
 import KnowledgeBase from './pages/tutor/KnowledgeBase';
 import SubmissionReview from './pages/tutor/SubmissionReview';
@@ -38,9 +38,11 @@ function App() {
     >
       <AuthProvider>
         <Routes>
-          {/* Public auth routes — no ProtectedRoute, no AppLayout */}
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
+          {/* Public auth routes — redirect to dashboard if already authenticated */}
+          <Route element={<PublicOnlyRoute />}>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+          </Route>
 
           {/* Onboarding — protected but outside AppLayout (uses AuthLayout) */}
           <Route element={<ProtectedRoute allowedRoles={['STUDENT']} />}>
@@ -68,7 +70,6 @@ function App() {
                   path="/chapters/:id/review/:jobId"
                   element={<ReviewView />}
                 />
-                <Route path="/history" element={<HistoryPage />} />
               </Route>
 
               {/* Tutor routes */}

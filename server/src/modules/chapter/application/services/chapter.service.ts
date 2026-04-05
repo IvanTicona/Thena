@@ -55,6 +55,11 @@ export interface ChapterRejectionResult {
   status: string;
 }
 
+export interface RequestTutorReviewResult {
+  id: string;
+  status: string;
+}
+
 @Injectable()
 export class ChapterService {
   constructor(private readonly prisma: PrismaService) {}
@@ -282,6 +287,67 @@ export class ChapterService {
           }
         : null,
     };
+  }
+
+  async requestTutorReview(
+    chapterId: string,
+    studentId: string,
+  ): Promise<RequestTutorReviewResult> {
+    const chapter = await this.prisma.client.chapter.findUnique({
+      where: { id: chapterId },
+      include: {
+        thesis: { select: { studentId: true } },
+        submissions: {
+          include: { reviewJob: true },
+          orderBy: { versionNumber: 'desc' },
+        },
+      },
+    });
+
+    if (!chapter) {
+      throw new NotFoundException('Chapter not found');
+    }
+
+    if (chapter.thesis.studentId !== studentId) {
+      throw new ForbiddenException('Chapter does not belong to this student');
+    }
+
+    if (chapter.status !== 'DRAFT') {
+      throw new BadRequestException(
+        'Only chapters in DRAFT status can be sent for tutor review',
+      );
+    }
+
+    // Must have at least one completed AI review
+    const hasCompletedReview = chapter.submissions.some(
+      (s) => s.reviewJob?.status === 'COMPLETED',
+    );
+
+    if (!hasCompletedReview) {
+      throw new BadRequestException(
+        'You must have at least one completed AI review before requesting tutor review',
+      );
+    }
+
+    // Must not have an active AI review in progress
+    const hasActiveReview = chapter.submissions.some(
+      (s) =>
+        s.reviewJob?.status === 'QUEUED' ||
+        s.reviewJob?.status === 'PROCESSING',
+    );
+
+    if (hasActiveReview) {
+      throw new BadRequestException(
+        'Wait for the current AI review to finish before requesting tutor review',
+      );
+    }
+
+    const updated = await this.prisma.client.chapter.update({
+      where: { id: chapterId },
+      data: { status: 'IN_REVIEW' },
+    });
+
+    return { id: updated.id, status: updated.status };
   }
 
   async reject(chapterId: string, tutorId: string): Promise<ChapterRejectionResult> {

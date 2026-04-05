@@ -106,31 +106,12 @@ export interface ChapterDetailData extends Chapter {
 export const chaptersApi = {
   list: () => api.get<Chapter[]>('/chapters'),
   getById: (id: string) => api.get<ChapterDetailData>(`/chapters/${id}`),
+  requestTutorReview: (id: string) => api.patch(`/chapters/${id}/request-review`),
   approve: (id: string) => api.patch(`/chapters/${id}/approve`),
   reject: (id: string) => api.patch(`/chapters/${id}/reject`),
 };
 
-/** Shape returned by GET /submissions/mine (flat submission + chapter context). */
-export interface SubmissionWithChapter {
-  id: string;
-  chapterId: string;
-  versionNumber: number;
-  fileName: string;
-  submittedAt: string;
-  chapter: {
-    id: string;
-    number: number;
-    title: string;
-    status: string;
-  };
-  reviewJob: { id: string; status: string } | null;
-}
-
 export const submissionsApi = {
-  /** Single query — all submissions for the authenticated student. */
-  listMine: () =>
-    api.get<SubmissionWithChapter[]>('/submissions/mine'),
-
   upload: (chapterId: string, file: File) => {
     const formData = new FormData();
     formData.append('file', file);

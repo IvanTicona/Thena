@@ -14,6 +14,7 @@ import {
   FileWordOutlined,
   EyeOutlined,
   InboxOutlined,
+  CheckCircleOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -34,6 +35,7 @@ export default function ChapterDetail() {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [requestingReview, setRequestingReview] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
@@ -80,6 +82,24 @@ export default function ChapterDetail() {
     }
   };
 
+  const handleRequestTutorReview = async () => {
+    if (!id) return;
+    setRequestingReview(true);
+    try {
+      await chaptersApi.requestTutorReview(id);
+      message.success('Revisión del tutor solicitada correctamente');
+      fetchData();
+    } catch (err) {
+      message.error(
+        err instanceof ApiError
+          ? err.message
+          : 'Error al solicitar revisión del tutor',
+      );
+    } finally {
+      setRequestingReview(false);
+    }
+  };
+
   if (loading) {
     return <Spin size="large" className="u-spinner-centered" />;
   }
@@ -103,7 +123,22 @@ export default function ChapterDetail() {
 
   if (!chapter) return <Alert type="error" title="Capítulo no encontrado" />;
 
-  const canUpload = chapter.status === 'DRAFT';
+  // Derived state for the new chapter flow
+  const hasActiveAiReview = submissions.some(
+    (s) =>
+      s.reviewJob?.status === 'QUEUED' || s.reviewJob?.status === 'PROCESSING',
+  );
+  const hasCompletedReview = submissions.some(
+    (s) => s.reviewJob?.status === 'COMPLETED',
+  );
+
+  // Student can upload when: DRAFT + no active AI review running
+  const canUpload = chapter.status === 'DRAFT' && !hasActiveAiReview;
+
+  // "Solicitar Revisión del Tutor" visible when: DRAFT + has completed review + no active AI review
+  const canRequestTutorReview =
+    chapter.status === 'DRAFT' && hasCompletedReview && !hasActiveAiReview;
+
   const statusCfg = CHAPTER_STATUS[chapter.status];
 
   /* ── Table columns ─────────────────────────────────────── */
@@ -181,12 +216,45 @@ export default function ChapterDetail() {
   /* ── Page content (upload + submissions table) ──────────── */
   const pageContent = (
     <div className="chapter-detail__content">
+      {/* Request tutor review — action banner */}
+      {canRequestTutorReview && (
+        <div className="chapter-detail__review-banner">
+          <div className="chapter-detail__review-banner-content">
+            <CheckCircleOutlined className="chapter-detail__review-banner-icon" />
+            <div className="chapter-detail__review-banner-text">
+              <strong>Revisión de Thena disponible</strong>
+              <span>
+                Ya podés enviar este capítulo a tu tutor para su aprobación, o
+                subir una nueva versión si querés hacer correcciones.
+              </span>
+            </div>
+          </div>
+          <Button
+            type="primary"
+            loading={requestingReview}
+            onClick={handleRequestTutorReview}
+            className="chapter-detail__review-banner-btn"
+          >
+            Solicitar Revisión del Tutor
+          </Button>
+        </div>
+      )}
+
       {/* Status alerts */}
+      {hasActiveAiReview && chapter.status === 'DRAFT' && (
+        <Alert
+          type="info"
+          title="Thena está revisando tu capítulo"
+          description="Thena está analizando tu documento. Esperá a que termine antes de subir una nueva versión."
+          showIcon
+          className="chapter-detail__status-alert"
+        />
+      )}
       {chapter.status === 'IN_REVIEW' && (
         <Alert
           type="info"
-          title="Revisión en progreso"
-          description="Hay una revisión en progreso. Esperá el resultado antes de subir una nueva versión."
+          title="Esperando revisión del tutor"
+          description="Este capítulo fue enviado a tu tutor para revisión. No podés subir nuevas versiones hasta que el tutor lo apruebe o rechace."
           showIcon
           className="chapter-detail__status-alert"
         />
@@ -271,12 +339,14 @@ export default function ChapterDetail() {
             {chapter.title}
           </Title>
         </div>
-        <Tag
-          color={statusCfg.tagColor}
-          className="chapter-detail__status-tag"
-        >
-          {statusCfg.label}
-        </Tag>
+        <div className="chapter-detail__header-actions">
+          <Tag
+            color={statusCfg.tagColor}
+            className="chapter-detail__status-tag"
+          >
+            {statusCfg.label}
+          </Tag>
+        </div>
       </div>
 
       {/* Content */}

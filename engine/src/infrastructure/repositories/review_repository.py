@@ -105,6 +105,24 @@ class ReviewRepository(ReviewRepositoryPort):
                     params,
                 )
 
+                # When AI review completes, set the chapter back to DRAFT so
+                # the student can submit again or request tutor review.
+                if status == "COMPLETED":
+                    conn.execute(
+                        text("""
+                            UPDATE chapters
+                            SET status = 'DRAFT'
+                            WHERE id = (
+                                SELECT s.chapter_id
+                                FROM review_jobs rj
+                                JOIN submissions s ON s.id = rj.submission_id
+                                WHERE rj.id = CAST(:job_id AS uuid)
+                            )
+                            AND status != 'APPROVED'
+                        """),
+                        {"job_id": job_id},
+                    )
+
     def update_submission_markdown(self, submission_id: str, markdown: str) -> None:
         """Store the parsed markdown content for a submission."""
         with self._db_engine.begin() as conn:

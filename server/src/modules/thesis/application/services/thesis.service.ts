@@ -85,11 +85,23 @@ export class ThesisService {
       },
     });
 
-    return thesis ?? null;
+    if (!thesis) return null;
+
+    return {
+      ...thesis,
+      chapters: thesis.chapters.map((ch) => ({
+        id: ch.id,
+        number: ch.number,
+        title: ch.title,
+        status: ch.status,
+        latestSubmission: ch.submissions[0] ?? null,
+        submissionCount: ch._count.submissions,
+      })),
+    };
   }
 
   async findForTutor(tutorId: string) {
-    return this.prisma.client.thesisDocument.findMany({
+    const theses = await this.prisma.client.thesisDocument.findMany({
       where: { tutorId },
       include: {
         student: { select: { id: true, name: true, email: true } },
@@ -107,6 +119,18 @@ export class ThesisService {
       },
       orderBy: { createdAt: 'desc' },
     });
+
+    return theses.map((thesis) => ({
+      ...thesis,
+      chapters: thesis.chapters.map((ch) => ({
+        id: ch.id,
+        number: ch.number,
+        title: ch.title,
+        status: ch.status,
+        latestSubmission: ch.submissions[0] ?? null,
+        submissionCount: ch._count.submissions,
+      })),
+    }));
   }
 
   async findById(id: string, userId: string, role: 'STUDENT' | 'TUTOR') {
@@ -142,7 +166,17 @@ export class ThesisService {
       throw new ForbiddenException('Thesis is not assigned to this tutor');
     }
 
-    return thesis;
+    return {
+      ...thesis,
+      chapters: thesis.chapters.map((ch) => ({
+        id: ch.id,
+        number: ch.number,
+        title: ch.title,
+        status: ch.status,
+        latestSubmission: ch.submissions[0] ?? null,
+        submissionCount: ch._count.submissions,
+      })),
+    };
   }
 
   async update(id: string, studentId: string, dto: UpdateThesisDto) {

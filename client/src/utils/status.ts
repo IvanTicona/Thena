@@ -20,7 +20,7 @@ export const CHAPTER_STATUS: Record<
 > = {
   LOCKED:    { label: 'Bloqueado',   tagColor: 'default',    dotColor: '#d9d9d9' },
   DRAFT:     { label: 'Borrador',    tagColor: 'blue',       dotColor: '#06175d' },
-  IN_REVIEW: { label: 'En Revisión', tagColor: 'processing', dotColor: '#faad14' },
+  IN_REVIEW: { label: 'Esperando Tutor', tagColor: 'processing', dotColor: '#faad14' },
   APPROVED:  { label: 'Aprobado',    tagColor: 'success',    dotColor: '#52c41a' },
 };
 
@@ -52,15 +52,3 @@ export const JOB_STATUS: Record<
   FAILED:     { label: 'Fallido',     tagColor: 'error' },
 };
 
-/**
- * Returns display { label, color } for a submission based on its reviewJob status.
- */
-export function getSubmissionDisplayStatus(
-  reviewJob: { status: JobStatus } | null | undefined,
-): { label: string; color: string } {
-  if (!reviewJob) {
-    return { label: 'Sin revisión', color: 'default' };
-  }
-  const cfg = JOB_STATUS[reviewJob.status];
-  return { label: cfg.label, color: cfg.tagColor };
-}

@@ -12,7 +12,6 @@ import {
 import {
   DashboardOutlined,
   DatabaseOutlined,
-  HistoryOutlined,
   LogoutOutlined,
   MenuOutlined,
   SafetyOutlined,
@@ -30,8 +29,7 @@ const { Title, Text } = Typography;
 
 const STUDENT_NAV = [
   { key: '/dashboard', icon: <DashboardOutlined />, label: 'Dashboard' },
-  { key: '/chapters', icon: <SafetyOutlined />, label: 'Revisión AI' },
-  { key: '/history', icon: <HistoryOutlined />, label: 'Historial' },
+  { key: '/chapters', icon: <SafetyOutlined />, label: 'Revisión' },
 ];
 
 function AppLayoutInner({ chapters }: { chapters: Chapter[] }) {
@@ -68,7 +66,7 @@ function AppLayoutInner({ chapters }: { chapters: Chapter[] }) {
     },
   ];
 
-  /* ── "Revisión AI" smart navigation ───────────────────── */
+  /* ── "Revisión" smart navigation ────────────────────────── */
   const handleNavClick = (key: string) => {
     if (key === '/chapters' && chapters.length > 0) {
       // Navigate directly to first actionable chapter, skip ChapterList redirect
@@ -197,7 +195,7 @@ function AppLayoutInner({ chapters }: { chapters: Chapter[] }) {
 
       <Footer className="app-layout__footer">
         <Alert
-          title="Toda retroalimentación generada es orientación preliminar, no una corrección definitiva ni una calificación."
+          title="Toda retroalimentación de Thena es orientación preliminar, no una corrección definitiva ni una calificación."
           type="info"
           showIcon
           banner

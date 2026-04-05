@@ -102,16 +102,26 @@
   margin-top: 4px;
 }
 
-/* ── STATS ROW ───────────────────────────────────────────── */
-.student-dashboard__stats-row {
-  margin-bottom: 24px;
+/* ── TWO-COLUMN BODY (main + aside) ─────────────────────── */
+.student-dashboard__body {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.student-dashboard__main {
+  flex: 1;
+  min-width: 0;
+}
+
+.student-dashboard__aside {
+  flex-shrink: 0;
+  width: 280px;
+  position: sticky;
+  top: 88px; /* header height + padding */
 }
 
 /* ── SECTIONS ────────────────────────────────────────────── */
-.student-dashboard__section {
-  margin-bottom: 24px;
-}
-
 .student-dashboard__section-title.ant-typography {
   margin-bottom: 12px !important;
   color: #111827;
@@ -149,6 +159,13 @@
   font-size: 13px;
   font-weight: 500;
   color: #111827;
+  margin-bottom: 4px;
+  line-height: 1.4;
+}
+
+.student-dashboard__chapter-card-meta {
+  font-size: 12px;
+  color: #9ca3af;
   margin-bottom: 10px;
   line-height: 1.4;
 }
@@ -161,16 +178,66 @@
   margin-top: 4px;
 }
 
-/* ── TIPS CARD ───────────────────────────────────────────── */
-.student-dashboard__tips-card .ant-card-body {
-  padding: 16px 24px;
+/* ── TIPS ASIDE ─────────────────────────────────────────── */
+.student-dashboard__tips {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 20px;
+}
+
+.student-dashboard__tips-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.student-dashboard__tips-header-icon {
+  font-size: 18px;
+  color: #faad14;
 }
 
 .student-dashboard__tip {
-  margin-bottom: 8px;
-  font-size: 14px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 0;
+  border-bottom: 1px solid #f9fafb;
 }
 
 .student-dashboard__tip:last-child {
-  margin-bottom: 0;
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.student-dashboard__tip-icon {
+  flex-shrink: 0;
+  font-size: 14px;
+  color: #06175d;
+  margin-top: 2px;
+}
+
+.student-dashboard__tip-text {
+  font-size: 13px;
+  color: #4b5563;
+  line-height: 1.5;
+}
+
+.student-dashboard__tip-text strong {
+  color: #111827;
+}
+
+/* ── RESPONSIVE ─────────────────────────────────────────── */
+@media (max-width: 860px) {
+  .student-dashboard__body {
+    flex-direction: column;
+  }
+
+  .student-dashboard__aside {
+    width: 100%;
+    position: static;
+  }
 }

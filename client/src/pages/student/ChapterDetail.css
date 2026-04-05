@@ -78,6 +78,88 @@
   margin-bottom: 24px;
 }
 
+/* ── HEADER ACTIONS (status tag) ──────────────────────────── */
+.chapter-detail__header-actions {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* ── REVIEW BANNER (solicitar revisión del tutor) ────────── */
+.chapter-detail__review-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  background: linear-gradient(135deg, #eef0f8 0%, #f6f7fb 100%);
+  border: 1px solid #d4d9ed;
+  border-left: 4px solid #06175d;
+  border-radius: 8px;
+}
+
+.chapter-detail__review-banner-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.chapter-detail__review-banner-icon {
+  font-size: 22px;
+  color: #06175d;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.chapter-detail__review-banner-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.chapter-detail__review-banner-text strong {
+  font-size: 14px;
+  color: #111827;
+  line-height: 1.4;
+}
+
+.chapter-detail__review-banner-text span {
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+.chapter-detail__review-banner-btn {
+  flex-shrink: 0;
+  height: 40px;
+  padding: 0 20px;
+  font-weight: 600;
+  font-size: 14px;
+  border-radius: 6px;
+  background: #06175d;
+  border-color: #06175d;
+}
+
+.chapter-detail__review-banner-btn:hover {
+  background: #0a2280 !important;
+  border-color: #0a2280 !important;
+}
+
+/* Responsive: stack vertically on narrow screens */
+@media (max-width: 640px) {
+  .chapter-detail__review-banner {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .chapter-detail__review-banner-btn {
+    width: 100%;
+  }
+}
+
 /* ── HISTORY CARD ────────────────────────────────────────── */
 .chapter-detail__history-card {
   margin-top: 0;

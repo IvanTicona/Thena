@@ -21,7 +21,7 @@ export class SubmissionService {
   ) {}
 
   async findAllForStudent(studentId: string) {
-    return this.prisma.client.submission.findMany({
+    const submissions = await this.prisma.client.submission.findMany({
       where: { studentId },
       orderBy: { submittedAt: 'desc' },
       select: {
@@ -46,6 +46,7 @@ export class SubmissionService {
         },
       },
     });
+    return submissions;
   }
 
   async create(
@@ -84,6 +85,26 @@ export class SubmissionService {
       throw new BadRequestException('Chapter is already approved.');
     }
 
+    if (chapter.status === 'IN_REVIEW') {
+      throw new BadRequestException(
+        'Chapter is waiting for tutor review. Cannot submit new versions.',
+      );
+    }
+
+    // Block if there is an active AI review (QUEUED or PROCESSING) for this chapter
+    const activeReviewJob = await this.prisma.client.reviewJob.findFirst({
+      where: {
+        submission: { chapterId },
+        status: { in: ['QUEUED', 'PROCESSING'] },
+      },
+    });
+
+    if (activeReviewJob) {
+      throw new BadRequestException(
+        'An AI review is in progress. Please wait for it to finish before submitting again.',
+      );
+    }
+
     // Determine version number
     const lastSubmission = await this.prisma.client.submission.findFirst({
       where: { chapterId },
@@ -118,10 +139,9 @@ export class SubmissionService {
       },
     });
 
-    await this.prisma.client.chapter.update({
-      where: { id: chapterId },
-      data: { status: 'IN_REVIEW' },
-    });
+    // NOTE: We no longer set chapter status to IN_REVIEW here.
+    // The chapter stays in DRAFT while AI processes. The student
+    // explicitly requests tutor review via a separate endpoint.
 
     const result = { submission, reviewJob };
 

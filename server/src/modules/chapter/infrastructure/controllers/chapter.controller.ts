@@ -32,6 +32,17 @@ export class ChapterController {
     return this.chapterService.findById(id, user.sub, user.role);
   }
 
+  @Patch(':id/request-review')
+  async requestTutorReview(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    if (user.role !== 'STUDENT') {
+      throw new ForbiddenException('Only students can request tutor review');
+    }
+    return this.chapterService.requestTutorReview(id, user.sub);
+  }
+
   @Patch(':id/approve')
   async approve(
     @Param('id', ParseUUIDPipe) id: string,
