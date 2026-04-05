@@ -4,7 +4,6 @@ import {
   Menu,
   Tag,
   Typography,
-  Alert,
   Button,
   Space,
   Dropdown,
@@ -24,7 +23,7 @@ import { ChapterTimeline } from './ChapterTimeline';
 import type { Chapter } from '../../types';
 import './AppLayout.css';
 
-const { Header, Sider, Content, Footer } = Layout;
+const { Header, Sider, Content } = Layout;
 const { Title, Text } = Typography;
 
 const STUDENT_NAV = [
@@ -100,7 +99,7 @@ function AppLayoutInner({ chapters }: { chapters: Chapter[] }) {
             className="app-layout__brand"
             onClick={() => navigate(isStudent ? '/dashboard' : '/tutor')}
           >
-            Thena
+            THENA
           </Title>
         </div>
 
@@ -192,15 +191,6 @@ function AppLayoutInner({ chapters }: { chapters: Chapter[] }) {
           <Outlet />
         </Content>
       </Layout>
-
-      <Footer className="app-layout__footer">
-        <Alert
-          title="Toda retroalimentación de Thena es orientación preliminar, no una corrección definitiva ni una calificación."
-          type="info"
-          showIcon
-          banner
-        />
-      </Footer>
     </Layout>
   );
 }

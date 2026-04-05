@@ -11,7 +11,7 @@ export const DEFAULT_CHAPTERS = [
 
 export interface CreateThesisPayload {
   title: string;
-  tutorId?: string;
+  tutorId: string;
 }
 
 export interface UpdateThesisPayload {

@@ -12,7 +12,7 @@ const { Title, Text } = Typography;
 
 interface OnboardingFormValues {
   title: string;
-  tutorId?: string;
+  tutorId: string;
 }
 
 export default function OnboardingPage() {
@@ -56,7 +56,7 @@ export default function OnboardingPage() {
     try {
       const dto: CreateThesisDto = {
         title: values.title.trim(),
-        ...(values.tutorId ? { tutorId: values.tutorId } : {}),
+        tutorId: values.tutorId,
       };
       await thesisApi.create(dto);
       // After thesis is created, go to student dashboard
@@ -86,7 +86,7 @@ export default function OnboardingPage() {
             Configura tu Proyecto de Grado
           </Title>
           <Text className="auth-form-subtitle">
-            Completa los datos para comenzar a trabajar en tu tesis
+            Completá los datos para comenzar a trabajar con Thena
           </Text>
         </div>
 
@@ -125,16 +125,19 @@ export default function OnboardingPage() {
 
             <Form.Item
               name="tutorId"
-              label="Tutor (opcional)"
+              label="Tutor"
+              rules={[
+                { required: true, message: 'Elegí un tutor para continuar' },
+              ]}
+              help="Elegí al tutor que guía tu proyecto. Si aún no tenés tutor asignado, elegí al docente que mejor se adapte a tu área."
             >
               {loadingTutors ? (
                 <Spin size="small" />
               ) : (
                 <Select
                   size="large"
-                  placeholder="Selecciona un tutor (opcional)"
+                  placeholder="Buscá por nombre o correo..."
                   options={tutorOptions}
-                  allowClear
                   showSearch
                   filterOption={(input, option) =>
                     (option?.label ?? '')

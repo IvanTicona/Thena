@@ -142,7 +142,7 @@ export const knowledgeApi = {
 
 export interface CreateThesisDto {
   title: string;
-  tutorId?: string;
+  tutorId: string;
 }
 
 export const thesisApi = {

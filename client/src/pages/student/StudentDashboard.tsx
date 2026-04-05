@@ -103,13 +103,35 @@ function buildContextualTips(chapters: Chapter[]): Tip[] {
     });
   }
 
-  // Always-present tip
+  // ── Fixed tips (always visible, after contextual) ──
+
   tips.push({
     icon: <SafetyOutlined />,
     text: (
       <>
         <strong>Thena es orientativa.</strong> Las observaciones son
         sugerencias, no calificaciones. Tu tutor tiene la palabra final.
+      </>
+    ),
+  });
+
+  tips.push({
+    icon: <RocketOutlined />,
+    text: (
+      <>
+        <strong>Subí siempre archivos DOCX.</strong> Es el único formato
+        que Thena puede analizar. Otros formatos como PDF no son compatibles.
+      </>
+    ),
+  });
+
+  tips.push({
+    icon: <BulbOutlined />,
+    text: (
+      <>
+        <strong>Podés hacer varias entregas.</strong> Cada nueva versión genera
+        una revisión fresca. Iterá hasta que estés conforme antes de pedir
+        revisión del tutor.
       </>
     ),
   });

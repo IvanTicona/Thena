@@ -23,15 +23,13 @@ export class ThesisService {
       throw new BadRequestException('Student already has a thesis');
     }
 
-    // Validate tutorId if provided
-    if (dto.tutorId) {
-      const tutor = await this.prisma.client.user.findUnique({
-        where: { id: dto.tutorId },
-      });
+    // Validate tutor exists and has TUTOR role
+    const tutor = await this.prisma.client.user.findUnique({
+      where: { id: dto.tutorId },
+    });
 
-      if (!tutor || tutor.role !== 'TUTOR') {
-        throw new BadRequestException('Invalid tutor ID: user not found or not a tutor');
-      }
+    if (!tutor || tutor.role !== 'TUTOR') {
+      throw new BadRequestException('Invalid tutor ID: user not found or not a tutor');
     }
 
     // Create thesis + 8 chapters in a transaction
@@ -40,7 +38,7 @@ export class ThesisService {
         data: {
           title: dto.title,
           studentId,
-          tutorId: dto.tutorId ?? null,
+          tutorId: dto.tutorId,
         },
       });
 

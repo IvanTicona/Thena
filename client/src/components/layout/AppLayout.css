@@ -133,10 +133,6 @@
 }
 
 /* ── FOOTER ──────────────────────────────────────────────── */
-.app-layout__footer {
-  text-align: center;
-  padding: 0 !important;
-}
 
 /* ── MENU TOGGLE (hamburger — mobile only, only when sidebar is visible) ── */
 .app-layout__menu-toggle {
