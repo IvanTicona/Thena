@@ -1,4 +1,5 @@
-import { ConfigProvider } from 'antd';
+import { lazy, Suspense } from 'react';
+import { ConfigProvider, Spin } from 'antd';
 import esES from 'antd/locale/es_ES';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
@@ -6,16 +7,18 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { PublicOnlyRoute } from './components/PublicOnlyRoute';
 import { StudentThesisGuard } from './components/StudentThesisGuard';
 import { AppLayout } from './components/layout/AppLayout';
-import LoginPage from './pages/auth/LoginPage';
-import RegisterPage from './pages/auth/RegisterPage';
-import OnboardingPage from './pages/student/OnboardingPage';
-import StudentDashboard from './pages/student/StudentDashboard';
-import ChapterList from './pages/student/ChapterList';
-import ChapterDetail from './pages/student/ChapterDetail';
-import ReviewView from './pages/student/ReviewView';
-import TutorDashboard from './pages/tutor/TutorDashboard';
-import KnowledgeBase from './pages/tutor/KnowledgeBase';
-import SubmissionReview from './pages/tutor/SubmissionReview';
+
+/* ── Lazy-loaded pages ────────────────────────────────────── */
+const LoginPage = lazy(() => import('./pages/auth/LoginPage'));
+const RegisterPage = lazy(() => import('./pages/auth/RegisterPage'));
+const OnboardingPage = lazy(() => import('./pages/student/OnboardingPage'));
+const StudentDashboard = lazy(() => import('./pages/student/StudentDashboard'));
+const ChapterList = lazy(() => import('./pages/student/ChapterList'));
+const ChapterDetail = lazy(() => import('./pages/student/ChapterDetail'));
+const ReviewView = lazy(() => import('./pages/student/ReviewView'));
+const TutorDashboard = lazy(() => import('./pages/tutor/TutorDashboard'));
+const KnowledgeBase = lazy(() => import('./pages/tutor/KnowledgeBase'));
+const SubmissionReview = lazy(() => import('./pages/tutor/SubmissionReview'));
 
 function App() {
   return (
@@ -37,7 +40,8 @@ function App() {
       }}
     >
       <AuthProvider>
-        <Routes>
+        <Suspense fallback={<Spin size="large" className="u-spinner-centered" />}>
+          <Routes>
           {/* Public auth routes — redirect to dashboard if already authenticated */}
           <Route element={<PublicOnlyRoute />}>
             <Route path="/login" element={<LoginPage />} />
@@ -99,7 +103,8 @@ function App() {
               />
             </Route>
           </Route>
-        </Routes>
+          </Routes>
+        </Suspense>
       </AuthProvider>
     </ConfigProvider>
   );
