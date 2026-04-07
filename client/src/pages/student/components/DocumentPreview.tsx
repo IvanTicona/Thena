@@ -6,23 +6,10 @@ import rehypeRaw from 'rehype-raw';
 import type { Observation, Severity } from '../../../types';
 import './DocumentPreview.css';
 
-const HIGHLIGHT_COLORS: Record<Severity, string> = {
-  ERROR: '#fff1f0',
-  WARNING: '#fff7e6',
-  SUGGESTION: '#e6f7ff',
-  INFO: '#f5f5f5',
-};
-
-const HIGHLIGHT_BORDER: Record<Severity, string> = {
-  ERROR: '#ffa39e',
-  WARNING: '#ffd591',
-  SUGGESTION: '#91d5ff',
-  INFO: '#d9d9d9',
-};
-
 interface DocumentPreviewProps {
   markdownContent: string | null;
   observations?: Observation[];
+  selectedObsId?: string | null;
   onHighlightClick?: (obsId: string) => void;
 }
 
@@ -66,7 +53,7 @@ function injectHighlights(markdown: string, observations: Observation[]): string
 }
 
 const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
-  ({ markdownContent, observations = [], onHighlightClick }, ref) => {
+  ({ markdownContent, observations = [], selectedObsId, onHighlightClick }, ref) => {
     const processedContent = useMemo(() => {
       if (!markdownContent) return null;
       return injectHighlights(markdownContent, observations);
@@ -85,6 +72,7 @@ const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
                   const obsId = props['data-obs-id'] as string;
                   const severity = props['data-severity'] as Severity;
                   const obs = observations.find((o) => o.id === obsId);
+                  const isSelected = selectedObsId === obsId;
 
                   const tooltipTitle = obs
                     ? obs.suggestion
@@ -92,16 +80,15 @@ const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
                       : obs.message
                     : undefined;
 
+                  const severityClass = `document-preview__highlight--${severity.toLowerCase()}`;
+                  const selectedClass = isSelected ? 'document-preview__highlight--selected' : '';
+
                   return (
                     <Tooltip title={tooltipTitle} placement="top">
                       <mark
                         data-obs-id={obsId}
                         onClick={() => onHighlightClick?.(obsId)}
-                        className="document-preview__highlight"
-                        style={{
-                          backgroundColor: HIGHLIGHT_COLORS[severity] ?? '#fffbe6',
-                          borderBottom: `2px solid ${HIGHLIGHT_BORDER[severity] ?? '#ffe58f'}`,
-                        }}
+                        className={`document-preview__highlight ${severityClass} ${selectedClass}`.trim()}
                       >
                         {children}
                       </mark>

@@ -68,9 +68,11 @@ export interface ReviewReport {
   bySeverity: Record<Severity, number>;
 }
 
+export type AgentStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED';
+
 export interface ReviewAgentStatus {
   type: AgentType;
-  status: string;
+  status: AgentStatus;
 }
 
 export interface ReviewResult {

@@ -67,5 +67,7 @@ docs/
 # Utility scripts (not part of the application)
 scripts/
 
-# Claude AI settings
+# AI tool settings
 .claude/
+.opencode/
+.atl/

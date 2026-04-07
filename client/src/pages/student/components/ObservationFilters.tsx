@@ -1,9 +1,11 @@
 import { Select, Typography } from 'antd';
-import type { AgentType, Severity } from '../../../types';
+import type { AgentType, Observation, Severity } from '../../../types';
+import { AGENT_LABELS, SEVERITY_CONFIG } from './observation-config';
 
 const { Text } = Typography;
 
 interface ObservationFiltersProps {
+  observations: Observation[];
   typeFilter: AgentType | 'ALL';
   severityFilter: Severity | 'ALL';
   onTypeChange: (value: AgentType | 'ALL') => void;
@@ -11,11 +13,32 @@ interface ObservationFiltersProps {
 }
 
 export default function ObservationFilters({
+  observations,
   typeFilter,
   severityFilter,
   onTypeChange,
   onSeverityChange,
 }: ObservationFiltersProps) {
+  const totalCount = observations.length;
+
+  const typeOptions = [
+    { value: 'ALL' as const, label: `Todos los tipos (${totalCount})` },
+    ...(Object.entries(AGENT_LABELS) as [AgentType, string][]).map(([value, label]) => {
+      const count = observations.filter((o) => o.type === value).length;
+      return { value, label: `${label} (${count})` };
+    }),
+  ];
+
+  const severityOptions = [
+    { value: 'ALL' as const, label: `Todas las severidades (${totalCount})` },
+    ...(Object.entries(SEVERITY_CONFIG) as [Severity, { label: string; color: string; icon: React.ReactNode }][]).map(
+      ([value, cfg]) => {
+        const count = observations.filter((o) => o.severity === value).length;
+        return { value, label: `${cfg.label} (${count})` };
+      },
+    ),
+  ];
+
   return (
     <div style={{ display: 'flex', gap: 8 }}>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
@@ -24,12 +47,7 @@ export default function ObservationFilters({
           value={typeFilter}
           onChange={onTypeChange}
           aria-label="Filtrar por tipo"
-          options={[
-            { value: 'ALL', label: 'Todos los tipos' },
-            { value: 'STRUCTURE', label: 'Estructura' },
-            { value: 'METHODOLOGY', label: 'Metodología' },
-            { value: 'COHERENCE', label: 'Coherencia' },
-          ]}
+          options={typeOptions}
         />
       </div>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
@@ -38,13 +56,7 @@ export default function ObservationFilters({
           value={severityFilter}
           onChange={onSeverityChange}
           aria-label="Filtrar por severidad"
-          options={[
-            { value: 'ALL', label: 'Todas las severidades' },
-            { value: 'ERROR', label: 'Error' },
-            { value: 'WARNING', label: 'Advertencia' },
-            { value: 'SUGGESTION', label: 'Sugerencia' },
-            { value: 'INFO', label: 'Info' },
-          ]}
+          options={severityOptions}
         />
       </div>
     </div>

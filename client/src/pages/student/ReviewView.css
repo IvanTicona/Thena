@@ -12,6 +12,16 @@
   margin-bottom: 12px;
 }
 
+/* Sticky variant — stays visible while scrolling panel content */
+.review-view__back-row--sticky {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #f9fafb;
+  padding: 8px 0 12px;
+  margin-bottom: 0;
+}
+
 /* ── OBSERVATIONS PANEL ──────────────────────────────────── */
 .review-view__obs-panel {
   height: 100%;
@@ -50,6 +60,141 @@
 .review-view__alert {
   max-width: 600px;
   margin: 60px auto;
+}
+
+/* ── EMPTY FILTER STATE ──────────────────────────────────── */
+.review-view__empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 40px 24px;
+  text-align: center;
+  color: #6b7280;
+}
+
+.review-view__empty-state-icon {
+  font-size: 32px;
+  opacity: 0.5;
+}
+
+.review-view__empty-state-text {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+/* ── PROCESSING TIMELINE ─────────────────────────────────── */
+/* Custom vertical timeline replacing Ant Design Steps */
+.review-view__timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-top: 24px;
+  text-align: left;
+}
+
+.review-view__timeline-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  position: relative;
+  padding-bottom: 20px;
+}
+
+/* Vertical connector line */
+.review-view__timeline-item:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 7px;
+  top: 18px;
+  bottom: 0;
+  width: 2px;
+  background: #e5e7eb;
+}
+
+/* Timeline dot */
+.review-view__timeline-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 2px;
+  position: relative;
+  z-index: 1;
+  background: #d9d9d9;
+  border: 2px solid #d9d9d9;
+}
+
+.review-view__timeline-item--completed .review-view__timeline-dot {
+  background: var(--color-success, #52c41a);
+  border-color: var(--color-success, #52c41a);
+}
+
+.review-view__timeline-item--running .review-view__timeline-dot {
+  background: var(--color-primary, #06175d);
+  border-color: var(--color-primary, #06175d);
+  animation: pulse-dot 1.4s ease-in-out infinite;
+}
+
+.review-view__timeline-item--failed .review-view__timeline-dot {
+  background: #ff4d4f;
+  border-color: #ff4d4f;
+}
+
+@keyframes pulse-dot {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.3);
+    opacity: 1;
+  }
+}
+
+.review-view__timeline-content {
+  flex: 1;
+  padding-top: 0;
+}
+
+.review-view__timeline-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1f2937;
+  line-height: 1.4;
+}
+
+.review-view__timeline-item--pending .review-view__timeline-label {
+  color: #9ca3af;
+}
+
+.review-view__timeline-status {
+  font-size: 12px;
+  color: #6b7280;
+  display: block;
+  margin-top: 2px;
+}
+
+/* ── SKELETON LOADING LAYOUT ─────────────────────────────── */
+/* Skeleton cards in observation panel */
+.review-view__skeleton-card {
+  margin-bottom: 8px;
+  padding: 12px;
+  background: #fff;
+  border-radius: 6px;
+  border: 1px solid #f0f0f0;
+}
+
+/* Keyboard focus on observation list container */
+.review-view__obs-list:focus {
+  outline: 2px solid var(--color-primary, #06175d);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.review-view__obs-list:focus:not(:focus-visible) {
+  outline: none;
 }
 
 /* ── MOBILE ──────────────────────────────────────────────── */

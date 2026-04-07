@@ -3,9 +3,9 @@ import {
   Typography,
   Spin,
   Alert,
-  Steps,
   Empty,
   Button,
+  Skeleton,
 } from 'antd';
 import { Allotment } from 'allotment';
 import { ArrowLeftOutlined } from '@ant-design/icons';
@@ -16,6 +16,7 @@ import type {
   Observation,
   AgentType,
   Severity,
+  AgentStatus,
 } from '../../types';
 import { AGENT_LABELS } from './components/observation-config';
 import ReviewSummaryCard from './components/ReviewSummaryCard';
@@ -29,10 +30,18 @@ const { Title, Text } = Typography;
 const shouldStopPolling = (data: ReviewResult) =>
   data.status === 'COMPLETED' || data.status === 'FAILED';
 
-const agentStepStatus = (status: string): 'finish' | 'process' | 'wait' => {
-  if (status === 'COMPLETED') return 'finish';
-  if (status === 'RUNNING') return 'process';
-  return 'wait';
+const AGENT_STATUS_LABEL: Record<AgentStatus, string> = {
+  PENDING: 'En espera',
+  RUNNING: 'Analizando...',
+  COMPLETED: 'Completado',
+  FAILED: 'Error',
+};
+
+const agentTimelineModifier = (status: AgentStatus): string => {
+  if (status === 'COMPLETED') return 'review-view__timeline-item--completed';
+  if (status === 'RUNNING') return 'review-view__timeline-item--running';
+  if (status === 'FAILED') return 'review-view__timeline-item--failed';
+  return 'review-view__timeline-item--pending';
 };
 
 export default function ReviewView() {
@@ -42,6 +51,7 @@ export default function ReviewView() {
   const [typeFilter, setTypeFilter] = useState<AgentType | 'ALL'>('ALL');
   const [severityFilter, setSeverityFilter] = useState<Severity | 'ALL'>('ALL');
   const markdownRef = useRef<HTMLDivElement>(null);
+  const obsListRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { document.title = 'Revisión — Thena'; }, []);
 
@@ -51,13 +61,51 @@ export default function ReviewView() {
     shouldStop: shouldStopPolling,
   });
 
+  // Click on document highlight → select obs + scroll obs panel to card
   const handleHighlightClick = useCallback((obsId: string) => {
-    setSelectedObs((prev) => (prev === obsId ? null : obsId));
+    setSelectedObs((prev) => {
+      const next = prev === obsId ? null : obsId;
+      if (next && obsListRef.current) {
+        // Use rAF so the DOM has time to re-render the --selected class first
+        requestAnimationFrame(() => {
+          const card = obsListRef.current?.querySelector(`[data-card-id="${next}"]`);
+          if (card) {
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        });
+      }
+      return next;
+    });
   }, []);
 
-  if (loading)
+  // Task 5.1: Show skeleton ONLY on initial load (data is null and loading is true)
+  if (loading && !review)
     return (
-      <Spin size="large" className="u-spinner-centered" />
+      <div className="review-view">
+        <div className="review-view__back-row review-view__back-row--sticky">
+          <Skeleton.Button active size="default" style={{ width: 160 }} />
+        </div>
+        <Allotment defaultSizes={[60, 40]}>
+          <Allotment.Pane minSize={300}>
+            <div style={{ padding: '24px 32px', height: '100%' }}>
+              <Skeleton active paragraph={{ rows: 14 }} />
+            </div>
+          </Allotment.Pane>
+          <Allotment.Pane minSize={320} preferredSize={420}>
+            <div className="review-view__obs-panel">
+              <div className="review-view__skeleton-card">
+                <Skeleton active paragraph={{ rows: 3 }} />
+              </div>
+              <div className="review-view__skeleton-card">
+                <Skeleton active paragraph={{ rows: 3 }} />
+              </div>
+              <div className="review-view__skeleton-card">
+                <Skeleton active paragraph={{ rows: 3 }} />
+              </div>
+            </div>
+          </Allotment.Pane>
+        </Allotment>
+      </div>
     );
 
   if (error)
@@ -78,29 +126,31 @@ export default function ReviewView() {
       <div className="review-view__processing">
         <Spin size="large" />
         <Title level={4} style={{ marginTop: 24 }}>
-          {review.status === 'QUEUED'
-            ? 'Tu documento está en cola...'
-            : 'Analizando tu documento...'}
+          Thena está analizando tu documento...
         </Title>
         <Text type="secondary">
           Thena está revisando tu capítulo.
         </Text>
         {review.agents && review.agents.length > 0 && (
           <div className="review-view__processing-steps">
-            <Steps
-              direction="vertical"
-              current={-1}
-              items={review.agents.map((a) => ({
-                title: AGENT_LABELS[a.type],
-                status: agentStepStatus(a.status),
-                description:
-                  a.status === 'COMPLETED'
-                    ? 'Completado'
-                    : a.status === 'RUNNING'
-                      ? 'En proceso...'
-                      : 'Pendiente',
-              }))}
-            />
+            <div className="review-view__timeline">
+              {review.agents.map((agent) => (
+                <div
+                  key={agent.type}
+                  className={`review-view__timeline-item ${agentTimelineModifier(agent.status)}`}
+                >
+                  <div className="review-view__timeline-dot" />
+                  <div className="review-view__timeline-content">
+                    <div className="review-view__timeline-label">
+                      {AGENT_LABELS[agent.type]}
+                    </div>
+                    <span className="review-view__timeline-status">
+                      {AGENT_STATUS_LABEL[agent.status]}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
         <Text type="secondary" className="review-view__processing-hint">
@@ -130,19 +180,50 @@ export default function ReviewView() {
     return true;
   });
 
+  // Click on observation card → select obs + scroll document to highlight
   const handleObsClick = (obs: Observation) => {
-    setSelectedObs(obs.id === selectedObs ? null : obs.id);
-    if (obs.textFragment && markdownRef.current) {
-      const el = markdownRef.current.querySelector(`[data-obs-id="${obs.id}"]`);
+    const next = obs.id === selectedObs ? null : obs.id;
+    setSelectedObs(next);
+    if (next && obs.textFragment && markdownRef.current) {
+      const el = markdownRef.current.querySelector(`[data-obs-id="${next}"]`);
       if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     }
   };
 
+  // Task 5.3: Keyboard navigation handler for observation list
+  const handleObsKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (!filtered.length) return;
+    const currentIndex = selectedObs
+      ? filtered.findIndex((o) => o.id === selectedObs)
+      : -1;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      const nextIndex = currentIndex === -1 ? 0 : Math.min(currentIndex + 1, filtered.length - 1);
+      const nextObs = filtered[nextIndex];
+      handleObsClick(nextObs);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (currentIndex <= 0) return;
+      const prevObs = filtered[currentIndex - 1];
+      handleObsClick(prevObs);
+    } else if (e.key === 'Enter') {
+      if (selectedObs && markdownRef.current) {
+        const el = markdownRef.current.querySelector(`[data-obs-id="${selectedObs}"]`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
+    } else if (e.key === 'Escape') {
+      setSelectedObs(null);
+    }
+  };
+
   return (
     <div className="review-view">
-      <div className="review-view__back-row">
+      <div className="review-view__back-row review-view__back-row--sticky">
         <Button
           icon={<ArrowLeftOutlined />}
           onClick={() => navigate(`/chapters/${chapterId}`)}
@@ -157,6 +238,7 @@ export default function ReviewView() {
             ref={markdownRef}
             markdownContent={review.markdownContent}
             observations={filtered}
+            selectedObsId={selectedObs}
             onHighlightClick={handleHighlightClick}
           />
         </Allotment.Pane>
@@ -167,8 +249,9 @@ export default function ReviewView() {
             {/* Resumen */}
             {review.report && <ReviewSummaryCard report={review.report} />}
 
-            {/* Filtros */}
+            {/* Filtros — recibe la lista COMPLETA sin filtrar para los conteos */}
             <ObservationFilters
+              observations={observations}
               typeFilter={typeFilter}
               severityFilter={severityFilter}
               onTypeChange={setTypeFilter}
@@ -176,9 +259,31 @@ export default function ReviewView() {
             />
 
             {/* Tarjetas de observaciones */}
-            <div className="review-view__obs-list">
-              {filtered.length === 0 ? (
-                <Empty description="No hay observaciones con estos filtros" />
+            <div
+              ref={obsListRef}
+              className="review-view__obs-list"
+              tabIndex={0}
+              onKeyDown={handleObsKeyDown}
+              aria-label="Lista de observaciones"
+            >
+              {filtered.length === 0 && observations.length > 0 ? (
+                <div className="review-view__empty-state">
+                  <span className="review-view__empty-state-icon" role="img" aria-label="Sin resultados">🔍</span>
+                  <span className="review-view__empty-state-text">
+                    No se encontraron observaciones con los filtros seleccionados
+                  </span>
+                  <Button
+                    type="link"
+                    onClick={() => {
+                      setTypeFilter('ALL');
+                      setSeverityFilter('ALL');
+                    }}
+                  >
+                    Limpiar filtros
+                  </Button>
+                </div>
+              ) : filtered.length === 0 ? (
+                <Empty description="No hay observaciones para este capítulo" />
               ) : (
                 filtered.map((obs) => (
                   <ObservationCard

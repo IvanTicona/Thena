@@ -1,6 +1,7 @@
 import { Card, Tag, Tooltip, Typography } from 'antd';
 import type { Observation } from '../../../types';
 import { SEVERITY_CONFIG, AGENT_LABELS } from './observation-config';
+import './ObservationCard.css';
 
 const { Text, Paragraph } = Typography;
 
@@ -16,22 +17,12 @@ export default function ObservationCard({ observation, isSelected, onClick }: Ob
   return (
     <Card
       size="small"
-      style={{
-        marginBottom: 8,
-        cursor: 'pointer',
-        borderColor: isSelected ? cfg.color : undefined,
-        borderWidth: isSelected ? 2 : 1,
-      }}
+      className={`observation-card${isSelected ? ' observation-card--selected' : ''}`}
+      style={{ '--card-severity-color': cfg.color } as React.CSSProperties}
+      data-card-id={observation.id}
       onClick={() => onClick(observation)}
     >
-      <div
-        style={{
-          display: 'flex',
-          gap: 8,
-          marginBottom: 4,
-          alignItems: 'center',
-        }}
-      >
+      <div className="observation-card__header">
         <Tag color={cfg.color} icon={cfg.icon}>
           {cfg.label}
         </Tag>
@@ -41,23 +32,13 @@ export default function ObservationCard({ observation, isSelected, onClick }: Ob
       {observation.suggestion && (
         <Paragraph
           type="secondary"
-          style={{ marginTop: 4, marginBottom: 0, fontSize: 13 }}
+          className="observation-card__suggestion"
         >
           {observation.suggestion}
         </Paragraph>
       )}
       {observation.textFragment && (
-        <blockquote
-          style={{
-            marginTop: 8,
-            padding: '4px 8px',
-            background: '#fafafa',
-            borderLeft: `3px solid ${cfg.color}`,
-            fontSize: 12,
-            color: '#666',
-            margin: '8px 0 0 0',
-          }}
-        >
+        <blockquote className="observation-card__quote">
           {observation.textFragment}
         </blockquote>
       )}
@@ -67,11 +48,7 @@ export default function ObservationCard({ observation, isSelected, onClick }: Ob
         >
           <Text
             type="secondary"
-            style={{
-              fontSize: 11,
-              display: 'block',
-              marginTop: 4,
-            }}
+            className="observation-card__source"
           >
             Fuente: {observation.sourceReference.layer === 'TUTOR' ? 'Tutor' : 'Institucional'} -{' '}
             {observation.sourceReference.section}

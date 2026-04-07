@@ -1,0 +1,44 @@
+/* ========================================================
+   ReviewSummaryCard — Summary text + severity metrics
+   BEM: .review-summary-card__element
+   ======================================================== */
+
+/* ── SUMMARY TEXT SECTION ────────────────────────────────── */
+.review-summary-card__text {
+  margin-bottom: 12px;
+}
+
+.review-summary-card__text .ant-typography {
+  margin-bottom: 0;
+}
+
+/* ── DIVIDER ─────────────────────────────────────────────── */
+.review-summary-card__divider {
+  border: none;
+  border-top: 1px solid #f0f0f0;
+  margin: 12px 0;
+}
+
+/* ── METRICS SECTION ─────────────────────────────────────── */
+.review-summary-card__metrics {
+  background: #f9fafb;
+  border-radius: 6px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.review-summary-card__metrics-label {
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 2px;
+  display: block;
+}
+
+.review-summary-card__metrics-tags {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
