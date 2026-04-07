@@ -17,6 +17,9 @@ datasource db {
 enum UserRole {
   STUDENT
   TUTOR
+  REVIEWER
+  ADMIN
+  SUPER_ADMIN
 }
 
 enum ChapterStatus {
@@ -37,6 +40,9 @@ enum AgentType {
   STRUCTURE
   METHODOLOGY
   COHERENCE
+  CITATIONS
+  FORMAT
+  INTEGRITY
 }
 
 enum AgentStatus {
@@ -56,6 +62,26 @@ enum ObservationSeverity {
 enum KnowledgeLayer {
   TUTOR
   INSTITUTIONAL
+  BIBLIOGRAPHY
+}
+
+enum ObservationSource {
+  SYSTEM
+  TUTOR
+}
+
+enum NotificationType {
+  NEW_SUBMISSION
+  REVIEW_COMPLETE
+  CHAPTER_APPROVED
+  CHAPTER_REJECTED
+  INACTIVITY_ALERT
+  ESCALATION_ALERT
+}
+
+enum AlertType {
+  INACTIVITY
+  ESCALATION
 }
 
 // =============================================
@@ -72,11 +98,17 @@ model User {
   updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
 
   // Relations
-  thesis           ThesisDocument?  @relation("StudentThesis")
-  tutoredTheses    ThesisDocument[] @relation("TutorTheses")
-  approvedChapters Chapter[]        @relation("ApprovedByTutor")
-  submissions      Submission[]
-  knowledgeChunks  KnowledgeChunk[]
+  thesis               ThesisDocument?    @relation("StudentThesis")
+  tutoredTheses        ThesisDocument[]   @relation("TutorTheses")
+  approvedChapters     Chapter[]          @relation("ApprovedByTutor")
+  submissions          Submission[]
+  knowledgeChunks      KnowledgeChunk[]
+  authoredObservations Observation[]      @relation("ObservationAuthor")
+  studentAssignment    StudentAssignment? @relation("AssignedStudent")
+  tutoredAssignments   StudentAssignment[] @relation("AssignedTutor")
+  reviewedAssignments  StudentAssignment[] @relation("AssignedReviewer")
+  notifications        Notification[]
+  auditLogs            AuditLog[]
 
   @@map("users")
 }
@@ -92,6 +124,7 @@ model ThesisDocument {
   student  User      @relation("StudentThesis", fields: [studentId], references: [id])
   tutor    User?     @relation("TutorTheses", fields: [tutorId], references: [id])
   chapters Chapter[]
+  alerts   Alert[]
 
   @@map("thesis_documents")
 }
@@ -201,10 +234,15 @@ model Observation {
   offsetEnd       Int?                @map("offset_end")
   sourceReference Json?               @map("source_reference")
   createdAt       DateTime            @default(now()) @map("created_at")
+  source          ObservationSource   @default(SYSTEM) @map("source")
+  authorId        String?             @map("author_id") @db.Uuid
+  isMutable       Boolean             @default(false) @map("is_mutable")
+  escalationLevel Int                 @default(0) @map("escalation_level") @db.SmallInt
 
   // Relations
   agentResult  AgentResult  @relation(fields: [agentResultId], references: [id])
   reviewReport ReviewReport @relation(fields: [reviewReportId], references: [id])
+  author       User?        @relation("ObservationAuthor", fields: [authorId], references: [id])
 
   @@index([reviewReportId])
   @@index([agentResultId])
@@ -229,4 +267,72 @@ model KnowledgeChunk {
 
   @@index([layer, ownerId])
   @@map("knowledge_chunks")
+}
+
+model StudentAssignment {
+  id         String   @id @default(uuid()) @db.Uuid
+  studentId  String   @unique @map("student_id") @db.Uuid
+  tutorId    String   @map("tutor_id") @db.Uuid
+  reviewerId String?  @map("reviewer_id") @db.Uuid
+  assignedAt DateTime @default(now()) @map("assigned_at")
+  active     Boolean  @default(true)
+
+  // Relations
+  student  User  @relation("AssignedStudent", fields: [studentId], references: [id])
+  tutor    User  @relation("AssignedTutor", fields: [tutorId], references: [id])
+  reviewer User? @relation("AssignedReviewer", fields: [reviewerId], references: [id])
+
+  @@index([tutorId])
+  @@index([reviewerId])
+  @@map("student_assignments")
+}
+
+model Notification {
+  id        String           @id @default(uuid()) @db.Uuid
+  userId    String           @map("user_id") @db.Uuid
+  type      NotificationType
+  title     String           @db.VarChar(255)
+  body      String           @db.Text
+  read      Boolean          @default(false)
+  metadata  Json             @default("{}")
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, read, createdAt(sort: Desc)])
+  @@map("notifications")
+}
+
+model Alert {
+  id          String    @id @default(uuid()) @db.Uuid
+  thesisId    String    @map("thesis_id") @db.Uuid
+  type        AlertType
+  triggeredAt DateTime  @default(now()) @map("triggered_at")
+  resolvedAt  DateTime? @map("resolved_at")
+  metadata    Json      @default("{}")
+
+  // Relations
+  thesis ThesisDocument @relation(fields: [thesisId], references: [id])
+
+  @@index([thesisId, resolvedAt])
+  @@map("alerts")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  action     String   @db.VarChar(100)
+  actorId    String   @map("actor_id") @db.Uuid
+  entityType String   @map("entity_type") @db.VarChar(100)
+  entityId   String   @map("entity_id") @db.Uuid
+  metadata   Json     @default("{}")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  // Relations
+  actor User @relation(fields: [actorId], references: [id])
+
+  @@index([actorId, createdAt(sort: Desc)])
+  @@index([entityType, entityId])
+  @@index([action, createdAt(sort: Desc)])
+  @@map("audit_logs")
 }
