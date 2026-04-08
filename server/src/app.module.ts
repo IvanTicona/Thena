@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { BullModule } from '@nestjs/bullmq';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 import { PrismaModule } from './shared/prisma/prisma.module.js';
 import { StorageModule } from './shared/storage/storage.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
@@ -11,6 +13,7 @@ import { ReviewModule } from './modules/review/review.module.js';
 import { KnowledgeModule } from './modules/knowledge/knowledge.module.js';
 import { ThesisModule } from './modules/thesis/thesis.module.js';
 import { HealthModule } from './shared/health/health.module.js';
+import { AuditModule } from './modules/audit/audit.module.js';
 
 @Module({
   imports: [
@@ -18,6 +21,15 @@ import { HealthModule } from './shared/health/health.module.js';
       isGlobal: true,
       envFilePath: '../.env',
     }),
+
+    // Rate limiting — default 100 req/min globally; auth endpoints override to 5/60s
+    ThrottlerModule.forRoot([
+      {
+        name: 'global',
+        ttl: 60_000,
+        limit: 100,
+      },
+    ]),
 
     PrismaModule,
     AuthModule,
@@ -40,8 +52,15 @@ import { HealthModule } from './shared/health/health.module.js';
     KnowledgeModule,
     ThesisModule,
     HealthModule,
+    AuditModule,
   ],
   controllers: [],
-  providers: [],
+  providers: [
+    // Apply ThrottlerGuard globally; auth endpoints override with stricter limits
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}

@@ -2,11 +2,15 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../../../shared/prisma/prisma.service.js';
 
 type KnowledgeLayer = 'TUTOR' | 'INSTITUTIONAL';
+
+/** Roles allowed to delete INSTITUTIONAL knowledge chunks */
+const INSTITUTIONAL_ADMIN_ROLES = ['ADMIN', 'SUPER_ADMIN'] as const;
 
 export interface KnowledgeDocumentSummary {
   sourceDocument: string;
@@ -114,7 +118,35 @@ export class KnowledgeService {
   async deleteBySource(
     sourceDocument: string,
     ownerId: string | null,
+    userRole?: string | null,
   ): Promise<KnowledgeDeletionResult> {
+    // Peek at the layer before attempting deletion
+    const sample = await this.prisma.client.knowledgeChunk.findFirst({
+      where: { sourceDocument },
+      select: { layer: true, ownerId: true },
+    });
+
+    if (!sample) {
+      throw new NotFoundException(
+        `No knowledge found for document: ${sourceDocument}`,
+      );
+    }
+
+    // P0-8: INSTITUTIONAL chunks can only be deleted by ADMIN or SUPER_ADMIN
+    if (sample.layer === 'INSTITUTIONAL') {
+      if (!userRole || !(INSTITUTIONAL_ADMIN_ROLES as readonly string[]).includes(userRole)) {
+        throw new ForbiddenException(
+          'Solo los administradores pueden eliminar conocimiento institucional',
+        );
+      }
+      // Admin delete: remove all chunks for this source regardless of ownerId
+      const result = await this.prisma.client.knowledgeChunk.deleteMany({
+        where: { sourceDocument, layer: 'INSTITUTIONAL' },
+      });
+      return { sourceDocument, deletedChunks: result.count };
+    }
+
+    // TUTOR layer: only the owner can delete
     const where = {
       sourceDocument,
       ...(ownerId && { ownerId }),
@@ -143,6 +175,7 @@ export class KnowledgeService {
   async deleteById(
     id: string,
     ownerId: string | null,
+    userRole?: string | null,
   ): Promise<KnowledgeChunkDeletionResult> {
     const chunk = await this.prisma.client.knowledgeChunk.findUnique({
       where: { id },
@@ -152,6 +185,18 @@ export class KnowledgeService {
       throw new NotFoundException(`Knowledge chunk not found: ${id}`);
     }
 
+    // P0-8: INSTITUTIONAL chunks can only be deleted by ADMIN or SUPER_ADMIN
+    if (chunk.layer === 'INSTITUTIONAL') {
+      if (!userRole || !(INSTITUTIONAL_ADMIN_ROLES as readonly string[]).includes(userRole)) {
+        throw new ForbiddenException(
+          'Solo los administradores pueden eliminar conocimiento institucional',
+        );
+      }
+      await this.prisma.client.knowledgeChunk.delete({ where: { id } });
+      return { id, deleted: true };
+    }
+
+    // TUTOR layer: only the owner can delete
     if (ownerId && chunk.ownerId !== ownerId) {
       throw new NotFoundException(`Knowledge chunk not found: ${id}`);
     }

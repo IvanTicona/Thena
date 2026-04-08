@@ -54,7 +54,7 @@ export default function SubmissionReview() {
     : null;
 
   const { data: review, loading, error } = usePolling<ReviewResult>({
-    url: reviewUrl || `/reviews/latest?chapterId=${submissionId}`,
+    url: reviewUrl,
     interval: 3000,
     shouldStop: shouldStopPolling,
   });

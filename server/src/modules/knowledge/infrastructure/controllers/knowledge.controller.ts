@@ -62,7 +62,9 @@ export class KnowledgeController {
     @Param('id', ParseUUIDPipe) id: string,
   ) {
     const userId = user?.sub ?? null;
-    return this.knowledgeService.deleteById(id, userId);
+    const userRole = user?.role ?? null;
+    // P0-8: Pass role so service can enforce ADMIN-only for INSTITUTIONAL chunks
+    return this.knowledgeService.deleteById(id, userId, userRole);
   }
 
   @Delete(':sourceDocument')
@@ -71,6 +73,8 @@ export class KnowledgeController {
     @Param('sourceDocument') sourceDocument: string,
   ) {
     const userId = user?.sub ?? null;
-    return this.knowledgeService.deleteBySource(sourceDocument, userId);
+    const userRole = user?.role ?? null;
+    // P0-8: Pass role so service can enforce ADMIN-only for INSTITUTIONAL chunks
+    return this.knowledgeService.deleteBySource(sourceDocument, userId, userRole);
   }
 }

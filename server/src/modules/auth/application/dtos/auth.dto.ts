@@ -1,4 +1,4 @@
-import { IsEmail, IsEnum, IsNotEmpty, MinLength } from 'class-validator';
+import { IsEmail, IsEnum, IsNotEmpty, IsOptional, MinLength } from 'class-validator';
 
 export enum UserRole {
   STUDENT = 'STUDENT',
@@ -15,8 +15,13 @@ export class RegisterDto {
   @MinLength(8)
   password: string;
 
+  /**
+   * Optional role field — if provided and not STUDENT, the controller will
+   * reject with 403. Always forced to STUDENT for self-registration.
+   */
+  @IsOptional()
   @IsEnum(UserRole)
-  role: UserRole;
+  role?: UserRole;
 }
 
 export class LoginDto {

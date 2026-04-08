@@ -19,6 +19,10 @@ services:
   redis:
     image: redis:7-alpine
     container_name: thena-redis
+    # PRODUCTION NOTE (P1-18): Enable Redis AUTH by adding a command override:
+    #   command: redis-server --requirepass <YOUR_STRONG_PASSWORD>
+    # And update REDIS_URL in .env to: redis://:<password>@redis:6379
+    # Never run Redis without a password in production.
     ports:
       - "6379:6379"
     volumes:

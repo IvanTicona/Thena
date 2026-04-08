@@ -3,8 +3,8 @@ import api from '../services/api';
 import { ApiError } from '../services/api-error';
 
 interface UsePollingOptions<T> {
-  /** URL to poll */
-  url: string;
+  /** URL to poll — pass null to skip polling entirely */
+  url: string | null;
   /** Base polling interval in milliseconds (default: 3000) */
   interval?: number;
   /** Maximum consecutive errors before polling stops (default: 10) */
@@ -38,6 +38,8 @@ export function usePolling<T>({
 
   const fetchData = useCallback(async () => {
     if (stoppedRef.current) return;
+    // url can only be non-null here because the effect guards below
+    if (!url) return;
 
     try {
       const res = await api.get<T>(url);
@@ -88,6 +90,14 @@ export function usePolling<T>({
   }, [url, interval, maxRetries, shouldStop]);
 
   useEffect(() => {
+    // If no URL, stop immediately with no data — caller shows the appropriate UI
+    if (!url) {
+      setLoading(false);
+      setData(null);
+      setError(null);
+      return;
+    }
+
     // Reset state when url/options change
     stoppedRef.current = false;
     retryCountRef.current = 0;
@@ -102,7 +112,7 @@ export function usePolling<T>({
       stoppedRef.current = true;
       clearScheduled();
     };
-  }, [fetchData, clearScheduled]);
+  }, [fetchData, clearScheduled, url]);
 
   return { data, loading, error, retryCount };
 }

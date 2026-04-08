@@ -1,12 +1,14 @@
 import {
   Body,
   Controller,
+  ForbiddenException,
   HttpCode,
   HttpStatus,
   Post,
   Res,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { AuthGuard } from '@nestjs/passport';
 import { Response } from 'express';
 import { AuthService } from '../../application/auth.service.js';
@@ -15,6 +17,9 @@ import { Public } from '../decorators/public.decorator.js';
 import { CurrentUser } from '../decorators/current-user.decorator.js';
 import { JwtPayload } from '../../domain/auth.types.js';
 
+/** Strict rate limit for auth endpoints: 5 attempts per 60 seconds */
+const AUTH_THROTTLE = { default: { limit: 5, ttl: 60_000 } } as const;
+
 @Public()
 @Controller('auth')
 export class AuthController {
@@ -22,12 +27,20 @@ export class AuthController {
 
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
+  @Throttle(AUTH_THROTTLE)
   async register(@Body() dto: RegisterDto, @Res({ passthrough: true }) res: Response) {
+    // P0-6: Only STUDENT self-registration is allowed via this endpoint
+    if (dto.role && dto.role !== 'STUDENT') {
+      throw new ForbiddenException(
+        'Solo se permite el registro con rol ESTUDIANTE desde este endpoint',
+      );
+    }
+
     const user = await this.authService.register(dto);
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
-      role: user.role as 'STUDENT' | 'TUTOR',
+      role: user.role as JwtPayload['role'],
     };
     const tokens = this.authService.generateTokens(payload);
     this.authService.setAuthCookies(res, tokens);
@@ -36,12 +49,13 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @Throttle(AUTH_THROTTLE)
   async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
     const user = await this.authService.login(dto);
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
-      role: user.role as 'STUDENT' | 'TUTOR',
+      role: user.role as JwtPayload['role'],
     };
     const tokens = this.authService.generateTokens(payload);
     this.authService.setAuthCookies(res, tokens);
@@ -50,6 +64,7 @@ export class AuthController {
 
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
+  @Throttle(AUTH_THROTTLE)
   @UseGuards(AuthGuard('jwt-refresh'))
   async refresh(
     @CurrentUser() user: JwtPayload,

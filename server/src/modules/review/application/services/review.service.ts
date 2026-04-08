@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../../../shared/prisma/prisma.service.js';
 
 export interface ReviewAgent {
@@ -30,6 +30,10 @@ export interface ReviewObservation {
   offsetStart: number | null;
   offsetEnd: number | null;
   sourceReference: SourceReference | null;
+  source: string;
+  authorId: string | null;
+  isMutable: boolean;
+  escalationLevel: number;
 }
 
 export interface ReviewJobBase {
@@ -83,7 +87,7 @@ function parseBySeverity(value: unknown): BySeverity {
 export class ReviewService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findByJobId(jobId: string): Promise<ReviewJobResult> {
+  async findByJobId(jobId: string, requestingUserId?: string): Promise<ReviewJobResult> {
     const job = await this.prisma.client.reviewJob.findUnique({
       where: { id: jobId },
       include: {
@@ -93,13 +97,29 @@ export class ReviewService {
         },
         reviewReport: true,
         submission: {
-          select: { markdownContent: true },
+          select: {
+            markdownContent: true,
+            chapter: {
+              select: {
+                thesis: { select: { studentId: true } },
+              },
+            },
+          },
         },
       },
     });
 
     if (!job) {
       throw new NotFoundException('Review job not found');
+    }
+
+    // P0-7: Ownership check — only the student who owns the chapter can view its review.
+    // Tutors bypass this check (they access reviews via their own dashboard endpoints).
+    if (requestingUserId) {
+      const studentId = job.submission.chapter.thesis.studentId;
+      if (studentId !== requestingUserId) {
+        throw new ForbiddenException('No tenés permiso para ver esta revisión');
+      }
     }
 
     const base = {
@@ -143,12 +163,16 @@ export class ReviewService {
         offsetStart: o.offsetStart,
         offsetEnd: o.offsetEnd,
         sourceReference: parseSourceReference(o.sourceReference),
+        source: o.source,
+        authorId: o.authorId,
+        isMutable: o.isMutable,
+        escalationLevel: o.escalationLevel,
       })),
       markdownContent: job.submission.markdownContent,
     };
   }
 
-  async findLatestByChapterId(chapterId: string): Promise<ReviewJobResult> {
+  async findLatestByChapterId(chapterId: string, requestingUserId?: string): Promise<ReviewJobResult> {
     const submission = await this.prisma.client.submission.findFirst({
       where: { chapterId },
       orderBy: { versionNumber: 'desc' },
@@ -159,6 +183,6 @@ export class ReviewService {
       throw new NotFoundException('No review found for this chapter');
     }
 
-    return this.findByJobId(submission.reviewJob.id);
+    return this.findByJobId(submission.reviewJob.id, requestingUserId);
   }
 }
