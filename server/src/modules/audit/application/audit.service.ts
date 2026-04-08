@@ -67,6 +67,73 @@ export class AuditService {
     }
   }
 
+  async exportCsv(filters: Omit<AuditLogFilters, 'page' | 'limit'>): Promise<string> {
+    const where: Record<string, unknown> = {};
+
+    if (filters.action) {
+      where['action'] = filters.action;
+    }
+
+    if (filters.actorId) {
+      where['actorId'] = filters.actorId;
+    }
+
+    if (filters.entityType) {
+      where['entityType'] = filters.entityType;
+    }
+
+    if (filters.dateFrom || filters.dateTo) {
+      where['createdAt'] = {
+        ...(filters.dateFrom ? { gte: filters.dateFrom } : {}),
+        ...(filters.dateTo ? { lte: filters.dateTo } : {}),
+      };
+    }
+
+    const rows = await this.prisma.client.auditLog.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: 10000, // safety cap
+      include: {
+        actor: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          },
+        },
+      },
+    });
+
+    const header = ['id', 'action', 'actorId', 'actorName', 'actorEmail', 'actorRole', 'entityType', 'entityId', 'createdAt'];
+
+    const escape = (value: string) => {
+      const str = String(value ?? '');
+      if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    };
+
+    const lines = rows.map((row) =>
+      [
+        row.id,
+        row.action,
+        row.actorId,
+        row.actor?.name ?? '',
+        row.actor?.email ?? '',
+        row.actor?.role ?? '',
+        row.entityType,
+        row.entityId,
+        row.createdAt.toISOString(),
+      ]
+        .map(escape)
+        .join(','),
+    );
+
+    return [header.join(','), ...lines].join('\n');
+  }
+
   async findAll(filters: AuditLogFilters): Promise<PaginatedAuditLogs> {
     const page = Math.max(1, filters.page ?? 1);
     const limit = Math.min(100, Math.max(1, filters.limit ?? 20));
