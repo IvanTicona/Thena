@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Typography, Spin, Modal, message, Empty } from 'antd';
+import { Typography, Spin, App, Empty } from 'antd';
 import { thesisApi } from '../../services/api';
 import api from '../../services/api';
 import { ApiError } from '../../services/api-error';
@@ -12,6 +12,7 @@ const { Title, Text } = Typography;
 export default function TutorDashboard() {
   const [theses, setTheses] = useState<ThesisDocument[]>([]);
   const [loading, setLoading] = useState(true);
+  const { modal, message } = App.useApp();
 
   const refetchTheses = useCallback(() => {
     setLoading(true);
@@ -35,7 +36,7 @@ export default function TutorDashboard() {
   useEffect(() => { document.title = 'Panel del Tutor — Thena'; }, []);
 
   const handleApprove = (chapterId: string, chapterTitle: string) => {
-    Modal.confirm({
+    modal.confirm({
       title: 'Aprobar capítulo',
       content: `¿Estás seguro de aprobar "${chapterTitle}"? Esto desbloqueará el siguiente capítulo para el estudiante.`,
       okText: 'Aprobar',
@@ -56,7 +57,7 @@ export default function TutorDashboard() {
   };
 
   const handleReject = (chapterId: string, chapterTitle: string) => {
-    Modal.confirm({
+    modal.confirm({
       title: 'Rechazar capítulo',
       content: `¿Estás seguro de rechazar "${chapterTitle}"? El estudiante deberá subir una nueva versión.`,
       okText: 'Rechazar',

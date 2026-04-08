@@ -5,8 +5,7 @@ import {
   Alert,
   Button,
   Space,
-  Modal,
-  message,
+  App,
   Empty,
   Steps,
 } from 'antd';
@@ -40,6 +39,7 @@ export default function SubmissionReview() {
   const [searchParams] = useSearchParams();
   const chapterId = searchParams.get('chapterId');
   const navigate = useNavigate();
+  const { modal, message } = App.useApp();
 
   const [selectedObs, setSelectedObs] = useState<string | null>(null);
   const [typeFilter, setTypeFilter] = useState<AgentType | 'ALL'>('ALL');
@@ -65,7 +65,7 @@ export default function SubmissionReview() {
 
   const handleApprove = () => {
     if (!chapterId) return;
-    Modal.confirm({
+    modal.confirm({
       title: 'Aprobar capítulo',
       content:
         '¿Estás seguro de aprobar este capítulo? Esto desbloqueará el siguiente capítulo para el estudiante.',
@@ -88,7 +88,7 @@ export default function SubmissionReview() {
 
   const handleReject = () => {
     if (!chapterId) return;
-    Modal.confirm({
+    modal.confirm({
       title: 'Rechazar capítulo',
       content:
         '¿Estás seguro de rechazar este capítulo? El estudiante deberá subir una nueva versión.',

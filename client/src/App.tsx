@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { ConfigProvider, Spin } from 'antd';
+import { ConfigProvider, App as AntApp, Spin } from 'antd';
 import esES from 'antd/locale/es_ES';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
@@ -55,6 +55,7 @@ function App() {
         },
       }}
     >
+      <AntApp>
       <AuthProvider>
         <Suspense fallback={<Spin size="large" className="u-spinner-fullscreen" />}>
           <Routes>
@@ -162,6 +163,7 @@ function App() {
           </Routes>
         </Suspense>
       </AuthProvider>
+      </AntApp>
     </ConfigProvider>
   );
 }
