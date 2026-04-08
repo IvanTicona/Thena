@@ -253,6 +253,7 @@ export default function SubmissionReview() {
 
               {/* Filtros */}
               <ObservationFilters
+                observations={observations}
                 typeFilter={typeFilter}
                 severityFilter={severityFilter}
                 onTypeChange={setTypeFilter}
