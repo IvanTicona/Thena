@@ -1,6 +1,9 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../../../shared/prisma/prisma.service.js';
 
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const PDFDocument = require('pdfkit') as typeof import('pdfkit');
+
 export interface ReviewAgent {
   type: string;
   status: string;
@@ -184,5 +187,477 @@ export class ReviewService {
     }
 
     return this.findByJobId(submission.reviewJob.id, requestingUserId);
+  }
+
+  async generatePdfReport(
+    jobId: string,
+    userId: string,
+    userRole: string,
+  ): Promise<{ buffer: Buffer; filename: string }> {
+    const job = await this.prisma.client.reviewJob.findUnique({
+      where: { id: jobId },
+      include: {
+        reviewReport: true,
+        submission: {
+          select: {
+            versionNumber: true,
+            chapter: {
+              select: {
+                number: true,
+                title: true,
+                thesis: {
+                  select: {
+                    title: true,
+                    studentId: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!job) {
+      throw new NotFoundException('Review job not found');
+    }
+
+    // Ownership check: STUDENTs can only export their own; TUTORs can export any
+    if (userRole === 'STUDENT') {
+      const studentId = job.submission.chapter.thesis.studentId;
+      if (studentId !== userId) {
+        throw new ForbiddenException('No tenés permiso para exportar esta revisión');
+      }
+    }
+
+    if (job.status !== 'COMPLETED' || !job.reviewReport) {
+      throw new ForbiddenException('Solo se pueden exportar revisiones completadas');
+    }
+
+    const observations = await this.prisma.client.observation.findMany({
+      where: { reviewReportId: job.reviewReport.id },
+      orderBy: { type: 'asc' },
+    });
+
+    const chapter = job.submission.chapter;
+    const thesis = chapter.thesis;
+    const report = job.reviewReport;
+    const bySeverity = parseBySeverity(report.bySeverity);
+    const versionNumber = job.submission.versionNumber;
+    const chapterNumber = chapter.number;
+
+    const buffer = await buildPdfBuffer({
+      thesisTitle: thesis.title,
+      chapterNumber,
+      chapterTitle: chapter.title,
+      versionNumber,
+      completedAt: job.completedAt,
+      summaryText: report.summaryText,
+      totalObservations: report.totalObservations,
+      bySeverity,
+      observations: observations.map((o) => ({
+        id: o.id,
+        type: o.type as string,
+        severity: o.severity as string,
+        message: o.message,
+        suggestion: o.suggestion,
+        textFragment: o.textFragment,
+        source: o.source as string,
+      })),
+    });
+
+    const filename = `thena-reporte-cap${chapterNumber}-v${versionNumber}.pdf`;
+    return { buffer, filename };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// PDF builder helpers
+// ---------------------------------------------------------------------------
+
+const SEVERITY_COLORS: Record<string, string> = {
+  ERROR: '#ff4d4f',
+  WARNING: '#faad14',
+  SUGGESTION: '#1890ff',
+  INFO: '#52c41a',
+};
+
+const SEVERITY_LABELS: Record<string, string> = {
+  ERROR: 'Error',
+  WARNING: 'Advertencia',
+  SUGGESTION: 'Sugerencia',
+  INFO: 'Info',
+};
+
+const AGENT_LABELS: Record<string, string> = {
+  STRUCTURE: 'Estructura',
+  METHODOLOGY: 'Metodología',
+  COHERENCE: 'Coherencia',
+  CITATIONS: 'Citas',
+  FORMAT: 'Formato',
+  INTEGRITY: 'Integridad',
+};
+
+interface PdfObservation {
+  id: string;
+  type: string;
+  severity: string;
+  message: string;
+  suggestion: string | null;
+  textFragment: string | null;
+  source: string;
+}
+
+interface PdfBuildInput {
+  thesisTitle: string;
+  chapterNumber: number;
+  chapterTitle: string;
+  versionNumber: number;
+  completedAt: Date | null;
+  summaryText: string;
+  totalObservations: number;
+  bySeverity: BySeverity;
+  observations: PdfObservation[];
+}
+
+function buildPdfBuffer(input: PdfBuildInput): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({
+      size: 'A4',
+      margins: { top: 56, bottom: 56, left: 56, right: 56 },
+      bufferPages: true,
+      info: {
+        Title: `Reporte de Revision - Capitulo ${input.chapterNumber}`,
+        Author: 'Thena - Sistema de Revision de Proyectos de Grado',
+      },
+    });
+
+    const chunks: Buffer[] = [];
+    doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+    doc.on('end', () => resolve(Buffer.concat(chunks)));
+    doc.on('error', reject);
+
+    const MARGIN = 56;
+    const CONTENT_WIDTH = doc.page.width - MARGIN * 2;
+
+    // ── Header ──
+    doc
+      .fillColor('#1a1a2e')
+      .font('Helvetica-Bold')
+      .fontSize(20)
+      .text('Thena \u2014 Reporte de Revisi\u00f3n', MARGIN, 56);
+
+    const dateStr = (input.completedAt ?? new Date()).toLocaleDateString('es-AR', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+    });
+
+    doc
+      .fillColor('#555555')
+      .font('Helvetica')
+      .fontSize(10)
+      .text(`Generado el ${dateStr}`, MARGIN);
+
+    doc.moveDown(0.5);
+
+    // Thesis + chapter info box
+    const infoBoxY = doc.y;
+    const infoBoxH = 66;
+    doc
+      .roundedRect(MARGIN, infoBoxY, CONTENT_WIDTH, infoBoxH, 6)
+      .fillAndStroke('#f5f5f5', '#e0e0e0');
+
+    doc
+      .fillColor('#333333')
+      .font('Helvetica-Bold')
+      .fontSize(9)
+      .text('TESIS', MARGIN + 12, infoBoxY + 10);
+
+    doc
+      .fillColor('#111111')
+      .font('Helvetica')
+      .fontSize(10)
+      .text(input.thesisTitle, MARGIN + 12, infoBoxY + 22, {
+        width: CONTENT_WIDTH - 24,
+        ellipsis: true,
+      });
+
+    doc
+      .fillColor('#555555')
+      .font('Helvetica')
+      .fontSize(9)
+      .text(
+        `Cap\u00edtulo ${input.chapterNumber}: ${input.chapterTitle}   \u00b7   Versi\u00f3n ${input.versionNumber}`,
+        MARGIN + 12,
+        infoBoxY + 44,
+        { width: CONTENT_WIDTH - 24 },
+      );
+
+    // Move cursor below the info box
+    doc.text('', MARGIN, infoBoxY + infoBoxH + 16);
+
+    // ── Summary section ──
+    drawSectionTitle(doc, 'Resumen', MARGIN, CONTENT_WIDTH);
+    doc.moveDown(0.3);
+
+    doc
+      .fillColor('#222222')
+      .font('Helvetica')
+      .fontSize(10)
+      .text(input.summaryText, MARGIN, doc.y, { width: CONTENT_WIDTH, align: 'justify' });
+
+    doc.moveDown(0.8);
+
+    // Totals
+    doc
+      .fillColor('#333333')
+      .font('Helvetica-Bold')
+      .fontSize(10)
+      .text(
+        `Total: ${input.totalObservations} observaci\u00f3n${input.totalObservations !== 1 ? 'es' : ''}`,
+        MARGIN,
+      );
+
+    doc.moveDown(0.4);
+
+    // Severity stats — rendered inline on current line
+    const sevOrder: Array<keyof BySeverity> = ['ERROR', 'WARNING', 'SUGGESTION', 'INFO'];
+    const statY = doc.y;
+    let statX = MARGIN;
+    const badgeH = 16;
+    const badgeW = 95;
+
+    for (const sev of sevOrder) {
+      const count = input.bySeverity[sev];
+      if (!count) continue;
+      const color = SEVERITY_COLORS[sev];
+      const label = `${SEVERITY_LABELS[sev]}: ${count}`;
+
+      doc
+        .roundedRect(statX, statY, badgeW, badgeH, 3)
+        .fillColor(color)
+        .fill();
+
+      doc
+        .fillColor('#ffffff')
+        .font('Helvetica-Bold')
+        .fontSize(8)
+        .text(label, statX + 5, statY + 4, { width: badgeW - 8, lineBreak: false });
+
+      statX += badgeW + 6;
+    }
+
+    // Move cursor below the badges
+    doc.text('', MARGIN, statY + badgeH + 16);
+
+    // ── Observations section ──
+    drawSectionTitle(doc, 'Observaciones', MARGIN, CONTENT_WIDTH);
+    doc.moveDown(0.5);
+
+    if (input.observations.length === 0) {
+      doc
+        .fillColor('#888888')
+        .font('Helvetica')
+        .fontSize(10)
+        .text('No se encontraron observaciones.', MARGIN, doc.y);
+    } else {
+      // Group by agent type
+      const grouped = new Map<string, PdfObservation[]>();
+      for (const obs of input.observations) {
+        const arr = grouped.get(obs.type) ?? [];
+        arr.push(obs);
+        grouped.set(obs.type, arr);
+      }
+
+      const agentOrder = ['STRUCTURE', 'METHODOLOGY', 'COHERENCE', 'CITATIONS', 'FORMAT', 'INTEGRITY'];
+
+      for (const agentType of agentOrder) {
+        const group = grouped.get(agentType);
+        if (!group || group.length === 0) continue;
+
+        doc.moveDown(0.5);
+
+        // Page break check before agent header
+        if (doc.y > doc.page.height - 130) {
+          doc.addPage();
+        }
+
+        // Agent group header
+        const agentLabel = AGENT_LABELS[agentType] ?? agentType;
+        doc
+          .fillColor('#1a1a2e')
+          .font('Helvetica-Bold')
+          .fontSize(12)
+          .text(agentLabel, MARGIN, doc.y);
+
+        const lineY = doc.y;
+        doc
+          .moveTo(MARGIN, lineY)
+          .lineTo(MARGIN + CONTENT_WIDTH, lineY)
+          .strokeColor('#cccccc')
+          .lineWidth(0.5)
+          .stroke();
+
+        doc.moveDown(0.5);
+
+        for (const obs of group) {
+          // Page break check before each observation
+          const estHeight = 70 + (obs.textFragment ? 40 : 0) + (obs.suggestion ? 30 : 0);
+          if (doc.y + estHeight > doc.page.height - 70) {
+            doc.addPage();
+          }
+
+          renderObservation(doc, obs, MARGIN, CONTENT_WIDTH);
+          doc.moveDown(0.3);
+        }
+      }
+    }
+
+    // ── Footers on all pages ──
+    addFooters(doc);
+
+    doc.end();
+  });
+}
+
+function drawSectionTitle(doc: PDFKit.PDFDocument, text: string, x: number, width: number) {
+  doc
+    .fillColor('#1a1a2e')
+    .font('Helvetica-Bold')
+    .fontSize(14)
+    .text(text, x, doc.y, { width });
+
+  const lineY = doc.y;
+  doc
+    .moveTo(x, lineY)
+    .lineTo(x + width, lineY)
+    .strokeColor('#1a1a2e')
+    .lineWidth(1)
+    .stroke();
+
+  doc.moveDown(0.3);
+}
+
+function renderObservation(
+  doc: PDFKit.PDFDocument,
+  obs: PdfObservation,
+  x: number,
+  width: number,
+) {
+  const color = SEVERITY_COLORS[obs.severity] ?? '#888888';
+  const boxY = doc.y;
+
+  // Severity badge
+  const badgeW = 80;
+  const badgeH = 16;
+  doc
+    .roundedRect(x, boxY, badgeW, badgeH, 3)
+    .fillColor(color)
+    .fill();
+
+  const sevLabel = SEVERITY_LABELS[obs.severity] ?? obs.severity;
+  doc
+    .fillColor('#ffffff')
+    .font('Helvetica-Bold')
+    .fontSize(7)
+    .text(sevLabel.toUpperCase(), x + 6, boxY + 4, { width: badgeW - 10, lineBreak: false });
+
+  // Source badge
+  const sourceBadgeX = x + badgeW + 6;
+  const sourceLabel = obs.source === 'TUTOR' ? 'Tutor' : 'Thena';
+  const sourceBg = obs.source === 'TUTOR' ? '#722ed1' : '#1890ff';
+  doc
+    .roundedRect(sourceBadgeX, boxY, 44, badgeH, 3)
+    .fillColor(sourceBg)
+    .fill();
+
+  doc
+    .fillColor('#ffffff')
+    .font('Helvetica-Bold')
+    .fontSize(7)
+    .text(sourceLabel, sourceBadgeX + 6, boxY + 4, { width: 32, lineBreak: false });
+
+  // Message text
+  doc
+    .fillColor('#111111')
+    .font('Helvetica')
+    .fontSize(10)
+    .text(obs.message, x + 4, boxY + badgeH + 6, { width: width - 4 });
+
+  // Text fragment (quoted)
+  if (obs.textFragment) {
+    doc.moveDown(0.25);
+    const fragY = doc.y;
+    doc
+      .rect(x + 4, fragY, 3, 12)
+      .fillColor('#aaaaaa')
+      .fill();
+    doc
+      .fillColor('#666666')
+      .font('Helvetica-Oblique')
+      .fontSize(9)
+      .text(`"${obs.textFragment}"`, x + 12, fragY, { width: width - 12 });
+  }
+
+  // Suggestion
+  if (obs.suggestion) {
+    doc.moveDown(0.25);
+    doc
+      .fillColor('#444444')
+      .font('Helvetica')
+      .fontSize(9)
+      .text(`\u2192 Sugerencia: ${obs.suggestion}`, x + 4, doc.y, { width: width - 4 });
+  }
+
+  // Bottom separator line
+  doc.moveDown(0.25);
+  doc
+    .moveTo(x, doc.y)
+    .lineTo(x + width, doc.y)
+    .strokeColor('#eeeeee')
+    .lineWidth(0.5)
+    .stroke();
+}
+
+function addFooters(doc: PDFKit.PDFDocument) {
+  const docWithBuffer = doc as unknown as {
+    bufferedPageRange: () => { start: number; count: number };
+  };
+
+  const range = docWithBuffer.bufferedPageRange?.();
+  if (!range) return;
+
+  const footerText = 'Generado por Thena \u2014 Sistema de Revisi\u00f3n de Proyectos de Grado';
+
+  for (let i = 0; i < range.count; i++) {
+    doc.switchToPage(range.start + i);
+    const pageNum = i + 1;
+    const totalPages = range.count;
+    const footerY = doc.page.height - 36;
+    const pageWidth = doc.page.width;
+
+    doc
+      .moveTo(56, footerY - 8)
+      .lineTo(pageWidth - 56, footerY - 8)
+      .strokeColor('#cccccc')
+      .lineWidth(0.5)
+      .stroke();
+
+    doc
+      .fillColor('#999999')
+      .font('Helvetica')
+      .fontSize(8)
+      .text(footerText, 56, footerY, { width: pageWidth - 112, align: 'left', lineBreak: false });
+
+    doc
+      .fillColor('#999999')
+      .font('Helvetica')
+      .fontSize(8)
+      .text(`P\u00e1gina ${pageNum} de ${totalPages}`, 56, footerY, {
+        width: pageWidth - 112,
+        align: 'right',
+        lineBreak: false,
+      });
   }
 }

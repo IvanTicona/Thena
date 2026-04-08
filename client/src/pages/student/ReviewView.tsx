@@ -6,9 +6,10 @@ import {
   Empty,
   Button,
   Skeleton,
+  message,
 } from 'antd';
 import { Allotment } from 'allotment';
-import { ArrowLeftOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, FilePdfOutlined } from '@ant-design/icons';
 import { useParams, useNavigate } from 'react-router-dom';
 import { usePolling } from '../../hooks/usePolling';
 import type {
@@ -23,6 +24,7 @@ import ReviewSummaryCard from './components/ReviewSummaryCard';
 import ObservationCard from './components/ObservationCard';
 import ObservationFilters from './components/ObservationFilters';
 import DocumentPreview from './components/DocumentPreview';
+import { reviewsApi } from '../../services/api';
 import './ReviewView.css';
 
 const { Title, Text } = Typography;
@@ -50,6 +52,7 @@ export default function ReviewView() {
   const [selectedObs, setSelectedObs] = useState<string | null>(null);
   const [typeFilter, setTypeFilter] = useState<AgentType | 'ALL'>('ALL');
   const [severityFilter, setSeverityFilter] = useState<Severity | 'ALL'>('ALL');
+  const [pdfLoading, setPdfLoading] = useState(false);
   const markdownRef = useRef<HTMLDivElement>(null);
   const obsListRef = useRef<HTMLDivElement>(null);
 
@@ -60,6 +63,29 @@ export default function ReviewView() {
     interval: 3000,
     shouldStop: shouldStopPolling,
   });
+
+  const handleExportPdf = useCallback(async () => {
+    if (!jobId) return;
+    setPdfLoading(true);
+    try {
+      const response = await reviewsApi.exportPdf(jobId);
+      const blob = new Blob([response.data as BlobPart], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const disposition = response.headers['content-disposition'] as string | undefined;
+      const filenameMatch = disposition?.match(/filename="?([^"]+)"?/);
+      a.href = url;
+      a.download = filenameMatch?.[1] ?? `thena-reporte.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      void message.error('No se pudo exportar el reporte. Intentá de nuevo.');
+    } finally {
+      setPdfLoading(false);
+    }
+  }, [jobId]);
 
   // Click on document highlight → select obs + scroll obs panel to card
   const handleHighlightClick = useCallback((obsId: string) => {
@@ -229,6 +255,13 @@ export default function ReviewView() {
           onClick={() => navigate(`/chapters/${chapterId}`)}
         >
           Volver al capítulo
+        </Button>
+        <Button
+          icon={<FilePdfOutlined />}
+          loading={pdfLoading}
+          onClick={handleExportPdf}
+        >
+          Exportar PDF
         </Button>
       </div>
       <Allotment defaultSizes={[60, 40]}>

@@ -4,7 +4,9 @@ import {
   Param,
   Query,
   ParseUUIDPipe,
+  Res,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { ReviewService } from '../../application/services/review.service.js';
 import { CurrentUser } from '../../../auth/infrastructure/decorators/current-user.decorator.js';
 import { JwtPayload } from '../../../auth/domain/auth.types.js';
@@ -21,6 +23,26 @@ export class ReviewController {
     // P0-7: Enforce ownership only for STUDENT role — tutors can view any review
     const ownershipUserId = user?.role === 'STUDENT' ? user.sub : undefined;
     return this.reviewService.findLatestByChapterId(chapterId, ownershipUserId);
+  }
+
+  @Get(':jobId/export')
+  async exportPdf(
+    @Param('jobId', ParseUUIDPipe) jobId: string,
+    @CurrentUser() user: JwtPayload,
+    @Res() res: Response,
+  ) {
+    const { buffer, filename } = await this.reviewService.generatePdfReport(
+      jobId,
+      user.sub,
+      user.role,
+    );
+
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+      'Content-Length': buffer.length,
+    });
+    res.end(buffer);
   }
 
   @Get(':jobId')
