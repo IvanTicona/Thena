@@ -35,6 +35,7 @@ export interface ReviewObservation {
   sourceReference: SourceReference | null;
   source: string;
   authorId: string | null;
+  authorName: string | null;
   isMutable: boolean;
   escalationLevel: number;
 }
@@ -151,6 +152,7 @@ export class ReviewService {
     // Fetch observations for the completed report
     const observations = await this.prisma.client.observation.findMany({
       where: { reviewReportId: job.reviewReport.id },
+      include: { author: { select: { name: true } } },
       orderBy: { createdAt: 'asc' },
     });
 
@@ -174,6 +176,7 @@ export class ReviewService {
         sourceReference: parseSourceReference(o.sourceReference),
         source: o.source,
         authorId: o.authorId,
+        authorName: o.author?.name ?? null,
         isMutable: o.isMutable,
         escalationLevel: o.escalationLevel,
       })),
@@ -224,6 +227,7 @@ export class ReviewService {
 
       const obs = await this.prisma.client.observation.findMany({
         where: { reviewReportId: job.reviewReport.id },
+        include: { author: { select: { name: true } } },
         orderBy: { createdAt: 'asc' },
       });
 
@@ -239,6 +243,7 @@ export class ReviewService {
         sourceReference: parseSourceReference(o.sourceReference),
         source: o.source,
         authorId: o.authorId,
+        authorName: o.author?.name ?? null,
         isMutable: o.isMutable,
         escalationLevel: o.escalationLevel,
       }));

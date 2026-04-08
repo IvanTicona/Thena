@@ -41,7 +41,7 @@ export interface ReviewJobSummary {
 
 export type JobStatus = 'QUEUED' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
 
-export type AgentType = 'STRUCTURE' | 'METHODOLOGY' | 'COHERENCE';
+export type AgentType = 'STRUCTURE' | 'METHODOLOGY' | 'COHERENCE' | 'CITATIONS' | 'FORMAT' | 'INTEGRITY';
 export type Severity = 'INFO' | 'SUGGESTION' | 'WARNING' | 'ERROR';
 export type ObservationSource = 'SYSTEM' | 'TUTOR';
 
@@ -60,7 +60,7 @@ export interface Observation {
   /** Display name of the author (tutor's name for TUTOR observations) */
   authorName?: string | null;
   /** Escalation level: 0 = normal, >0 = escalated (orange/red border) */
-  escalation_level?: number;
+  escalationLevel?: number;
 }
 
 export interface SourceReference {

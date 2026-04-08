@@ -14,7 +14,7 @@ interface ObservationCardProps {
 
 export default function ObservationCard({ observation, isSelected, onClick }: ObservationCardProps) {
   const cfg = SEVERITY_CONFIG[observation.severity];
-  const isEscalated = (observation.escalation_level ?? 0) > 0;
+  const isEscalated = (observation.escalationLevel ?? 0) > 0;
   const isThena = !observation.source || observation.source === 'SYSTEM';
 
   return (

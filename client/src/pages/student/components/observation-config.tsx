@@ -20,4 +20,7 @@ export const AGENT_LABELS: Record<AgentType, string> = {
   STRUCTURE: 'Estructura',
   METHODOLOGY: 'Metodología',
   COHERENCE: 'Coherencia',
+  CITATIONS: 'Citas',
+  FORMAT: 'Formato',
+  INTEGRITY: 'Integridad',
 };
