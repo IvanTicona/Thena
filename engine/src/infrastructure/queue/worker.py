@@ -34,9 +34,12 @@ from src.domain.entities import ReviewState
 
 logger = logging.getLogger(__name__)
 
-# Total timeout for a full review (all 6 agents run in parallel + synthesizer): 90 seconds.
-# This is enforced around the entire graph.invoke() call.
-REVIEW_TOTAL_TIMEOUT_SECONDS = 90
+# Total timeout for a full review (all 6 agents run in parallel + synthesizer).
+# Large documents (30K+ chars, 15+ sections) with 6 parallel agents and retries can
+# take 2-3 minutes. 90s was too tight and caused a race condition where the timeout
+# handler marked the job FAILED while agents were still running, only for the thread
+# to overwrite it back to COMPLETED later.  Increased to 300s (5 min).
+REVIEW_TOTAL_TIMEOUT_SECONDS = 300
 
 
 class ReviewWorker:

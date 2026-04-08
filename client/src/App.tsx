@@ -56,9 +56,9 @@ function App() {
       }}
     >
       <AntApp>
-      <AuthProvider>
-        <Suspense fallback={<Spin size="large" className="u-spinner-fullscreen" />}>
-          <Routes>
+        <AuthProvider>
+          <Suspense fallback={<Spin size="large" className="u-spinner-fullscreen" />}>
+            <Routes>
           {/* Public auth routes — redirect to dashboard if already authenticated */}
           <Route element={<PublicOnlyRoute />}>
             <Route path="/login" element={<LoginPage />} />
@@ -160,9 +160,9 @@ function App() {
               </Route>
             </Route>
           </Route>
-          </Routes>
-        </Suspense>
-      </AuthProvider>
+            </Routes>
+          </Suspense>
+        </AuthProvider>
       </AntApp>
     </ConfigProvider>
   );

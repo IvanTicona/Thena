@@ -1,6 +1,13 @@
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import TypedDict
+from typing import Annotated, TypedDict
+
+
+def _merge_dicts(left: dict[str, str], right: dict[str, str]) -> dict[str, str]:
+    """Reducer for LangGraph: merge two dicts (used by agent_errors in parallel fan-out)."""
+    merged = left.copy() if left else {}
+    merged.update(right or {})
+    return merged
 
 
 class ObservationType(str, Enum):
@@ -151,5 +158,5 @@ class ReviewState(TypedDict, total=False):
     observations: list[FindingDict]
     summary: str
 
-    # Error tracking
-    agent_errors: dict[str, str]
+    # Error tracking — uses a reducer so parallel agents can write concurrently
+    agent_errors: Annotated[dict[str, str], _merge_dicts]
