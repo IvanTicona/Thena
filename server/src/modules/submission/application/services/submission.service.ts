@@ -10,6 +10,7 @@ import { PrismaService } from '../../../../shared/prisma/prisma.service.js';
 import { StorageService } from '../../../../shared/storage/storage.service.js';
 import { AuditService } from '../../../audit/application/audit.service.js';
 import { AuditAction } from '../../../audit/domain/audit.constants.js';
+import { NotificationService } from '../../../notification/application/notification.service.js';
 
 const DOCX_MIME =
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
@@ -21,6 +22,7 @@ export class SubmissionService {
     private readonly storage: StorageService,
     @InjectQueue('review') private readonly reviewQueue: Queue,
     private readonly auditService: AuditService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   async findAllForStudent(studentId: string) {
@@ -67,7 +69,7 @@ export class SubmissionService {
     // Fetch chapter with thesis for ownership check
     const chapter = await this.prisma.client.chapter.findUnique({
       where: { id: chapterId },
-      include: { thesis: { select: { studentId: true } } },
+      include: { thesis: { select: { studentId: true, tutorId: true } } },
     });
 
     if (!chapter) {
@@ -167,6 +169,18 @@ export class SubmissionService {
       metadata: { chapterId, versionNumber },
     });
 
+    // Notification for tutor — fire-and-forget (errors swallowed in NotificationService)
+    // Notify the tutor assigned to this thesis that a new submission was made
+    if (chapter.thesis.tutorId) {
+      void this.notificationService.create(
+        chapter.thesis.tutorId,
+        'NEW_SUBMISSION',
+        'Nueva entrega recibida',
+        `El estudiante envió una nueva versión del capítulo "${chapter.title}".`,
+        { submissionId: result.submission.id, chapterId, versionNumber },
+      );
+    }
+
     return {
       id: result.submission.id,
       chapterId: result.submission.chapterId,
@@ -178,5 +192,41 @@ export class SubmissionService {
         status: result.reviewJob.status,
       },
     };
+  }
+
+  async downloadFile(
+    submissionId: string,
+    requestingUserId: string,
+    userRole: string,
+  ): Promise<{ buffer: Buffer; fileName: string }> {
+    const submission = await this.prisma.client.submission.findUnique({
+      where: { id: submissionId },
+      select: {
+        id: true,
+        fileUrl: true,
+        fileName: true,
+        studentId: true,
+      },
+    });
+
+    if (!submission) {
+      throw new NotFoundException('Submission not found');
+    }
+
+    // Only the student who owns the submission or a TUTOR can download
+    if (userRole === 'STUDENT' && submission.studentId !== requestingUserId) {
+      throw new ForbiddenException('No tenés permiso para descargar este archivo');
+    }
+
+    // fileUrl format: "thena-documents/<objectName>"
+    // StorageService.download expects only the objectName (without the bucket prefix)
+    const bucketPrefix = 'thena-documents/';
+    const objectName = submission.fileUrl.startsWith(bucketPrefix)
+      ? submission.fileUrl.slice(bucketPrefix.length)
+      : submission.fileUrl;
+
+    const buffer = await this.storage.download(objectName);
+
+    return { buffer, fileName: submission.fileName };
   }
 }
