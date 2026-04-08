@@ -10,7 +10,7 @@ import {
   Steps,
 } from 'antd';
 import { Allotment } from 'allotment';
-import { CheckOutlined, CloseOutlined, ArrowLeftOutlined } from '@ant-design/icons';
+import { CheckOutlined, CloseOutlined, ArrowLeftOutlined, PlusOutlined } from '@ant-design/icons';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { usePolling } from '../../hooks/usePolling';
 import type { ReviewResult, Observation, AgentType, Severity } from '../../types';
@@ -19,7 +19,9 @@ import ReviewSummaryCard from '../student/components/ReviewSummaryCard';
 import ObservationCard from '../student/components/ObservationCard';
 import ObservationFilters from '../student/components/ObservationFilters';
 import DocumentPreview from '../student/components/DocumentPreview';
+import ObservationFormModal from './components/ObservationFormModal';
 import api from '../../services/api';
+import { observationsApi } from '../../services/api';
 import { ApiError } from '../../services/api-error';
 import './SubmissionReview.css';
 
@@ -44,13 +46,16 @@ export default function SubmissionReview() {
   const [selectedObs, setSelectedObs] = useState<string | null>(null);
   const [typeFilter, setTypeFilter] = useState<AgentType | 'ALL'>('ALL');
   const [severityFilter, setSeverityFilter] = useState<Severity | 'ALL'>('ALL');
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingObs, setEditingObs] = useState<Observation | null>(null);
   const markdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { document.title = 'Revisión de Entrega — Thena'; }, []);
 
-  // Use latest review by chapterId if available, otherwise by submissionId reference
+  // Append refreshKey as a query param to force usePolling to re-fetch
   const reviewUrl = chapterId
-    ? `/reviews/latest?chapterId=${chapterId}`
+    ? `/reviews/latest?chapterId=${chapterId}&_r=${refreshKey}`
     : null;
 
   const { data: review, loading, error } = usePolling<ReviewResult>({
@@ -108,6 +113,23 @@ export default function SubmissionReview() {
         }
       },
     });
+  };
+
+  const handleObsEdit = (obs: Observation) => {
+    setEditingObs(obs);
+    setModalOpen(true);
+  };
+
+  const handleObsDelete = async (obs: Observation) => {
+    try {
+      await observationsApi.remove(obs.id);
+      message.success('Observación eliminada');
+      setRefreshKey((k) => k + 1);
+    } catch (err) {
+      message.error(
+        err instanceof ApiError ? err.message : 'Error al eliminar la observación',
+      );
+    }
   };
 
   if (loading)
@@ -213,6 +235,15 @@ export default function SubmissionReview() {
           Volver al panel
         </Button>
         <Space>
+          {review.status === 'COMPLETED' && review.report && (
+            <Button
+              type="dashed"
+              icon={<PlusOutlined />}
+              onClick={() => { setEditingObs(null); setModalOpen(true); }}
+            >
+              Agregar observación
+            </Button>
+          )}
           <Button
             type="primary"
             icon={<CheckOutlined />}
@@ -271,6 +302,8 @@ export default function SubmissionReview() {
                       observation={obs}
                       isSelected={selectedObs === obs.id}
                       onClick={handleObsClick}
+                      onEdit={handleObsEdit}
+                      onDelete={handleObsDelete}
                     />
                   ))
                 )}
@@ -279,6 +312,14 @@ export default function SubmissionReview() {
           </Allotment.Pane>
         </Allotment>
       </div>
+
+      <ObservationFormModal
+        open={modalOpen}
+        onClose={() => { setModalOpen(false); setEditingObs(null); }}
+        onSuccess={() => { setModalOpen(false); setEditingObs(null); setRefreshKey((k) => k + 1); }}
+        reviewId={review.report?.id ?? ''}
+        observation={editingObs ?? undefined}
+      />
     </div>
   );
 }

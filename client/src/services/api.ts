@@ -425,4 +425,29 @@ export const metricsApi = {
   getReviewsOverTime: () => api.get<ReviewsOverTime[]>('/metrics/reviews'),
 };
 
+export const observationsApi = {
+  create: (data: {
+    reviewId: string;
+    type: string;
+    severity: string;
+    message: string;
+    suggestion?: string;
+    textFragment?: string;
+    offsetStart?: number;
+    offsetEnd?: number;
+  }) => api.post<Observation>('/observations', data),
+  update: (
+    id: string,
+    data: {
+      severity?: string;
+      message?: string;
+      suggestion?: string;
+      textFragment?: string;
+      offsetStart?: number;
+      offsetEnd?: number;
+    },
+  ) => api.patch<Observation>(`/observations/${id}`, data),
+  remove: (id: string) => api.delete(`/observations/${id}`),
+};
+
 export default api;

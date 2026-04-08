@@ -61,6 +61,10 @@ export interface Observation {
   authorName?: string | null;
   /** Escalation level: 0 = normal, >0 = escalated (orange/red border) */
   escalationLevel?: number;
+  /** Whether this observation can be edited/deleted by the current tutor */
+  isMutable?: boolean;
+  /** The id of the user who created this observation */
+  authorId?: string | null;
 }
 
 export interface SourceReference {

@@ -1,5 +1,5 @@
-import { Card, Tag, Tooltip, Typography } from 'antd';
-import { RobotOutlined, UserOutlined } from '@ant-design/icons';
+import { Card, Tag, Tooltip, Typography, Button, Popconfirm } from 'antd';
+import { RobotOutlined, UserOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import type { Observation } from '../../../types';
 import { SEVERITY_CONFIG, AGENT_LABELS } from './observation-config';
 import './ObservationCard.css';
@@ -10,12 +10,15 @@ interface ObservationCardProps {
   observation: Observation;
   isSelected: boolean;
   onClick: (obs: Observation) => void;
+  onEdit?: (obs: Observation) => void;
+  onDelete?: (obs: Observation) => void;
 }
 
-export default function ObservationCard({ observation, isSelected, onClick }: ObservationCardProps) {
+export default function ObservationCard({ observation, isSelected, onClick, onEdit, onDelete }: ObservationCardProps) {
   const cfg = SEVERITY_CONFIG[observation.severity];
   const isEscalated = (observation.escalationLevel ?? 0) > 0;
   const isThena = !observation.source || observation.source === 'SYSTEM';
+  const showActions = observation.isMutable === true && (onEdit || onDelete);
 
   return (
     <Card
@@ -79,6 +82,41 @@ export default function ObservationCard({ observation, isSelected, onClick }: Ob
             {observation.sourceReference.section}
           </Text>
         </Tooltip>
+      )}
+      {showActions && (
+        <div
+          className="observation-card__actions"
+          style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}
+        >
+          {onEdit && (
+            <Button
+              size="small"
+              icon={<EditOutlined />}
+              onClick={(e) => { e.stopPropagation(); onEdit(observation); }}
+            >
+              Editar
+            </Button>
+          )}
+          {onDelete && (
+            <Popconfirm
+              title="¿Eliminar esta observación?"
+              okText="Eliminar"
+              cancelText="Cancelar"
+              okButtonProps={{ danger: true }}
+              onConfirm={(e) => { e?.stopPropagation(); onDelete(observation); }}
+              onCancel={(e) => e?.stopPropagation()}
+            >
+              <Button
+                size="small"
+                danger
+                icon={<DeleteOutlined />}
+                onClick={(e) => e.stopPropagation()}
+              >
+                Eliminar
+              </Button>
+            </Popconfirm>
+          )}
+        </div>
       )}
     </Card>
   );
