@@ -29,6 +29,7 @@ from src.infrastructure.repositories.review_repository import ReviewRepository
 from src.infrastructure.vector_store.retriever import RAGRetriever
 from src.application.parsers.docx_parser import parse_docx
 from src.application.workflows.review_graph import compile_review_graph
+from src.application.escalation import check_escalation
 from src.domain.entities import ReviewState
 
 logger = logging.getLogger(__name__)
@@ -92,6 +93,7 @@ class ReviewWorker:
         submission_id: str = job.data.get("submissionId", "")
         chapter_id: str = job.data.get("chapterId", "")
         file_url: str = job.data.get("fileUrl", "")
+        version_number: int = int(job.data.get("versionNumber", 1))
 
         logger.info(
             "Processing BullMQ job %s (db job_id=%s, submission=%s)",
@@ -111,6 +113,7 @@ class ReviewWorker:
                     submission_id,
                     chapter_id,
                     file_url,
+                    version_number,
                 ),
                 timeout=REVIEW_TOTAL_TIMEOUT_SECONDS,
             )
@@ -132,6 +135,7 @@ class ReviewWorker:
         submission_id: str,
         chapter_id: str,
         file_url: str,
+        version_number: int = 1,
     ) -> None:
         """
         Synchronous review pipeline — runs in a thread-pool executor.
@@ -225,6 +229,9 @@ class ReviewWorker:
                     "integrity_findings": result.get("integrity_findings", []),
                 },
             )
+
+            # Check escalation — resilient, errors are swallowed inside check_escalation
+            check_escalation(self._db_engine, chapter_id, version_number)
 
             # Mark job as completed
             self._repository.update_job_status(job_id, "COMPLETED")

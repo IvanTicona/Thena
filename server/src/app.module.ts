@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { BullModule } from '@nestjs/bullmq';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
 import { APP_GUARD } from '@nestjs/core';
 import { PrismaModule } from './shared/prisma/prisma.module.js';
 import { StorageModule } from './shared/storage/storage.module.js';
@@ -16,6 +17,7 @@ import { HealthModule } from './shared/health/health.module.js';
 import { AuditModule } from './modules/audit/audit.module.js';
 import { AssignmentModule } from './modules/assignment/assignment.module.js';
 import { NotificationModule } from './modules/notification/notification.module.js';
+import { AlertModule } from './modules/alert/alert.module.js';
 
 @Module({
   imports: [
@@ -32,6 +34,9 @@ import { NotificationModule } from './modules/notification/notification.module.j
         limit: 100,
       },
     ]),
+
+    // Cron jobs (AlertModule inactivity check)
+    ScheduleModule.forRoot(),
 
     PrismaModule,
     AuthModule,
@@ -57,6 +62,7 @@ import { NotificationModule } from './modules/notification/notification.module.j
     AuditModule,
     AssignmentModule,
     NotificationModule,
+    AlertModule,
   ],
   controllers: [],
   providers: [

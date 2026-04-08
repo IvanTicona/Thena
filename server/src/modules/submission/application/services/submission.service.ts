@@ -11,6 +11,7 @@ import { StorageService } from '../../../../shared/storage/storage.service.js';
 import { AuditService } from '../../../audit/application/audit.service.js';
 import { AuditAction } from '../../../audit/domain/audit.constants.js';
 import { NotificationService } from '../../../notification/application/notification.service.js';
+import { AlertService } from '../../../alert/application/alert.service.js';
 
 const DOCX_MIME =
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
@@ -23,6 +24,7 @@ export class SubmissionService {
     @InjectQueue('review') private readonly reviewQueue: Queue,
     private readonly auditService: AuditService,
     private readonly notificationService: NotificationService,
+    private readonly alertService: AlertService,
   ) {}
 
   async findAllForStudent(studentId: string) {
@@ -180,6 +182,9 @@ export class SubmissionService {
         { submissionId: result.submission.id, chapterId, versionNumber },
       );
     }
+
+    // Auto-resolve any active INACTIVITY alert for this thesis — fire-and-forget
+    void this.alertService.resolveInactivityAlertsForThesis(chapter.thesisId);
 
     return {
       id: result.submission.id,
