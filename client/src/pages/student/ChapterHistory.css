@@ -108,3 +108,194 @@
     overflow-x: auto;
   }
 }
+
+/* ========================================================
+   Cross-version diff section
+   BEM: .chapter-history-diff__element--modifier
+   ======================================================== */
+
+/* ── DIFF CARD ───────────────────────────────────────────── */
+.chapter-history-diff__card {
+  margin-top: 20px;
+}
+
+.chapter-history-diff__card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── VERSION SELECTORS ───────────────────────────────────── */
+.chapter-history-diff__selectors {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.chapter-history-diff__selector-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 200px;
+}
+
+.chapter-history-diff__selector-label {
+  font-size: 12px;
+}
+
+.chapter-history-diff__select {
+  width: 100%;
+}
+
+.chapter-history-diff__arrow {
+  font-size: 20px;
+  color: #06175d;
+  padding-bottom: 4px;
+  flex-shrink: 0;
+  align-self: flex-end;
+}
+
+/* ── ACTIONS ─────────────────────────────────────────────── */
+.chapter-history-diff__actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.chapter-history-diff__error {
+  margin-top: 12px;
+}
+
+/* ── DIVIDER ─────────────────────────────────────────────── */
+.chapter-history-diff__divider {
+  margin: 16px 0;
+}
+
+/* ── SUMMARY BADGES ──────────────────────────────────────── */
+.chapter-history-diff__summary {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.chapter-history-diff__summary-tag {
+  font-size: 13px;
+  padding: 3px 10px;
+  font-weight: 500;
+}
+
+/* ── DIFF RESULTS ────────────────────────────────────────── */
+.chapter-history-diff__results {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ── DIFF SECTION (Collapse) ─────────────────────────────── */
+.chapter-history-diff__section .ant-collapse-header {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+/* Resolved — green left border */
+.chapter-history-diff__section--resolved {
+  border-left: 4px solid #52c41a !important;
+}
+
+.chapter-history-diff__section--resolved > .ant-collapse-item > .ant-collapse-header {
+  color: #389e0d;
+}
+
+/* Persisting — orange left border */
+.chapter-history-diff__section--persisting {
+  border-left: 4px solid #fa8c16 !important;
+}
+
+.chapter-history-diff__section--persisting > .ant-collapse-item > .ant-collapse-header {
+  color: #d46b08;
+}
+
+/* New — red left border */
+.chapter-history-diff__section--new {
+  border-left: 4px solid #ff4d4f !important;
+}
+
+.chapter-history-diff__section--new > .ant-collapse-item > .ant-collapse-header {
+  color: #cf1322;
+}
+
+/* ── SECTION LABEL ───────────────────────────────────────── */
+.chapter-history-diff__section-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chapter-history-diff__count-tag {
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+/* ── OBSERVATION ROW ─────────────────────────────────────── */
+.chapter-history-diff__obs-row {
+  padding: 8px 0 !important;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.chapter-history-diff__obs-row:last-child {
+  border-bottom: none;
+}
+
+/* ── OBSERVATION ITEM ────────────────────────────────────── */
+.chapter-history-diff__obs-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.chapter-history-diff__obs-badges {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.chapter-history-diff__agent-tag {
+  font-size: 11px;
+}
+
+.chapter-history-diff__obs-message {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #111827;
+}
+
+.chapter-history-diff__obs-suggestion {
+  font-size: 12px;
+  line-height: 1.4;
+  font-style: italic;
+}
+
+/* ── MOBILE DIFF ─────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .chapter-history-diff__selectors {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .chapter-history-diff__arrow {
+    transform: rotate(90deg);
+    align-self: center;
+    padding: 0;
+  }
+
+  .chapter-history-diff__selector-group {
+    width: 100%;
+  }
+}
+

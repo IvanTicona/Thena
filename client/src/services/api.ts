@@ -4,6 +4,7 @@ import type {
   Chapter,
   Submission,
   ReviewResult,
+  Observation,
   ThesisDocument,
   TutorSummary,
   KnowledgeDoc,
@@ -104,6 +105,12 @@ export interface ChapterDetailData extends Chapter {
   submissions?: Submission[];
 }
 
+export interface ReviewDiffResult {
+  resolved: Observation[];
+  persisting: Observation[];
+  new: Observation[];
+}
+
 export const chaptersApi = {
   list: () => api.get<Chapter[]>('/chapters'),
   getById: (id: string) => api.get<ChapterDetailData>(`/chapters/${id}`),
@@ -129,6 +136,10 @@ export const reviewsApi = {
   getByJobId: (jobId: string) => api.get<ReviewResult>(`/reviews/${jobId}`),
   exportPdf: (jobId: string) =>
     api.get(`/reviews/${jobId}/export`, { responseType: 'blob' }),
+  getDiff: (submissionV1: string, submissionV2: string) =>
+    api.get<ReviewDiffResult>('/reviews/diff', {
+      params: { submissionV1, submissionV2 },
+    }),
 };
 
 export const reviewerApi = {

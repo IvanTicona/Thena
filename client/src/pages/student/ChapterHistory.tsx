@@ -10,24 +10,129 @@ import {
   Statistic,
   Row,
   Col,
+  Select,
+  Collapse,
+  List,
+  Empty,
+  Divider,
 } from 'antd';
 import {
   ArrowLeftOutlined,
   FileWordOutlined,
   DownloadOutlined,
   EyeOutlined,
+  DiffOutlined,
+  CloseOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { useParams, useNavigate } from 'react-router-dom';
-import { chaptersApi, submissionsApi, type ChapterDetailData } from '../../services/api';
+import {
+  chaptersApi,
+  submissionsApi,
+  reviewsApi,
+  type ChapterDetailData,
+  type ReviewDiffResult,
+} from '../../services/api';
 import { ApiError } from '../../services/api-error';
-import type { Submission } from '../../types';
+import type { Submission, Observation } from '../../types';
 import { CHAPTER_STATUS, JOB_STATUS } from '../../utils/status';
 import { formatDateTime } from '../../utils/format';
 import './ChapterHistory.css';
 
 const { Title, Text } = Typography;
 
+const SEVERITY_LABELS: Record<string, string> = {
+  ERROR: 'Error',
+  WARNING: 'Advertencia',
+  SUGGESTION: 'Sugerencia',
+  INFO: 'Info',
+};
+
+const SEVERITY_COLORS: Record<string, string> = {
+  ERROR: 'red',
+  WARNING: 'orange',
+  SUGGESTION: 'blue',
+  INFO: 'green',
+};
+
+const AGENT_LABELS: Record<string, string> = {
+  STRUCTURE: 'Estructura',
+  METHODOLOGY: 'Metodología',
+  COHERENCE: 'Coherencia',
+  CITATIONS: 'Citas',
+  FORMAT: 'Formato',
+  INTEGRITY: 'Integridad',
+};
+
+/* ── Observation item component ──────────────────────────────── */
+function ObservationItem({ obs }: { obs: Observation }) {
+  return (
+    <div className="chapter-history-diff__obs-item">
+      <div className="chapter-history-diff__obs-badges">
+        <Tag color={SEVERITY_COLORS[obs.severity] ?? 'default'}>
+          {SEVERITY_LABELS[obs.severity] ?? obs.severity}
+        </Tag>
+        <Tag color="default" className="chapter-history-diff__agent-tag">
+          {AGENT_LABELS[obs.type] ?? obs.type}
+        </Tag>
+        {obs.source === 'TUTOR' && <Tag color="purple">Tutor</Tag>}
+      </div>
+      <Text className="chapter-history-diff__obs-message">{obs.message}</Text>
+      {obs.suggestion && (
+        <Text type="secondary" className="chapter-history-diff__obs-suggestion">
+          → {obs.suggestion}
+        </Text>
+      )}
+    </div>
+  );
+}
+
+/* ── Diff section component ──────────────────────────────────── */
+interface DiffSectionProps {
+  title: string;
+  observations: Observation[];
+  colorClass: string;
+  emptyText: string;
+  defaultOpen?: boolean;
+}
+
+function DiffSection({ title, observations, colorClass, emptyText, defaultOpen }: DiffSectionProps) {
+  return (
+    <Collapse
+      defaultActiveKey={defaultOpen ? ['section'] : []}
+      className={`chapter-history-diff__section ${colorClass}`}
+      items={[
+        {
+          key: 'section',
+          label: (
+            <span className="chapter-history-diff__section-label">
+              {title}
+              <Tag className="chapter-history-diff__count-tag">
+                {observations.length}
+              </Tag>
+            </span>
+          ),
+          children:
+            observations.length === 0 ? (
+              <Empty description={emptyText} image={Empty.PRESENTED_IMAGE_SIMPLE} />
+            ) : (
+              <List
+                dataSource={observations}
+                renderItem={(obs) => (
+                  <List.Item className="chapter-history-diff__obs-row">
+                    <ObservationItem obs={obs} />
+                  </List.Item>
+                )}
+                split={false}
+              />
+            ),
+        },
+      ]}
+    />
+  );
+}
+
+/* ── Main component ──────────────────────────────────────────── */
 export default function ChapterHistory() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -36,6 +141,13 @@ export default function ChapterHistory() {
   const [loading, setLoading] = useState(true);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Diff state
+  const [diffV1, setDiffV1] = useState<string | null>(null);
+  const [diffV2, setDiffV2] = useState<string | null>(null);
+  const [diffResult, setDiffResult] = useState<ReviewDiffResult | null>(null);
+  const [diffLoading, setDiffLoading] = useState(false);
+  const [diffError, setDiffError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -62,6 +174,12 @@ export default function ChapterHistory() {
       : 'Historial — Thena';
   }, [chapter]);
 
+  // Reset diff result when selection changes
+  useEffect(() => {
+    setDiffResult(null);
+    setDiffError(null);
+  }, [diffV1, diffV2]);
+
   const handleDownload = async (submission: Submission) => {
     setDownloadingId(submission.id);
     try {
@@ -82,6 +200,29 @@ export default function ChapterHistory() {
     } finally {
       setDownloadingId(null);
     }
+  };
+
+  const handleCompareDiff = async () => {
+    if (!diffV1 || !diffV2) return;
+    setDiffLoading(true);
+    setDiffError(null);
+    setDiffResult(null);
+    try {
+      const res = await reviewsApi.getDiff(diffV1, diffV2);
+      setDiffResult(res.data);
+    } catch (err) {
+      const msg = err instanceof ApiError ? err.message : 'Error al comparar versiones';
+      setDiffError(msg);
+    } finally {
+      setDiffLoading(false);
+    }
+  };
+
+  const handleClearDiff = () => {
+    setDiffV1(null);
+    setDiffV2(null);
+    setDiffResult(null);
+    setDiffError(null);
   };
 
   if (loading) {
@@ -112,6 +253,11 @@ export default function ChapterHistory() {
     (s) => s.reviewJob?.status === 'COMPLETED',
   ).length;
   const latestSubmission = submissions[0] ?? null;
+
+  // Only submissions with a COMPLETED review can be compared
+  const completedSubmissions = submissions.filter(
+    (s) => s.reviewJob?.status === 'COMPLETED',
+  );
 
   /* ── Table columns ─────────────────────────────────────── */
   const columns: ColumnsType<Submission> = [
@@ -267,6 +413,129 @@ export default function ChapterHistory() {
           }
         />
       </Card>
+
+      {/* Cross-version diff */}
+      {completedSubmissions.length >= 2 && (
+        <Card
+          title={
+            <span className="chapter-history-diff__card-title">
+              <DiffOutlined />
+              <span>Comparar versiones</span>
+            </span>
+          }
+          className="chapter-history-diff__card"
+        >
+          <div className="chapter-history-diff__selectors">
+            <div className="chapter-history-diff__selector-group">
+              <Text type="secondary" className="chapter-history-diff__selector-label">
+                Versión base (anterior)
+              </Text>
+              <Select
+                placeholder="Seleccioná una versión"
+                value={diffV1 ?? undefined}
+                onChange={(val) => setDiffV1(val)}
+                className="chapter-history-diff__select"
+                options={completedSubmissions.map((s) => ({
+                  value: s.id,
+                  label: `v${s.versionNumber} — ${formatDateTime(s.submittedAt)}`,
+                  disabled: s.id === diffV2,
+                }))}
+              />
+            </div>
+
+            <div className="chapter-history-diff__arrow">→</div>
+
+            <div className="chapter-history-diff__selector-group">
+              <Text type="secondary" className="chapter-history-diff__selector-label">
+                Versión nueva (comparar con)
+              </Text>
+              <Select
+                placeholder="Seleccioná una versión"
+                value={diffV2 ?? undefined}
+                onChange={(val) => setDiffV2(val)}
+                className="chapter-history-diff__select"
+                options={completedSubmissions.map((s) => ({
+                  value: s.id,
+                  label: `v${s.versionNumber} — ${formatDateTime(s.submittedAt)}`,
+                  disabled: s.id === diffV1,
+                }))}
+              />
+            </div>
+          </div>
+
+          <div className="chapter-history-diff__actions">
+            <Button
+              type="primary"
+              icon={<DiffOutlined />}
+              disabled={!diffV1 || !diffV2 || diffV1 === diffV2}
+              loading={diffLoading}
+              onClick={handleCompareDiff}
+            >
+              Comparar observaciones
+            </Button>
+            {(diffResult || diffError) && (
+              <Button
+                icon={<CloseOutlined />}
+                onClick={handleClearDiff}
+              >
+                Limpiar
+              </Button>
+            )}
+          </div>
+
+          {diffError && (
+            <Alert
+              type="error"
+              message={diffError}
+              showIcon
+              className="chapter-history-diff__error"
+            />
+          )}
+
+          {diffResult && (
+            <>
+              <Divider className="chapter-history-diff__divider" />
+
+              {/* Summary badges */}
+              <div className="chapter-history-diff__summary">
+                <Tag color="green" className="chapter-history-diff__summary-tag">
+                  ✓ Resueltas: {diffResult.resolved.length}
+                </Tag>
+                <Tag color="orange" className="chapter-history-diff__summary-tag">
+                  ~ Persisten: {diffResult.persisting.length}
+                </Tag>
+                <Tag color="red" className="chapter-history-diff__summary-tag">
+                  + Nuevas: {diffResult.new.length}
+                </Tag>
+              </div>
+
+              <div className="chapter-history-diff__results">
+                <DiffSection
+                  title="Resueltas"
+                  observations={diffResult.resolved}
+                  colorClass="chapter-history-diff__section--resolved"
+                  emptyText="No hay observaciones resueltas"
+                  defaultOpen={diffResult.resolved.length > 0}
+                />
+                <DiffSection
+                  title="Persisten"
+                  observations={diffResult.persisting}
+                  colorClass="chapter-history-diff__section--persisting"
+                  emptyText="No hay observaciones que persisten"
+                  defaultOpen={diffResult.persisting.length > 0}
+                />
+                <DiffSection
+                  title="Nuevas"
+                  observations={diffResult.new}
+                  colorClass="chapter-history-diff__section--new"
+                  emptyText="No hay observaciones nuevas"
+                  defaultOpen={diffResult.new.length > 0}
+                />
+              </div>
+            </>
+          )}
+        </Card>
+      )}
     </div>
   );
 }

@@ -39,6 +39,12 @@ export interface ReviewObservation {
   escalationLevel: number;
 }
 
+export interface ReviewDiffResult {
+  resolved: ReviewObservation[];
+  persisting: ReviewObservation[];
+  new: ReviewObservation[];
+}
+
 export interface ReviewJobBase {
   id: string;
   submissionId: string;
@@ -189,6 +195,63 @@ export class ReviewService {
     return this.findByJobId(submission.reviewJob.id, requestingUserId);
   }
 
+  async getDiff(
+    submissionV1Id: string,
+    submissionV2Id: string,
+    requestingUserId?: string,
+  ): Promise<ReviewDiffResult> {
+    // Fetch observations for both submissions via their review reports
+    const getObsForSubmission = async (submissionId: string): Promise<ReviewObservation[]> => {
+      const job = await this.prisma.client.reviewJob.findUnique({
+        where: { submissionId },
+        include: { reviewReport: true },
+      });
+
+      if (!job || job.status !== 'COMPLETED' || !job.reviewReport) {
+        return [];
+      }
+
+      // Ownership check — only the student who owns the chapter can diff
+      if (requestingUserId) {
+        const submission = await this.prisma.client.submission.findUnique({
+          where: { id: submissionId },
+          select: { chapter: { select: { thesis: { select: { studentId: true } } } } },
+        });
+        if (submission?.chapter.thesis.studentId !== requestingUserId) {
+          throw new ForbiddenException('No tenés permiso para ver esta revisión');
+        }
+      }
+
+      const obs = await this.prisma.client.observation.findMany({
+        where: { reviewReportId: job.reviewReport.id },
+        orderBy: { createdAt: 'asc' },
+      });
+
+      return obs.map((o) => ({
+        id: o.id,
+        type: o.type,
+        severity: o.severity,
+        message: o.message,
+        suggestion: o.suggestion,
+        textFragment: o.textFragment,
+        offsetStart: o.offsetStart,
+        offsetEnd: o.offsetEnd,
+        sourceReference: parseSourceReference(o.sourceReference),
+        source: o.source,
+        authorId: o.authorId,
+        isMutable: o.isMutable,
+        escalationLevel: o.escalationLevel,
+      }));
+    };
+
+    const [obsV1, obsV2] = await Promise.all([
+      getObsForSubmission(submissionV1Id),
+      getObsForSubmission(submissionV2Id),
+    ]);
+
+    return diffObservations(obsV1, obsV2);
+  }
+
   async generatePdfReport(
     jobId: string,
     userId: string,
@@ -269,6 +332,81 @@ export class ReviewService {
     const filename = `thena-reporte-cap${chapterNumber}-v${versionNumber}.pdf`;
     return { buffer, filename };
   }
+}
+
+// ---------------------------------------------------------------------------
+// Diff helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Compute word-overlap similarity between two strings.
+ * Returns a value in [0, 1] — 1 means identical content.
+ */
+function wordOverlapSimilarity(a: string, b: string): number {
+  const tokenize = (s: string) =>
+    s
+      .toLowerCase()
+      .trim()
+      .split(/\s+/)
+      .filter((w) => w.length > 0);
+
+  const wordsA = new Set(tokenize(a));
+  const wordsB = new Set(tokenize(b));
+
+  if (wordsA.size === 0 && wordsB.size === 0) return 1;
+  if (wordsA.size === 0 || wordsB.size === 0) return 0;
+
+  let overlap = 0;
+  for (const w of wordsA) {
+    if (wordsB.has(w)) overlap++;
+  }
+
+  return (overlap * 2) / (wordsA.size + wordsB.size);
+}
+
+/**
+ * Match observations by (type + severity + message similarity ≥ 80%).
+ * Returns { resolved, persisting, new }.
+ */
+function diffObservations(
+  v1: ReviewObservation[],
+  v2: ReviewObservation[],
+): ReviewDiffResult {
+  const SIMILARITY_THRESHOLD = 0.8;
+
+  const matchedV2Indices = new Set<number>();
+  const persisting: ReviewObservation[] = [];
+  const resolved: ReviewObservation[] = [];
+
+  for (const obs1 of v1) {
+    let bestMatch = -1;
+    let bestScore = 0;
+
+    for (let i = 0; i < v2.length; i++) {
+      if (matchedV2Indices.has(i)) continue;
+      const obs2 = v2[i];
+
+      // Must share the same type and severity bucket
+      if (obs1.type !== obs2.type || obs1.severity !== obs2.severity) continue;
+
+      const score = wordOverlapSimilarity(obs1.message, obs2.message);
+      if (score >= SIMILARITY_THRESHOLD && score > bestScore) {
+        bestScore = score;
+        bestMatch = i;
+      }
+    }
+
+    if (bestMatch >= 0) {
+      matchedV2Indices.add(bestMatch);
+      persisting.push(v1.find((o) => o === obs1)!);
+    } else {
+      resolved.push(obs1);
+    }
+  }
+
+  const newObservations = v2.filter((_, i) => !matchedV2Indices.has(i));
+
+  return { resolved, persisting, new: newObservations };
 }
 
 // ---------------------------------------------------------------------------

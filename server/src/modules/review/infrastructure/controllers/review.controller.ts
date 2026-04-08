@@ -25,6 +25,16 @@ export class ReviewController {
     return this.reviewService.findLatestByChapterId(chapterId, ownershipUserId);
   }
 
+  @Get('diff')
+  async getDiff(
+    @Query('submissionV1', ParseUUIDPipe) submissionV1: string,
+    @Query('submissionV2', ParseUUIDPipe) submissionV2: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    const ownershipUserId = user?.role === 'STUDENT' ? user.sub : undefined;
+    return this.reviewService.getDiff(submissionV1, submissionV2, ownershipUserId);
+  }
+
   @Get(':jobId/export')
   async exportPdf(
     @Param('jobId', ParseUUIDPipe) jobId: string,
