@@ -120,6 +120,8 @@ export const submissionsApi = {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
   },
+  downloadFile: (submissionId: string) =>
+    api.get(`/submissions/${submissionId}/file`, { responseType: 'arraybuffer' }),
 };
 
 export const reviewsApi = {

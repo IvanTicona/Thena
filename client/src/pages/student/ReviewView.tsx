@@ -232,10 +232,11 @@ export default function ReviewView() {
         </Button>
       </div>
       <Allotment defaultSizes={[60, 40]}>
-        {/* Panel izquierdo — Documento Markdown */}
+        {/* Panel izquierdo — Documento */}
         <Allotment.Pane minSize={300}>
           <DocumentPreview
             ref={markdownRef}
+            submissionId={review.submissionId}
             markdownContent={review.markdownContent}
             observations={filtered}
             selectedObsId={selectedObs}

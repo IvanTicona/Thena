@@ -2,13 +2,17 @@ import {
   Controller,
   Get,
   Post,
+  Param,
+  ParseUUIDPipe,
   Body,
   ForbiddenException,
   UseInterceptors,
   UploadedFile,
   ParseFilePipe,
   MaxFileSizeValidator,
+  Res,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { SubmissionService } from '../../application/services/submission.service.js';
 import { CreateSubmissionDto } from '../../application/dtos/create-submission.dto.js';
@@ -27,6 +31,29 @@ export class SubmissionController {
       throw new ForbiddenException('Only students can access their submissions');
     }
     return this.submissionService.findAllForStudent(user.sub);
+  }
+
+  @Get(':id/file')
+  async downloadFile(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: JwtPayload,
+    @Res() res: Response,
+  ) {
+    const { buffer, fileName } = await this.submissionService.downloadFile(
+      id,
+      user.sub,
+      user.role,
+    );
+
+    res.set({
+      'Content-Type':
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'Content-Disposition': `inline; filename="${encodeURIComponent(fileName)}"`,
+      'Content-Length': buffer.length,
+      'Cache-Control': 'private, max-age=3600',
+    });
+
+    res.end(buffer);
   }
 
   @Post()
