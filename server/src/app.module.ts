@@ -18,6 +18,7 @@ import { AuditModule } from './modules/audit/audit.module.js';
 import { AssignmentModule } from './modules/assignment/assignment.module.js';
 import { NotificationModule } from './modules/notification/notification.module.js';
 import { AlertModule } from './modules/alert/alert.module.js';
+import { MetricsModule } from './modules/metrics/metrics.module.js';
 
 @Module({
   imports: [
@@ -63,6 +64,7 @@ import { AlertModule } from './modules/alert/alert.module.js';
     AssignmentModule,
     NotificationModule,
     AlertModule,
+    MetricsModule,
   ],
   controllers: [],
   providers: [

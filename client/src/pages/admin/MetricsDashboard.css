@@ -1,0 +1,44 @@
+.metrics-dashboard {
+  padding: 0;
+}
+
+.metrics-dashboard__loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+}
+
+.metrics-dashboard__header {
+  margin-bottom: 24px;
+}
+
+.metrics-dashboard__header .ant-typography:first-child {
+  margin-bottom: 4px;
+}
+
+.metrics-dashboard__summary {
+  margin-bottom: 32px;
+}
+
+.metrics-dashboard__section-title {
+  margin: 28px 0 16px !important;
+}
+
+.metrics-dashboard__chart-card {
+  height: 320px;
+}
+
+.metrics-dashboard__chart-card .ant-card-body {
+  height: calc(100% - 56px);
+  padding: 16px;
+}
+
+.metrics-dashboard__empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: #999;
+  font-size: 14px;
+}
