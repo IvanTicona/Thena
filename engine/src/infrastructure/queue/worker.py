@@ -1,7 +1,26 @@
-import json
-import logging
+"""
+BullMQ Worker for Thena Engine.
 
-import redis
+Uses the official `bullmq` Python package (same Lua scripts as @nestjs/bullmq),
+which is fully interoperable with the NestJS/BullMQ v5 producer on the server side.
+
+The worker is async (asyncio-based). Synchronous LangGraph/DB work is offloaded
+to a thread-pool executor so it never blocks the event loop.
+
+Key design decisions:
+- Queue name "review" matches the name registered in SubmissionModule (BullModule.registerQueue)
+- BullMQ v5 uses sorted-set-based waiting lists (ZADD/ZPOPMIN) — the `bullmq` Python package
+  handles all Redis key patterns and Lua scripts internally.
+- uvicorn is started with --workers 1 (see Dockerfile) to guarantee only one worker
+  instance runs per container. If multiple replicas are ever needed, spin up separate
+  engine containers — BullMQ handles job distribution across multiple workers.
+"""
+
+import asyncio
+import logging
+from concurrent.futures import ThreadPoolExecutor
+
+from bullmq import Worker, Job
 from sqlalchemy.engine import Engine
 
 from src.config import settings
@@ -14,27 +33,112 @@ from src.domain.entities import ReviewState
 
 logger = logging.getLogger(__name__)
 
-QUEUE_NAME = "bull:review:process-review"
-POLL_INTERVAL = 2  # seconds
+# Total timeout for a full review (all 3 agents + synthesizer): 90 seconds.
+# This is enforced around the entire graph.invoke() call.
+REVIEW_TOTAL_TIMEOUT_SECONDS = 90
 
 
 class ReviewWorker:
+    """
+    Wraps the bullmq.Worker and exposes start/stop lifecycle methods
+    that integrate cleanly with FastAPI's asyncio event loop.
+    """
+
     def __init__(self, db_engine: Engine) -> None:
         self._db_engine = db_engine
         self._storage = MinioStorage()
         self._repository = ReviewRepository(db_engine)
         self._retriever = RAGRetriever(db_engine)
         self._graph = compile_review_graph()
-        self._redis = redis.from_url(settings.REDIS_URL, decode_responses=True)
-        self._running = False
+        # Thread executor for blocking synchronous work (LangGraph, DB, MinIO)
+        self._executor = ThreadPoolExecutor(
+            max_workers=2, thread_name_prefix="review-worker"
+        )
+        self._bullmq_worker: Worker | None = None
 
-    def process_job(self, job_data: dict[str, str]) -> None:
-        """Process a single review job."""
-        job_id = job_data["jobId"]
-        submission_id = job_data["submissionId"]
-        chapter_id = job_data["chapterId"]
-        file_url = job_data["fileUrl"]
+    # ── Public lifecycle ─────────────────────────────────────────────
 
+    async def start(self) -> None:
+        """Create the BullMQ Worker and start consuming jobs."""
+        redis_opts = {"connection": settings.REDIS_URL}
+
+        self._bullmq_worker = Worker(
+            "review",  # Must match BullModule.registerQueue({ name: 'review' })
+            self._process_job,  # Async processor — receives bullmq.Job
+            redis_opts,
+        )
+        logger.info("BullMQ Worker started — consuming from queue 'review'")
+
+    async def stop(self) -> None:
+        """Gracefully drain the worker and close connections."""
+        if self._bullmq_worker is not None:
+            try:
+                await self._bullmq_worker.close()
+            except Exception as e:
+                logger.warning("Error closing BullMQ worker: %s", e)
+        self._executor.shutdown(wait=False)
+        logger.info("BullMQ Worker stopped")
+
+    # ── BullMQ processor ─────────────────────────────────────────────
+
+    async def _process_job(self, job: Job, job_token: str) -> None:
+        """
+        Called by bullmq.Worker for every job dequeued from 'review'.
+
+        job.data contains the payload added by the NestJS SubmissionService:
+          { jobId, submissionId, chapterId, studentId, fileUrl, versionNumber }
+        """
+        job_id: str = job.data.get("jobId", "")
+        submission_id: str = job.data.get("submissionId", "")
+        chapter_id: str = job.data.get("chapterId", "")
+        file_url: str = job.data.get("fileUrl", "")
+
+        logger.info(
+            "Processing BullMQ job %s (db job_id=%s, submission=%s)",
+            job.id,
+            job_id,
+            submission_id,
+        )
+
+        # Run the blocking review pipeline in a thread-pool with a hard timeout
+        loop = asyncio.get_running_loop()
+        try:
+            await asyncio.wait_for(
+                loop.run_in_executor(
+                    self._executor,
+                    self._run_review_sync,
+                    job_id,
+                    submission_id,
+                    chapter_id,
+                    file_url,
+                ),
+                timeout=REVIEW_TOTAL_TIMEOUT_SECONDS,
+            )
+        except asyncio.TimeoutError:
+            timeout_msg = f"Review timed out after {REVIEW_TOTAL_TIMEOUT_SECONDS}s"
+            logger.error("Review job %s timed out", job_id)
+            try:
+                self._repository.update_job_status(job_id, "FAILED", timeout_msg)
+            except Exception as db_err:
+                logger.error("Failed to mark timed-out job as FAILED: %s", db_err)
+            # Re-raise so BullMQ marks the job as failed and applies retry/backoff
+            raise RuntimeError(timeout_msg)
+
+    # ── Synchronous review pipeline ──────────────────────────────────
+
+    def _run_review_sync(
+        self,
+        job_id: str,
+        submission_id: str,
+        chapter_id: str,
+        file_url: str,
+    ) -> None:
+        """
+        Synchronous review pipeline — runs in a thread-pool executor.
+
+        Mirrors the original process_job() logic; kept sync because LangGraph,
+        psycopg2, and MinIO are all blocking.
+        """
         logger.info("Processing review job %s for submission %s", job_id, submission_id)
 
         try:
@@ -51,16 +155,19 @@ class ReviewWorker:
             # Update submission with markdown
             self._repository.update_submission_markdown(submission_id, parsed.markdown)
 
-            # Get previously approved chapters
+            # Get previously approved chapters (context for coherence agent)
             previous_chapters = self._repository.get_approved_chapters(chapter_id)
 
             # Retrieve RAG context
-            query = f"Capitulo {chapter_info['chapter_number']}: {chapter_info['chapter_title']}\n{parsed.full_text[:2000]}"
+            query = (
+                f"Capitulo {chapter_info['chapter_number']}: "
+                f"{chapter_info['chapter_title']}\n{parsed.full_text[:2000]}"
+            )
             rag_context = self._retriever.retrieve(
                 query, tutor_id=chapter_info.get("tutor_id")
             )
 
-            # Build initial state
+            # Build initial LangGraph state
             sections_dicts = [
                 {
                     "heading": s.heading,
@@ -90,10 +197,10 @@ class ReviewWorker:
                 "agent_errors": {},
             }
 
-            # Run the LangGraph workflow
+            # Run the LangGraph workflow (blocking — runs 3 parallel agents + synthesizer)
             result = self._graph.invoke(initial_state)
 
-            # Save results
+            # Save results to the database
             self._repository.save_results(
                 job_id=job_id,
                 summary=result.get("summary", ""),
@@ -111,54 +218,9 @@ class ReviewWorker:
 
         except Exception as e:
             logger.error("Review job %s failed: %s", job_id, str(e), exc_info=True)
-            self._repository.update_job_status(job_id, "FAILED", str(e))
-
-    def poll_queue(self) -> dict[str, str | dict[str, str]] | None:
-        """Poll Redis for BullMQ jobs. Simplified polling for MVP."""
-        # BullMQ stores jobs in Redis lists/sorted sets
-        # For MVP, we poll the "wait" list
-        try:
-            # Try to get a job from the BullMQ wait list
-            result = self._redis.brpoplpush(
-                f"bull:review:wait", f"bull:review:active", timeout=POLL_INTERVAL
-            )
-
-            if result is None:
-                return None
-
-            # result is the job ID; get the job data
-            job_data_raw = self._redis.hgetall(f"bull:review:{result}")
-            if not job_data_raw:
-                return None
-
-            data = json.loads(job_data_raw.get("data", "{}"))
-            return {"bull_job_id": result, "data": data}
-
-        except Exception as e:
-            logger.error("Queue poll error: %s", str(e))
-            return None
-
-    def start(self) -> None:
-        """Start the worker loop."""
-        self._running = True
-        logger.info("Review worker started, polling queue...")
-
-        while self._running:
-            job = self.poll_queue()
-            if job:
-                try:
-                    self.process_job(job["data"])
-                except Exception as e:
-                    logger.error("Worker error: %s", str(e), exc_info=True)
-                finally:
-                    # Remove from active list
-                    try:
-                        self._redis.lrem(
-                            "bull:review:active", 1, job["bull_job_id"]
-                        )
-                    except Exception as e:
-                        logger.warning("Failed to remove job from active list: %s", e)
-
-    def stop(self) -> None:
-        self._running = False
-        logger.info("Review worker stopping...")
+            try:
+                self._repository.update_job_status(job_id, "FAILED", str(e))
+            except Exception as db_err:
+                logger.error("Failed to mark job as FAILED in DB: %s", db_err)
+            # Re-raise so BullMQ records the failure and can retry
+            raise

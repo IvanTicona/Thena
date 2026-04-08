@@ -1,5 +1,5 @@
+import asyncio
 import logging
-import threading
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
@@ -17,12 +17,67 @@ from src.config import settings
 
 logger = logging.getLogger(__name__)
 
-_worker_thread: threading.Thread | None = None
+# ── Worker crash-recovery constants (P2-11) ─────────────────────────────────
+_MAX_RESTART_ATTEMPTS = 5
+_RESTART_BASE_DELAY_SECONDS = 2.0  # exponential back-off base
+
+
+async def _run_worker_with_recovery(db_engine) -> None:
+    """
+    Supervisor loop: starts the BullMQ ReviewWorker and restarts it if it crashes.
+    Uses exponential back-off (2s, 4s, 8s, 16s, 32s) then gives up.
+    This coroutine is launched as a background asyncio task so it does not
+    block the FastAPI event loop.
+    """
+    from src.infrastructure.queue.worker import ReviewWorker
+
+    attempt = 0
+    while attempt <= _MAX_RESTART_ATTEMPTS:
+        worker = ReviewWorker(db_engine)
+        try:
+            await worker.start()
+            logger.info(
+                "ReviewWorker running (attempt %d/%d)",
+                attempt + 1,
+                _MAX_RESTART_ATTEMPTS + 1,
+            )
+            # bullmq.Worker runs continuously in the background via its own internal
+            # asyncio tasks.  We park here — this coroutine will be cancelled on shutdown.
+            await asyncio.get_running_loop().create_future()  # park indefinitely
+
+        except asyncio.CancelledError:
+            # Graceful shutdown requested — stop the worker and exit the loop
+            logger.info("ReviewWorker supervisor received shutdown signal")
+            await worker.stop()
+            return
+
+        except Exception as e:
+            await worker.stop()
+            attempt += 1
+            if attempt > _MAX_RESTART_ATTEMPTS:
+                logger.error(
+                    "ReviewWorker failed %d times — giving up. Last error: %s",
+                    _MAX_RESTART_ATTEMPTS,
+                    str(e),
+                    exc_info=True,
+                )
+                return
+
+            delay = _RESTART_BASE_DELAY_SECONDS * (2 ** (attempt - 1))
+            logger.error(
+                "ReviewWorker crashed (attempt %d/%d), restarting in %.1fs. Error: %s",
+                attempt,
+                _MAX_RESTART_ATTEMPTS,
+                delay,
+                str(e),
+                exc_info=True,
+            )
+            await asyncio.sleep(delay)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    # Startup
+    # ── Startup ────────────────────────────────────────────────────────────
     logger.info(
         "Thena Engine starting | LLM: %s/%s", settings.LLM_PROVIDER, settings.LLM_MODEL
     )
@@ -30,23 +85,29 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     db_engine = create_engine(settings.DATABASE_URL)
     app.state.db_engine = db_engine
 
-    # Start queue worker in background thread
-    from src.infrastructure.queue.worker import ReviewWorker
-
-    worker = ReviewWorker(db_engine)
-    app.state.worker = worker
-
-    global _worker_thread
-    _worker_thread = threading.Thread(target=worker.start, daemon=True)
-    _worker_thread.start()
-    logger.info("Review worker started")
+    # Launch the worker supervisor as a background asyncio task.
+    # Using a single asyncio task (not a thread) means there is EXACTLY ONE
+    # worker instance per uvicorn process.  The Dockerfile uses --workers 1
+    # to ensure only one uvicorn process runs, preventing duplicate workers.
+    worker_task = asyncio.create_task(
+        _run_worker_with_recovery(db_engine),
+        name="review-worker-supervisor",
+    )
+    app.state.worker_task = worker_task
+    logger.info("Review worker supervisor started")
 
     yield
 
-    # Shutdown
-    worker.stop()
+    # ── Shutdown ───────────────────────────────────────────────────────────
+    logger.info("Thena Engine shutting down — cancelling worker task")
+    worker_task.cancel()
+    try:
+        await asyncio.wait_for(asyncio.shield(worker_task), timeout=10)
+    except (asyncio.CancelledError, asyncio.TimeoutError):
+        pass
+
     db_engine.dispose()
-    logger.info("Thena Engine shutting down")
+    logger.info("Thena Engine shut down cleanly")
 
 
 app = FastAPI(
