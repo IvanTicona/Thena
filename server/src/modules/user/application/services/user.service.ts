@@ -38,18 +38,19 @@ export class UserService {
   ) {}
 
   async findById(id: string): Promise<UserModel | null> {
-    return this.prisma.client.user.findUnique({ where: { id } });
+    return this.prisma.client.user.findUnique({ where: { id, deletedAt: null } });
   }
 
   async findAll(): Promise<UserSummary[]> {
     return this.prisma.client.user.findMany({
+      where: { deletedAt: null },
       select: { id: true, name: true, role: true },
     });
   }
 
   async findTutors(): Promise<TutorSummary[]> {
     return this.prisma.client.user.findMany({
-      where: { role: 'TUTOR' },
+      where: { role: 'TUTOR', deletedAt: null },
       select: { id: true, name: true, email: true },
       orderBy: { name: 'asc' },
     });
@@ -58,8 +59,8 @@ export class UserService {
   // ─── Admin User Management ────────────────────────────────────────────
 
   async create(dto: CreateUserDto, actorId: string): Promise<Omit<UserModel, 'passwordHash'>> {
-    const existing = await this.prisma.client.user.findUnique({
-      where: { email: dto.email },
+    const existing = await this.prisma.client.user.findFirst({
+      where: { email: dto.email, deletedAt: null },
     });
 
     if (existing) {
@@ -93,7 +94,8 @@ export class UserService {
     const limit = Math.min(100, Math.max(1, query.limit ?? 20));
     const skip = (page - 1) * limit;
 
-    const where = query.role ? { role: query.role as UserRole } : {};
+    const where: Record<string, unknown> = { deletedAt: null };
+    if (query.role) where['role'] = query.role as UserRole;
 
     const [users, total] = await Promise.all([
       this.prisma.client.user.findMany({
@@ -105,6 +107,7 @@ export class UserService {
           role: true,
           createdAt: true,
           updatedAt: true,
+          deletedAt: true,
         },
         skip,
         take: limit,
@@ -125,7 +128,7 @@ export class UserService {
   }
 
   async getById(id: string): Promise<Omit<UserModel, 'passwordHash'>> {
-    const user = await this.prisma.client.user.findUnique({ where: { id } });
+    const user = await this.prisma.client.user.findUnique({ where: { id, deletedAt: null } });
 
     if (!user) {
       throw new NotFoundException('User not found');
@@ -139,7 +142,7 @@ export class UserService {
     dto: UpdateUserDto,
     actorId: string,
   ): Promise<Omit<UserModel, 'passwordHash'>> {
-    const user = await this.prisma.client.user.findUnique({ where: { id } });
+    const user = await this.prisma.client.user.findUnique({ where: { id, deletedAt: null } });
 
     if (!user) {
       throw new NotFoundException('User not found');
@@ -147,8 +150,8 @@ export class UserService {
 
     // Check email uniqueness if changing
     if (dto.email && dto.email !== user.email) {
-      const emailTaken = await this.prisma.client.user.findUnique({
-        where: { email: dto.email },
+      const emailTaken = await this.prisma.client.user.findFirst({
+        where: { email: dto.email, deletedAt: null },
       });
       if (emailTaken) {
         throw new ConflictException('Email already in use');
@@ -176,7 +179,7 @@ export class UserService {
   }
 
   async delete(id: string, actorId: string): Promise<{ id: string; deleted: true }> {
-    const user = await this.prisma.client.user.findUnique({ where: { id } });
+    const user = await this.prisma.client.user.findUnique({ where: { id, deletedAt: null } });
 
     if (!user) {
       throw new NotFoundException('User not found');
@@ -187,7 +190,10 @@ export class UserService {
       throw new BadRequestException('Cannot delete your own account');
     }
 
-    await this.prisma.client.user.delete({ where: { id } });
+    await this.prisma.client.user.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
 
     void this.auditService.log({
       action: AuditAction.CREATE_USER,
@@ -206,7 +212,7 @@ export class UserService {
     newPassword: string,
   ): Promise<{ success: true }> {
     const user = await this.prisma.client.user.findUnique({
-      where: { id: userId },
+      where: { id: userId, deletedAt: null },
     });
 
     if (!user) {
@@ -226,6 +232,33 @@ export class UserService {
     });
 
     return { success: true };
+  }
+
+  async restore(id: string, actorId: string): Promise<Omit<UserModel, 'passwordHash'>> {
+    const user = await this.prisma.client.user.findUnique({ where: { id } });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (!user.deletedAt) {
+      throw new BadRequestException('User is not deleted');
+    }
+
+    const restored = await this.prisma.client.user.update({
+      where: { id },
+      data: { deletedAt: null },
+    });
+
+    void this.auditService.log({
+      action: AuditAction.CREATE_USER,
+      actorId,
+      entityType: 'user',
+      entityId: id,
+      metadata: { action: 'RESTORE_USER', email: user.email },
+    });
+
+    return this.omitPassword(restored);
   }
 
   private omitPassword(user: UserModel): Omit<UserModel, 'passwordHash'> {

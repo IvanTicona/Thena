@@ -89,13 +89,14 @@ enum AlertType {
 // =============================================
 
 model User {
-  id           String   @id @default(uuid()) @db.Uuid
-  email        String   @unique @db.VarChar(255)
-  name         String   @db.VarChar(255)
+  id           String    @id @default(uuid()) @db.Uuid
+  email        String    @unique @db.VarChar(255)
+  name         String    @db.VarChar(255)
   role         UserRole
-  passwordHash String   @default("") @map("password_hash") @db.VarChar(255)
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
+  passwordHash String    @default("") @map("password_hash") @db.VarChar(255)
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
 
   // Relations
   thesis               ThesisDocument?    @relation("StudentThesis")
@@ -114,12 +115,14 @@ model User {
 }
 
 model ThesisDocument {
-  id        String   @id @default(uuid()) @db.Uuid
-  title     String   @db.VarChar(500)
-  studentId String   @unique @map("student_id") @db.Uuid
-  tutorId   String?  @map("tutor_id") @db.Uuid
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+  id           String    @id @default(uuid()) @db.Uuid
+  title        String    @db.VarChar(500)
+  studentId    String    @unique @map("student_id") @db.Uuid
+  tutorId      String?   @map("tutor_id") @db.Uuid
+  chapterCount Int       @default(5) @map("chapter_count")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
 
   student  User      @relation("StudentThesis", fields: [studentId], references: [id])
   tutor    User?     @relation("TutorTheses", fields: [tutorId], references: [id])

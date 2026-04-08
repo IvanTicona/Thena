@@ -96,4 +96,14 @@ export class UserController {
   ) {
     return this.userService.delete(id, actor.sub);
   }
+
+  @Patch(':id/restore')
+  @UseGuards(RolesGuard)
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  async restore(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() actor: JwtPayload,
+  ) {
+    return this.userService.restore(id, actor.sub);
+  }
 }
