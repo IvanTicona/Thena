@@ -62,7 +62,14 @@ temp/
 spec/**/*.csv
 
 # Project documentation (binary files, not source code)
-docs/
+# Ignore all docs files except Markdown documentation for IT staff
+docs/*.docx
+docs/*.pdf
+docs/*.png
+docs/*.jpg
+docs/*.jpeg
+# But track IT documentation markdown files (deployment guides, architecture, env vars)
+# docs/*.md are tracked (not ignored)
 
 # Utility scripts — ignore auto-generated docs script, but track infra scripts
 scripts/generate-docs.mjs
