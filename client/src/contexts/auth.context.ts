@@ -1,6 +1,6 @@
 import { createContext } from 'react';
 
-export type UserRole = 'STUDENT' | 'TUTOR' | 'ADMIN' | 'SUPER_ADMIN';
+export type UserRole = 'STUDENT' | 'TUTOR' | 'REVIEWER' | 'ADMIN' | 'SUPER_ADMIN';
 
 export interface AuthUser {
   id: string;

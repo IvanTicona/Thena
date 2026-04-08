@@ -15,6 +15,9 @@ import {
   UsergroupAddOutlined,
   LinkOutlined,
   BookOutlined,
+  AuditOutlined,
+  EyeOutlined,
+  BarChartOutlined,
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/useAuth';
@@ -38,7 +41,9 @@ function AppLayoutInner({ chapters }: { chapters: Chapter[] }) {
   const location = useLocation();
 
   const isStudent = user?.role === 'STUDENT';
+  const isReviewer = user?.role === 'REVIEWER';
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const showSidebar = isStudent && location.pathname.startsWith('/chapters');
 
   const [siderCollapsed, setSiderCollapsed] = useState(false);
@@ -47,6 +52,10 @@ function AppLayoutInner({ chapters }: { chapters: Chapter[] }) {
     await logout();
     navigate('/login', { replace: true });
   };
+
+  const reviewerMenuItems = [
+    { key: '/reviewer', icon: <EyeOutlined />, label: 'Panel de Revisor' },
+  ];
 
   const tutorMenuItems = [
     { key: '/tutor', icon: <DashboardOutlined />, label: 'Panel de Tutor' },
@@ -58,9 +67,24 @@ function AppLayoutInner({ chapters }: { chapters: Chapter[] }) {
     { key: '/admin/users', icon: <UsergroupAddOutlined />, label: 'Usuarios' },
     { key: '/admin/assignments', icon: <LinkOutlined />, label: 'Asignaciones' },
     { key: '/admin/knowledge', icon: <BookOutlined />, label: 'Base de Conocimiento' },
+    { key: '/admin/metrics', icon: <BarChartOutlined />, label: 'Métricas' },
   ];
 
-  const activeMenuItems = isAdmin ? adminMenuItems : tutorMenuItems;
+  const superAdminMenuItems = [
+    { key: '/superadmin', icon: <DashboardOutlined />, label: 'Panel Super Admin' },
+    { key: '/admin/users', icon: <UsergroupAddOutlined />, label: 'Usuarios' },
+    { key: '/admin/assignments', icon: <LinkOutlined />, label: 'Asignaciones' },
+    { key: '/admin/knowledge', icon: <BookOutlined />, label: 'Base de Conocimiento' },
+    { key: '/superadmin/audit', icon: <AuditOutlined />, label: 'Auditoría' },
+  ];
+
+  const activeMenuItems = isSuperAdmin
+    ? superAdminMenuItems
+    : isAdmin
+      ? adminMenuItems
+      : isReviewer
+        ? reviewerMenuItems
+        : tutorMenuItems;
 
   // For admin: match longest prefix to handle /admin vs /admin/users etc
   const nonAdminSelectedKey =
@@ -71,7 +95,21 @@ function AppLayoutInner({ chapters }: { chapters: Chapter[] }) {
     [...adminMenuItems].reverse().find((item) => location.pathname.startsWith(item.key))?.key ||
     adminMenuItems[0]?.key;
 
-  const selectedKey = isAdmin ? adminSelectedKey : nonAdminSelectedKey;
+  const superAdminSelectedKey =
+    [...superAdminMenuItems].reverse().find((item) => location.pathname.startsWith(item.key))?.key ||
+    superAdminMenuItems[0]?.key;
+
+  const reviewerSelectedKey =
+    reviewerMenuItems.find((item) => location.pathname.startsWith(item.key))?.key ||
+    reviewerMenuItems[0]?.key;
+
+  const selectedKey = isSuperAdmin
+    ? superAdminSelectedKey
+    : isAdmin
+      ? adminSelectedKey
+      : isReviewer
+        ? reviewerSelectedKey
+        : nonAdminSelectedKey;
 
   const userMenuItems = [
     {
@@ -83,7 +121,7 @@ function AppLayoutInner({ chapters }: { chapters: Chapter[] }) {
     },
   ];
 
-  const brandTarget = isStudent ? '/dashboard' : isAdmin ? '/admin' : '/tutor';
+  const brandTarget = isStudent ? '/dashboard' : isSuperAdmin ? '/superadmin' : isAdmin ? '/admin' : isReviewer ? '/reviewer' : '/tutor';
 
   /* ── "Revisión" smart navigation ────────────────────────── */
   const handleNavClick = (key: string) => {

@@ -16,6 +16,7 @@ const StudentDashboard = lazy(() => import('./pages/student/StudentDashboard'));
 const ChapterList = lazy(() => import('./pages/student/ChapterList'));
 const ChapterDetail = lazy(() => import('./pages/student/ChapterDetail'));
 const ReviewView = lazy(() => import('./pages/student/ReviewView'));
+const ChapterHistory = lazy(() => import('./pages/student/ChapterHistory'));
 const TutorDashboard = lazy(() => import('./pages/tutor/TutorDashboard'));
 const KnowledgeBase = lazy(() => import('./pages/tutor/KnowledgeBase'));
 const SubmissionReview = lazy(() => import('./pages/tutor/SubmissionReview'));
@@ -25,6 +26,15 @@ const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 const UserManagement = lazy(() => import('./pages/admin/UserManagement'));
 const AssignmentManagement = lazy(() => import('./pages/admin/AssignmentManagement'));
 const KnowledgeBaseAdmin = lazy(() => import('./pages/admin/KnowledgeBaseAdmin'));
+const MetricsDashboard = lazy(() => import('./pages/admin/MetricsDashboard'));
+
+/* ── Reviewer pages ───────────────────────────────────────── */
+const ReviewerDashboard = lazy(() => import('./pages/reviewer/ReviewerDashboard'));
+const ReviewerReviewView = lazy(() => import('./pages/reviewer/ReviewerReviewView'));
+
+/* ── Super Admin pages ────────────────────────────────────── */
+const SuperAdminDashboard = lazy(() => import('./pages/superadmin/SuperAdminDashboard'));
+const AuditLogViewer = lazy(() => import('./pages/superadmin/AuditLogViewer'));
 
 function App() {
   return (
@@ -77,6 +87,10 @@ function App() {
                 <Route path="/chapters" element={<ChapterList />} />
                 <Route path="/chapters/:id" element={<ChapterDetail />} />
                 <Route
+                  path="/chapters/:id/history"
+                  element={<ChapterHistory />}
+                />
+                <Route
                   path="/chapters/:id/review/:jobId"
                   element={<ReviewView />}
                 />
@@ -108,6 +122,19 @@ function App() {
                 }
               />
 
+              {/* Reviewer routes */}
+              <Route
+                element={
+                  <ProtectedRoute allowedRoles={['REVIEWER']} />
+                }
+              >
+                <Route path="/reviewer" element={<ReviewerDashboard />} />
+                <Route
+                  path="/reviewer/review/:jobId"
+                  element={<ReviewerReviewView />}
+                />
+              </Route>
+
               {/* Admin routes */}
               <Route
                 element={
@@ -118,6 +145,17 @@ function App() {
                 <Route path="/admin/users" element={<UserManagement />} />
                 <Route path="/admin/assignments" element={<AssignmentManagement />} />
                 <Route path="/admin/knowledge" element={<KnowledgeBaseAdmin />} />
+                <Route path="/admin/metrics" element={<MetricsDashboard />} />
+              </Route>
+
+              {/* Super Admin routes */}
+              <Route
+                element={
+                  <ProtectedRoute allowedRoles={['SUPER_ADMIN']} />
+                }
+              >
+                <Route path="/superadmin" element={<SuperAdminDashboard />} />
+                <Route path="/superadmin/audit" element={<AuditLogViewer />} />
               </Route>
             </Route>
           </Route>

@@ -131,6 +131,10 @@ export const reviewsApi = {
     api.get(`/reviews/${jobId}/export`, { responseType: 'blob' }),
 };
 
+export const reviewerApi = {
+  listTheses: () => api.get<ThesisDocument[]>('/theses'),
+};
+
 export const knowledgeApi = {
   list: () => api.get<KnowledgeDoc[]>('/knowledge'),
   upload: (file: File, layer: string = 'TUTOR') => {
@@ -320,5 +324,94 @@ export const notificationsApi = {
 
 // Re-export KnowledgeDoc type for consumers that import it from here
 export type { KnowledgeDoc } from '../types';
+
+// ── Audit Logs (Super Admin) ──────────────────────────────────────────────────
+
+export type AuditActionType =
+  | 'SUBMIT_CHAPTER'
+  | 'GENERATE_REVIEW'
+  | 'APPROVE_CHAPTER'
+  | 'REJECT_CHAPTER'
+  | 'CREATE_USER'
+  | 'ASSIGN_TUTOR'
+  | 'ADD_OBSERVATION'
+  | 'DELETE_OBSERVATION'
+  | 'UPLOAD_KNOWLEDGE'
+  | 'DELETE_KNOWLEDGE'
+  | 'LOGIN';
+
+export interface AuditLogEntry {
+  id: string;
+  action: AuditActionType;
+  actorId: string;
+  entityType: string;
+  entityId: string;
+  metadata: Record<string, unknown> | null;
+  createdAt: string;
+  actor: {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+  };
+}
+
+export interface PaginatedAuditLogs {
+  data: AuditLogEntry[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface GetAuditLogsParams {
+  page?: number;
+  limit?: number;
+  action?: AuditActionType;
+  actorId?: string;
+  entityType?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+export const auditApi = {
+  getLogs: (params?: GetAuditLogsParams) =>
+    api.get<PaginatedAuditLogs>('/audit-logs', { params }),
+  exportCsv: (params?: Omit<GetAuditLogsParams, 'page' | 'limit'>) =>
+    api.get('/audit-logs/export', { params, responseType: 'blob' }),
+};
+
+// ── Metrics (Admin) ───────────────────────────────────────────────────────────
+
+export interface MetricsSummary {
+  totalTheses: number;
+  totalReviews: number;
+  avgReviewTimeSeconds: number;
+  activeStudentsThisMonth: number;
+}
+
+export interface ObservationsBySeverity {
+  severity: string;
+  count: number;
+}
+
+export interface ObservationsByAgent {
+  agent: string;
+  count: number;
+}
+
+export interface ReviewsOverTime {
+  date: string;
+  count: number;
+}
+
+export const metricsApi = {
+  getSummary: () => api.get<MetricsSummary>('/metrics/summary'),
+  getObservationsBySeverity: () =>
+    api.get<ObservationsBySeverity[]>('/metrics/observations/severity'),
+  getObservationsByAgent: () =>
+    api.get<ObservationsByAgent[]>('/metrics/observations/agent'),
+  getReviewsOverTime: () => api.get<ReviewsOverTime[]>('/metrics/reviews'),
+};
 
 export default api;
