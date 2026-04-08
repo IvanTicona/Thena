@@ -207,7 +207,7 @@ export default function StudentDashboard() {
                 <Progress
                   percent={percent}
                   strokeColor="#52c41a"
-                  trailColor="rgba(255,255,255,0.3)"
+                   railColor="rgba(255,255,255,0.3)"
                   showInfo={false}
                   className="student-dashboard__project-bar"
                 />

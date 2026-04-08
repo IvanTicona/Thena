@@ -61,7 +61,7 @@ export default function AdminDashboard() {
               title="Total de Usuarios"
               value={stats.totalUsers}
               prefix={<UserOutlined />}
-              valueStyle={{ color: '#06175d' }}
+               styles={{ content: { color: '#06175d' } }}
             />
           </Card>
         </Col>
@@ -71,7 +71,7 @@ export default function AdminDashboard() {
               title="Total de Asignaciones"
               value={stats.totalAssignments}
               prefix={<LinkOutlined />}
-              valueStyle={{ color: '#06175d' }}
+              styles={{ content: { color: '#06175d' } }}
             />
           </Card>
         </Col>
@@ -81,7 +81,7 @@ export default function AdminDashboard() {
               title="Tesis Registradas"
               value="—"
               prefix={<FileTextOutlined />}
-              valueStyle={{ color: '#8c8c8c' }}
+              styles={{ content: { color: '#8c8c8c' } }}
             />
           </Card>
         </Col>

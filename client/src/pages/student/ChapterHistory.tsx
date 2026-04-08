@@ -375,7 +375,7 @@ export default function ChapterHistory() {
             <Statistic
               title="Revisiones completadas"
               value={completedCount}
-              valueStyle={{ color: completedCount > 0 ? '#52c41a' : undefined }}
+               styles={{ content: { color: completedCount > 0 ? '#52c41a' : undefined } }}
             />
           </Card>
         </Col>
@@ -388,7 +388,7 @@ export default function ChapterHistory() {
                   ? formatDateTime(latestSubmission.submittedAt)
                   : '—'
               }
-              valueStyle={{ fontSize: 14 }}
+               styles={{ content: { fontSize: 14 } }}
             />
           </Card>
         </Col>

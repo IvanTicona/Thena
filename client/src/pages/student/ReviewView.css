@@ -5,6 +5,9 @@
 /* ── ROOT PANEL ──────────────────────────────────────────── */
 .review-view {
   height: var(--review-panel-height);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 /* ── BACK BUTTON ROW ─────────────────────────────────────── */
@@ -17,8 +20,7 @@
 
 /* Sticky variant — stays visible while scrolling panel content */
 .review-view__back-row--sticky {
-  position: sticky;
-  top: 0;
+  flex-shrink: 0;
   z-index: 10;
   background: #f9fafb;
   padding: 8px 0 12px;
@@ -34,6 +36,13 @@
   gap: 12px;
   padding-left: 16px;
   padding-right: 16px;
+}
+
+/* Allotment wrapper — fills remaining height after back-row */
+.review-view__split-wrapper {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
 /* ── OBSERVATIONS LIST ───────────────────────────────────── */

@@ -145,7 +145,7 @@ export default function MetricsDashboard() {
               title="Total de Tesis"
               value={summary?.totalTheses ?? 0}
               prefix={<FileTextOutlined />}
-              valueStyle={{ color: '#06175d' }}
+               styles={{ content: { color: '#06175d' } }}
             />
           </Card>
         </Col>
@@ -155,7 +155,7 @@ export default function MetricsDashboard() {
               title="Revisiones Completadas"
               value={summary?.totalReviews ?? 0}
               prefix={<CheckCircleOutlined />}
-              valueStyle={{ color: '#52c41a' }}
+              styles={{ content: { color: '#52c41a' } }}
             />
           </Card>
         </Col>
@@ -165,7 +165,7 @@ export default function MetricsDashboard() {
               title="Tiempo Promedio de Revisión"
               value={formatSeconds(summary?.avgReviewTimeSeconds ?? 0)}
               prefix={<ClockCircleOutlined />}
-              valueStyle={{ color: '#faad14' }}
+              styles={{ content: { color: '#faad14' } }}
             />
           </Card>
         </Col>
@@ -175,7 +175,7 @@ export default function MetricsDashboard() {
               title="Estudiantes Activos (mes)"
               value={summary?.activeStudentsThisMonth ?? 0}
               prefix={<TeamOutlined />}
-              valueStyle={{ color: '#1890ff' }}
+              styles={{ content: { color: '#1890ff' } }}
             />
           </Card>
         </Col>

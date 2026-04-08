@@ -36,7 +36,11 @@ export function ChaptersProvider({ children, enabled = true }: ChaptersProviderP
     setError(null);
     chaptersApi
       .list()
-      .then((res) => setChapters(res.data))
+      .then((res) => {
+        // Server returns paginated { data: [...], meta: {...} }
+        const payload = res.data;
+        setChapters(Array.isArray(payload) ? payload : payload.data ?? []);
+      })
       .catch(() => setError('Error al cargar los capítulos'))
       .finally(() => setLoading(false));
   }, [enabled]);

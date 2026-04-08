@@ -17,7 +17,11 @@ export default function TutorDashboard() {
     setLoading(true);
     thesisApi
       .list()
-      .then((res) => setTheses(res.data))
+      .then((res) => {
+        // Server returns paginated { data: [...], meta: {...} } for tutors
+        const payload = res.data;
+        setTheses(Array.isArray(payload) ? payload : (payload as any).data ?? []);
+      })
       .catch((err: unknown) => {
         if (err instanceof ApiError) console.error(err.message);
       })

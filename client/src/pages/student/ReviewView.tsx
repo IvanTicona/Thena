@@ -109,28 +109,30 @@ export default function ReviewView() {
     return (
       <div className="review-view">
         <div className="review-view__back-row review-view__back-row--sticky">
-          <Skeleton.Button active size="default" style={{ width: 160 }} />
+          <Skeleton.Button active size="medium" style={{ width: 160 }} />
         </div>
-        <Allotment defaultSizes={[60, 40]}>
-          <Allotment.Pane minSize={300}>
-            <div style={{ padding: '24px 32px', height: '100%' }}>
-              <Skeleton active paragraph={{ rows: 14 }} />
-            </div>
-          </Allotment.Pane>
-          <Allotment.Pane minSize={320} preferredSize={420}>
-            <div className="review-view__obs-panel">
-              <div className="review-view__skeleton-card">
-                <Skeleton active paragraph={{ rows: 3 }} />
+        <div className="review-view__split-wrapper">
+          <Allotment defaultSizes={[60, 40]}>
+            <Allotment.Pane minSize={300}>
+              <div style={{ padding: '24px 32px', height: '100%' }}>
+                <Skeleton active paragraph={{ rows: 14 }} />
               </div>
-              <div className="review-view__skeleton-card">
-                <Skeleton active paragraph={{ rows: 3 }} />
+            </Allotment.Pane>
+            <Allotment.Pane minSize={320} preferredSize={420}>
+              <div className="review-view__obs-panel">
+                <div className="review-view__skeleton-card">
+                  <Skeleton active paragraph={{ rows: 3 }} />
+                </div>
+                <div className="review-view__skeleton-card">
+                  <Skeleton active paragraph={{ rows: 3 }} />
+                </div>
+                <div className="review-view__skeleton-card">
+                  <Skeleton active paragraph={{ rows: 3 }} />
+                </div>
               </div>
-              <div className="review-view__skeleton-card">
-                <Skeleton active paragraph={{ rows: 3 }} />
-              </div>
-            </div>
-          </Allotment.Pane>
-        </Allotment>
+            </Allotment.Pane>
+          </Allotment>
+        </div>
       </div>
     );
 
@@ -264,10 +266,11 @@ export default function ReviewView() {
           Exportar PDF
         </Button>
       </div>
-      <Allotment defaultSizes={[60, 40]}>
-        {/* Panel izquierdo — Documento */}
-        <Allotment.Pane minSize={300}>
-          <DocumentPreview
+      <div className="review-view__split-wrapper">
+        <Allotment defaultSizes={[60, 40]}>
+          {/* Panel izquierdo — Documento */}
+          <Allotment.Pane minSize={300}>
+            <DocumentPreview
             ref={markdownRef}
             submissionId={review.submissionId}
             markdownContent={review.markdownContent}
@@ -332,6 +335,7 @@ export default function ReviewView() {
           </div>
         </Allotment.Pane>
       </Allotment>
+      </div>
     </div>
   );
 }
