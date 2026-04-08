@@ -30,6 +30,7 @@ const { Option } = Select;
 const ROLE_LABELS: Record<UserRole, string> = {
   STUDENT: 'Estudiante',
   TUTOR: 'Tutor',
+  REVIEWER: 'Revisor',
   ADMIN: 'Administrador',
   SUPER_ADMIN: 'Super Administrador',
 };
@@ -37,6 +38,7 @@ const ROLE_LABELS: Record<UserRole, string> = {
 const ROLE_COLORS: Record<UserRole, string> = {
   STUDENT: 'blue',
   TUTOR: 'green',
+  REVIEWER: 'purple',
   ADMIN: 'orange',
   SUPER_ADMIN: 'red',
 };
@@ -225,6 +227,7 @@ export default function UserManagement() {
         >
           <Option value="STUDENT">Estudiante</Option>
           <Option value="TUTOR">Tutor</Option>
+          <Option value="REVIEWER">Revisor</Option>
           <Option value="ADMIN">Administrador</Option>
           <Option value="SUPER_ADMIN">Super Administrador</Option>
         </Select>
@@ -295,6 +298,7 @@ export default function UserManagement() {
             <Select placeholder="Seleccioná un rol">
               <Option value="STUDENT">Estudiante</Option>
               <Option value="TUTOR">Tutor</Option>
+              <Option value="REVIEWER">Revisor</Option>
               <Option value="ADMIN">Administrador</Option>
               <Option value="SUPER_ADMIN">Super Administrador</Option>
             </Select>

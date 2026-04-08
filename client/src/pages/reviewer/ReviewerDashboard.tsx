@@ -80,7 +80,7 @@ function ReviewerThesisCard({ thesis }: { thesis: ThesisDocument }) {
                           icon={<EyeOutlined />}
                           onClick={() =>
                             navigate(
-                              `/reviewer/submissions/${chapter.latestSubmission!.id}?chapterId=${chapter.id}`,
+                              `/reviewer/review/${chapter.latestSubmission!.id}?chapterId=${chapter.id}`,
                             )
                           }
                         >

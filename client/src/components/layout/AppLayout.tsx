@@ -75,6 +75,7 @@ function AppLayoutInner({ chapters }: { chapters: Chapter[] }) {
     { key: '/admin/users', icon: <UsergroupAddOutlined />, label: 'Usuarios' },
     { key: '/admin/assignments', icon: <LinkOutlined />, label: 'Asignaciones' },
     { key: '/admin/knowledge', icon: <BookOutlined />, label: 'Base de Conocimiento' },
+    { key: '/admin/metrics', icon: <BarChartOutlined />, label: 'Métricas' },
     { key: '/superadmin/audit', icon: <AuditOutlined />, label: 'Auditoría' },
   ];
 

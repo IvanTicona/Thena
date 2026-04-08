@@ -27,9 +27,15 @@ export default function LoginPage() {
     setIsLoading(true);
     setErrorMsg(null);
     try {
-      await login(values.email, values.password);
-      // Redirect to home — App.tsx will route based on role
-      navigate('/', { replace: true });
+      const loggedUser = await login(values.email, values.password);
+      // Redirect directly to role-specific dashboard
+      const dest =
+        loggedUser?.role === 'TUTOR' ? '/tutor'
+        : loggedUser?.role === 'REVIEWER' ? '/reviewer'
+        : loggedUser?.role === 'SUPER_ADMIN' ? '/superadmin'
+        : loggedUser?.role === 'ADMIN' ? '/admin'
+        : '/dashboard';
+      navigate(dest, { replace: true });
     } catch (err) {
       if (err instanceof ApiError) {
         setErrorMsg(err.message);

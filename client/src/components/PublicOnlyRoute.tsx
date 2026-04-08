@@ -25,7 +25,12 @@ export function PublicOnlyRoute() {
   }
 
   if (isAuthenticated && user) {
-    const defaultPath = user.role === 'STUDENT' ? '/dashboard' : '/tutor';
+    const defaultPath =
+      user.role === 'STUDENT' ? '/dashboard'
+      : user.role === 'TUTOR' ? '/tutor'
+      : user.role === 'REVIEWER' ? '/reviewer'
+      : user.role === 'SUPER_ADMIN' ? '/superadmin'
+      : '/admin';
     return <Navigate to={defaultPath} replace />;
   }
 
