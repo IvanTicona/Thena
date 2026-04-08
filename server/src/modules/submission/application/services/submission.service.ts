@@ -8,6 +8,8 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { PrismaService } from '../../../../shared/prisma/prisma.service.js';
 import { StorageService } from '../../../../shared/storage/storage.service.js';
+import { AuditService } from '../../../audit/application/audit.service.js';
+import { AuditAction } from '../../../audit/domain/audit.constants.js';
 
 const DOCX_MIME =
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
@@ -18,6 +20,7 @@ export class SubmissionService {
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
     @InjectQueue('review') private readonly reviewQueue: Queue,
+    private readonly auditService: AuditService,
   ) {}
 
   async findAllForStudent(studentId: string) {
@@ -153,6 +156,15 @@ export class SubmissionService {
       studentId,
       fileUrl,
       versionNumber,
+    });
+
+    // Audit log — fire-and-forget (errors swallowed in AuditService)
+    void this.auditService.log({
+      action: AuditAction.SUBMIT_CHAPTER,
+      actorId: studentId,
+      entityType: 'submission',
+      entityId: result.submission.id,
+      metadata: { chapterId, versionNumber },
     });
 
     return {

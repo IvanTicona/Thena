@@ -10,6 +10,8 @@ import { CookieOptions, Response } from 'express';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
 import { AuthTokens, JwtPayload } from '../domain/auth.types.js';
 import { LoginDto, RegisterDto } from './dtos/auth.dto.js';
+import { AuditService } from '../../audit/application/audit.service.js';
+import { AuditAction } from '../../audit/domain/audit.constants.js';
 
 @Injectable()
 export class AuthService {
@@ -17,6 +19,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
+    private readonly auditService: AuditService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -29,11 +32,12 @@ export class AuthService {
 
     const passwordHash = await bcrypt.hash(dto.password, 10);
 
+    // Always create as STUDENT — role enforcement happens at the controller level
     const user = await this.prisma.client.user.create({
       data: {
         email: dto.email,
         name: dto.name,
-        role: dto.role,
+        role: 'STUDENT',
         passwordHash,
       },
     });
@@ -54,6 +58,15 @@ export class AuthService {
     if (!isMatch) {
       throw new UnauthorizedException('Credenciales inválidas');
     }
+
+    // Audit log — fire-and-forget
+    void this.auditService.log({
+      action: AuditAction.LOGIN,
+      actorId: user.id,
+      entityType: 'user',
+      entityId: user.id,
+      metadata: { email: user.email, role: user.role },
+    });
 
     return this.omitPassword(user);
   }

@@ -10,12 +10,14 @@ import { JwtStrategy } from './infrastructure/strategies/jwt.strategy.js';
 import { JwtRefreshStrategy } from './infrastructure/strategies/jwt-refresh.strategy.js';
 import { JwtAuthGuard } from './infrastructure/guards/jwt-auth.guard.js';
 import { RolesGuard } from './infrastructure/guards/roles.guard.js';
+import { AuditModule } from '../audit/audit.module.js';
 
 @Module({
   imports: [
     PrismaModule,
     PassportModule,
     ConfigModule,
+    AuditModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

@@ -1,9 +1,11 @@
 import { Request } from 'express';
 
+export type UserRole = 'STUDENT' | 'TUTOR' | 'REVIEWER' | 'ADMIN' | 'SUPER_ADMIN';
+
 export interface JwtPayload {
   sub: string;
   email: string;
-  role: 'STUDENT' | 'TUTOR';
+  role: UserRole;
 }
 
 export interface AuthTokens {
