@@ -134,34 +134,44 @@ export class ThesisService {
   }
 
   async findForTutorWithFilters(tutorId: string, query: TutorDashboardQueryDto) {
-    const theses = await this.prisma.client.thesisDocument.findMany({
-      where: {
-        tutorId,
-        ...(query.studentName && {
-          student: {
-            name: { contains: query.studentName, mode: 'insensitive' },
-          },
-        }),
-      },
-      include: {
-        student: { select: { id: true, name: true, email: true } },
-        chapters: {
-          orderBy: { number: 'asc' },
-          where: query.chapterStatus ? { status: query.chapterStatus as any } : undefined,
-          include: {
-            submissions: {
-              orderBy: { versionNumber: 'desc' },
-              take: 1,
-              select: { id: true, versionNumber: true, submittedAt: true },
+    const page = Math.max(1, query.page ?? 1);
+    const limit = Math.min(100, Math.max(1, query.limit ?? 20));
+    const skip = (page - 1) * limit;
+
+    const where: Record<string, unknown> = { tutorId };
+
+    if (query.studentName) {
+      where['student'] = {
+        name: { contains: query.studentName, mode: 'insensitive' },
+      };
+    }
+
+    const [theses, total] = await Promise.all([
+      this.prisma.client.thesisDocument.findMany({
+        where,
+        include: {
+          student: { select: { id: true, name: true, email: true } },
+          chapters: {
+            orderBy: { number: 'asc' },
+            where: query.chapterStatus ? { status: query.chapterStatus as any } : undefined,
+            include: {
+              submissions: {
+                orderBy: { versionNumber: 'desc' },
+                take: 1,
+                select: { id: true, versionNumber: true, submittedAt: true },
+              },
+              _count: { select: { submissions: true } },
             },
-            _count: { select: { submissions: true } },
           },
         },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.client.thesisDocument.count({ where }),
+    ]);
 
-    return theses.map((thesis) => ({
+    const data = theses.map((thesis) => ({
       ...thesis,
       chapters: thesis.chapters.map((ch) => ({
         id: ch.id,
@@ -172,6 +182,16 @@ export class ThesisService {
         submissionCount: ch._count.submissions,
       })),
     }));
+
+    return {
+      data,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   async findById(id: string, userId: string, role: UserRole) {

@@ -53,7 +53,12 @@ export class KnowledgeService {
   async listByOwner(
     ownerId: string | null,
     layer?: string,
-  ): Promise<KnowledgeDocumentSummary[]> {
+    page?: number,
+    limit?: number,
+  ): Promise<{
+    data: KnowledgeDocumentSummary[];
+    meta: { page: number; limit: number; total: number; totalPages: number };
+  }> {
     const resolvedLayer: KnowledgeLayer =
       (layer as KnowledgeLayer) ?? (ownerId ? undefined : 'INSTITUTIONAL');
 
@@ -67,12 +72,28 @@ export class KnowledgeService {
       _max: { createdAt: true },
     });
 
-    return chunks.map((group) => ({
+    const allItems = chunks.map((group) => ({
       sourceDocument: group.sourceDocument,
       layer: group.layer,
       chunkCount: group._count.id,
       lastUpdated: group._max.createdAt,
     }));
+
+    const resolvedPage = Math.max(1, page ?? 1);
+    const resolvedLimit = Math.min(100, Math.max(1, limit ?? 20));
+    const skip = (resolvedPage - 1) * resolvedLimit;
+    const total = allItems.length;
+    const data = allItems.slice(skip, skip + resolvedLimit);
+
+    return {
+      data,
+      meta: {
+        page: resolvedPage,
+        limit: resolvedLimit,
+        total,
+        totalPages: Math.ceil(total / resolvedLimit),
+      },
+    };
   }
 
   async upload(

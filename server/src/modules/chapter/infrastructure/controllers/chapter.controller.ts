@@ -4,6 +4,7 @@ import {
   Patch,
   Param,
   Body,
+  Query,
   ForbiddenException,
   ParseUUIDPipe,
 } from '@nestjs/common';
@@ -12,6 +13,7 @@ import {
   ApproveChapterDto,
   RejectChapterDto,
 } from '../../application/dtos/chapter-action.dto.js';
+import { PaginationQueryDto } from '../../application/dtos/pagination-query.dto.js';
 import { CurrentUser } from '../../../../modules/auth/infrastructure/decorators/current-user.decorator.js';
 import { JwtPayload } from '../../../../modules/auth/domain/auth.types.js';
 
@@ -20,8 +22,13 @@ export class ChapterController {
   constructor(private readonly chapterService: ChapterService) {}
 
   @Get()
-  async findAll(@CurrentUser() user: JwtPayload) {
-    return this.chapterService.findAllForUser(user.sub, user.role);
+  async findAll(
+    @CurrentUser() user: JwtPayload,
+    @Query() query: PaginationQueryDto,
+  ) {
+    const page = Math.max(1, query.page ?? 1);
+    const limit = Math.min(100, Math.max(1, query.limit ?? 20));
+    return this.chapterService.findAllForUserPaginated(user.sub, user.role, page, limit);
   }
 
   @Get(':id')

@@ -14,6 +14,8 @@ import { KnowledgeModule } from './modules/knowledge/knowledge.module.js';
 import { ThesisModule } from './modules/thesis/thesis.module.js';
 import { HealthModule } from './shared/health/health.module.js';
 import { AuditModule } from './modules/audit/audit.module.js';
+import { AssignmentModule } from './modules/assignment/assignment.module.js';
+import { NotificationModule } from './modules/notification/notification.module.js';
 
 @Module({
   imports: [
@@ -53,6 +55,8 @@ import { AuditModule } from './modules/audit/audit.module.js';
     ThesisModule,
     HealthModule,
     AuditModule,
+    AssignmentModule,
+    NotificationModule,
   ],
   controllers: [],
   providers: [

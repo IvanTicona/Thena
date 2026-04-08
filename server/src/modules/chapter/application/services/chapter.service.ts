@@ -8,6 +8,7 @@ import { PrismaService } from '../../../../shared/prisma/prisma.service.js';
 import { AuditService } from '../../../audit/application/audit.service.js';
 import { AuditAction } from '../../../audit/domain/audit.constants.js';
 import { UserRole } from '../../../auth/domain/auth.types.js';
+import { NotificationService } from '../../../notification/application/notification.service.js';
 
 export interface ChapterListItem {
   id: string;
@@ -70,7 +71,30 @@ export class ChapterService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
+    private readonly notificationService: NotificationService,
   ) {}
+
+  async findAllForUserPaginated(
+    userId: string,
+    role: UserRole,
+    page: number,
+    limit: number,
+  ): Promise<{ data: ChapterListItem[]; meta: { page: number; limit: number; total: number; totalPages: number } }> {
+    const allChapters = await this.findAllForUser(userId, role);
+    const total = allChapters.length;
+    const skip = (page - 1) * limit;
+    const data = allChapters.slice(skip, skip + limit);
+
+    return {
+      data,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
 
   async findAllForUser(userId: string, role: UserRole): Promise<ChapterListItem[]> {
     let thesisIds: string[] = [];
@@ -214,7 +238,7 @@ export class ChapterService {
     const chapter = await this.prisma.client.chapter.findUnique({
       where: { id: chapterId },
       include: {
-        thesis: { select: { id: true, tutorId: true } },
+        thesis: { select: { id: true, tutorId: true, studentId: true } },
         submissions: {
           include: {
             reviewJob: true,
@@ -288,6 +312,15 @@ export class ChapterService {
       entityId: chapterId,
       metadata: { chapterNumber: chapter.number, thesisId: chapter.thesis.id },
     });
+
+    // Notification for student — fire-and-forget (errors swallowed in NotificationService)
+    void this.notificationService.create(
+      chapter.thesis.studentId,
+      'CHAPTER_APPROVED',
+      'Capítulo aprobado',
+      `Tu capítulo "${chapter.title}" fue aprobado por el tutor.`,
+      { chapterId, chapterNumber: chapter.number },
+    );
 
     return {
       id: approved.id,
@@ -372,7 +405,7 @@ export class ChapterService {
   async reject(chapterId: string, tutorId: string, comment?: string): Promise<ChapterRejectionResult> {
     const chapter = await this.prisma.client.chapter.findUnique({
       where: { id: chapterId },
-      include: { thesis: { select: { tutorId: true } } },
+      include: { thesis: { select: { tutorId: true, studentId: true } } },
     });
 
     if (!chapter) {
@@ -404,6 +437,15 @@ export class ChapterService {
       entityId: chapterId,
       metadata: { chapterNumber: chapter.number },
     });
+
+    // Notification for student — fire-and-forget (errors swallowed in NotificationService)
+    void this.notificationService.create(
+      chapter.thesis.studentId,
+      'CHAPTER_REJECTED',
+      'Capítulo rechazado',
+      `Tu capítulo "${chapter.title}" fue rechazado por el tutor. Revisá el comentario y volvé a enviar.`,
+      { chapterId, chapterNumber: chapter.number },
+    );
 
     return { id: updated.id, status: updated.status, comment: updated.comment };
   }

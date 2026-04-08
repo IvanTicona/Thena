@@ -22,12 +22,21 @@ export class KnowledgeController {
   constructor(private readonly knowledgeService: KnowledgeService) {}
 
   @Get()
-  async list(@CurrentUser() user: JwtPayload, @Query('layer') layer?: string) {
+  async list(
+    @CurrentUser() user: JwtPayload,
+    @Query('layer') layer?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
     const userId = user?.sub ?? null;
+    const pageNum = page ? Math.max(1, parseInt(page, 10)) : 1;
+    const limitNum = limit ? Math.min(100, Math.max(1, parseInt(limit, 10))) : 20;
     // Tutors see their own + institutional; if no user, show institutional only
     return this.knowledgeService.listByOwner(
       layer === 'INSTITUTIONAL' ? null : userId,
       layer,
+      pageNum,
+      limitNum,
     );
   }
 
