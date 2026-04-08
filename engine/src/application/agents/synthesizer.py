@@ -35,10 +35,20 @@ def synthesize(state: ReviewState) -> dict[str, str | list[FindingDict]]:
     structure = state.get("structure_findings", [])
     methodology = state.get("methodology_findings", [])
     coherence = state.get("coherence_findings", [])
+    citations = state.get("citations_findings", [])
+    format_findings = state.get("format_findings", [])
+    integrity = state.get("integrity_findings", [])
     agent_errors = state.get("agent_errors", {})
 
     all_findings = []
-    for findings in [structure, methodology, coherence]:
+    for findings in [
+        structure,
+        methodology,
+        coherence,
+        citations,
+        format_findings,
+        integrity,
+    ]:
         if isinstance(findings, list):
             all_findings.extend(findings)
 
@@ -47,12 +57,13 @@ def synthesize(state: ReviewState) -> dict[str, str | list[FindingDict]]:
         error_note = ""
         if agent_errors:
             failed = ", ".join(agent_errors.keys())
-            error_note = f" Los siguientes agentes no pudieron completar su analisis: {failed}."
+            error_note = (
+                f" Los siguientes agentes no pudieron completar su analisis: {failed}."
+            )
 
         return {
             "summary": (
-                "No se generaron observaciones para este capitulo."
-                + error_note
+                "No se generaron observaciones para este capitulo." + error_note
             ),
             "observations": [],
         }
@@ -75,10 +86,12 @@ def synthesize(state: ReviewState) -> dict[str, str | list[FindingDict]]:
 Consolida estas observaciones en un reporte unificado."""
 
     try:
-        response = llm.invoke([
-            SystemMessage(content=SYSTEM_PROMPT),
-            HumanMessage(content=user_prompt),
-        ])
+        response = llm.invoke(
+            [
+                SystemMessage(content=SYSTEM_PROMPT),
+                HumanMessage(content=user_prompt),
+            ]
+        )
 
         text = response.content.strip()
         if text.startswith("```"):

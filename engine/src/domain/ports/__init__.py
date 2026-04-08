@@ -36,7 +36,7 @@ class ReviewRepositoryPort(ABC):
 class RAGRetrieverPort(ABC):
     @abstractmethod
     def retrieve(
-        self, query: str, tutor_id: str | None = None
+        self, query: str, tutor_id: str | None = None, layers: list[str] | None = None
     ) -> list[RagChunkDict]: ...
 
     @abstractmethod

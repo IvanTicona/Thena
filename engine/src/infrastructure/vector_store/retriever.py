@@ -17,18 +17,57 @@ class RAGRetriever(RAGRetrieverPort):
         self._embeddings = LLMFactory.create_embeddings()
 
     def retrieve(
-        self, query: str, tutor_id: str | None = None
+        self, query: str, tutor_id: str | None = None, layers: list[str] | None = None
     ) -> list[RagChunkDict]:
-        """Retrieve relevant knowledge chunks from pgvector."""
+        """Retrieve relevant knowledge chunks from pgvector.
+
+        Args:
+            query: The search query string.
+            tutor_id: Optional tutor UUID to include TUTOR-layer chunks.
+            layers: Optional explicit list of KnowledgeLayer values to query.
+                    Defaults to ['INSTITUTIONAL', 'TUTOR'] (tutor only when
+                    tutor_id is provided). Use ['BIBLIOGRAPHY'] for citation checks.
+        """
         query_embedding = self._embeddings.embed_query(query)
 
         top_k = settings.RAG_TOP_K
         threshold = settings.RAG_SIMILARITY_THRESHOLD
         tutor_weight = settings.RAG_TUTOR_WEIGHT
 
+        # Build the layer filter clause based on requested layers.
+        # Default behaviour (layers=None): INSTITUTIONAL always included,
+        # TUTOR only when tutor_id is provided.
+        if layers is not None:
+            # Caller specified explicit layers — build a simple IN-clause.
+            # TUTOR layer still requires tutor_id; skip it silently if absent.
+            active_layers = [
+                lyr for lyr in layers if lyr != "TUTOR" or tutor_id is not None
+            ]
+            if not active_layers:
+                logger.warning(
+                    "retrieve() called with layers=%s but no valid layers remain",
+                    layers,
+                )
+                return []
+            layer_filter = " OR ".join(f"kc.layer = '{lyr}'" for lyr in active_layers)
+            if "TUTOR" in active_layers:
+                # Replace generic TUTOR clause with owner-scoped one
+                layer_filter = " OR ".join(
+                    f"kc.layer = '{lyr}'"
+                    if lyr != "TUTOR"
+                    else f"(kc.layer = 'TUTOR' AND kc.owner_id = CAST(:tutor_id AS uuid))"
+                    for lyr in active_layers
+                )
+        else:
+            # Default: INSTITUTIONAL + TUTOR (only if tutor_id is present)
+            layer_filter = (
+                "(kc.layer = 'INSTITUTIONAL' OR "
+                "(kc.layer = 'TUTOR' AND kc.owner_id = CAST(:tutor_id AS uuid)))"
+            )
+
         with self._db_engine.connect() as conn:
             result = conn.execute(
-                text("""
+                text(f"""
                     SELECT
                         kc.id,
                         kc.content,
@@ -43,7 +82,7 @@ class RAGRetriever(RAGRetrieverPort):
                         END AS weighted_similarity
                     FROM knowledge_chunks kc
                     WHERE
-                        (kc.layer = 'INSTITUTIONAL' OR (kc.layer = 'TUTOR' AND kc.owner_id = CAST(:tutor_id AS uuid)))
+                        ({layer_filter})
                         AND (1 - (kc.embedding <=> CAST(:embedding AS vector))) >= :threshold
                     ORDER BY weighted_similarity DESC
                     LIMIT :top_k
@@ -67,7 +106,8 @@ class RAGRetriever(RAGRetrieverPort):
                         "metadata": metadata,
                         "document_title": row.source_document,
                         "layer": row.layer,
-                        "section": row.section_title or metadata.get("section", "General"),
+                        "section": row.section_title
+                        or metadata.get("section", "General"),
                         "similarity": float(1 - row.distance),
                     }
                 )
@@ -88,7 +128,7 @@ class RAGRetriever(RAGRetrieverPort):
         for i, chunk in enumerate(chunks, 1):
             section = chunk.get("section", "General")
             lines.append(
-                f'[{i}] ({chunk["layer"]} - {chunk["document_title"]}, Seccion: {section})\n'
+                f"[{i}] ({chunk['layer']} - {chunk['document_title']}, Seccion: {section})\n"
                 f'"{chunk["content"]}"\n'
             )
 

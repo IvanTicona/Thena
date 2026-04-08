@@ -241,6 +241,9 @@ class ReviewRepository(ReviewRepositoryPort):
             "structure_findings": "STRUCTURE",
             "methodology_findings": "METHODOLOGY",
             "coherence_findings": "COHERENCE",
+            "citations_findings": "CITATIONS",
+            "format_findings": "FORMAT",
+            "integrity_findings": "INTEGRITY",
         }
 
         agent_result_ids: dict[str, str] = {}

@@ -33,7 +33,7 @@ from src.domain.entities import ReviewState
 
 logger = logging.getLogger(__name__)
 
-# Total timeout for a full review (all 3 agents + synthesizer): 90 seconds.
+# Total timeout for a full review (all 6 agents run in parallel + synthesizer): 90 seconds.
 # This is enforced around the entire graph.invoke() call.
 REVIEW_TOTAL_TIMEOUT_SECONDS = 90
 
@@ -167,6 +167,13 @@ class ReviewWorker:
                 query, tutor_id=chapter_info.get("tutor_id")
             )
 
+            # Retrieve BIBLIOGRAPHY-layer context for the citations agent
+            bibliography_context = self._retriever.retrieve(
+                query,
+                tutor_id=chapter_info.get("tutor_id"),
+                layers=["BIBLIOGRAPHY"],
+            )
+
             # Build initial LangGraph state
             sections_dicts = [
                 {
@@ -188,16 +195,20 @@ class ReviewWorker:
                 "markdown_content": parsed.markdown,
                 "previous_chapters": previous_chapters,
                 "rag_context": rag_context,
+                "bibliography_context": bibliography_context,
                 "tutor_id": chapter_info.get("tutor_id"),
                 "structure_findings": [],
                 "methodology_findings": [],
                 "coherence_findings": [],
+                "citations_findings": [],
+                "format_findings": [],
+                "integrity_findings": [],
                 "observations": [],
                 "summary": "",
                 "agent_errors": {},
             }
 
-            # Run the LangGraph workflow (blocking — runs 3 parallel agents + synthesizer)
+            # Run the LangGraph workflow (blocking — runs 6 parallel agents + synthesizer)
             result = self._graph.invoke(initial_state)
 
             # Save results to the database
@@ -209,6 +220,9 @@ class ReviewWorker:
                     "structure_findings": result.get("structure_findings", []),
                     "methodology_findings": result.get("methodology_findings", []),
                     "coherence_findings": result.get("coherence_findings", []),
+                    "citations_findings": result.get("citations_findings", []),
+                    "format_findings": result.get("format_findings", []),
+                    "integrity_findings": result.get("integrity_findings", []),
                 },
             )
 

@@ -7,6 +7,9 @@ class ObservationType(str, Enum):
     STRUCTURE = "STRUCTURE"
     METHODOLOGY = "METHODOLOGY"
     COHERENCE = "COHERENCE"
+    CITATIONS = "CITATIONS"
+    FORMAT = "FORMAT"
+    INTEGRITY = "INTEGRITY"
 
 
 class Severity(str, Enum):
@@ -133,12 +136,16 @@ class ReviewState(TypedDict, total=False):
     markdown_content: str
     previous_chapters: list[PreviousChapterDict]
     rag_context: list[RagChunkDict]
+    bibliography_context: list[RagChunkDict]
     tutor_id: str | None
 
     # Agent outputs
     structure_findings: list[FindingDict]
     methodology_findings: list[FindingDict]
     coherence_findings: list[FindingDict]
+    citations_findings: list[FindingDict]
+    format_findings: list[FindingDict]
+    integrity_findings: list[FindingDict]
 
     # Final output
     observations: list[FindingDict]
