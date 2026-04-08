@@ -32,8 +32,11 @@ export default function KnowledgeBase() {
   const fetchDocs = useCallback(() => {
     setLoading(true);
     api
-      .get<KnowledgeDoc[]>('/knowledge')
-      .then((res) => setDocs(res.data))
+      .get<KnowledgeDoc[] | { data: KnowledgeDoc[] }>('/knowledge')
+      .then((res) => {
+        const payload = res.data;
+        setDocs(Array.isArray(payload) ? payload : payload.data ?? []);
+      })
       .catch((err: ApiError) => {
         console.error(err.message);
       })

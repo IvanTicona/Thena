@@ -51,7 +51,10 @@ export default function KnowledgeBaseAdmin() {
     setLoadingDocs(true);
     knowledgeApi
       .list()
-      .then((res) => setDocs(res.data))
+      .then((res) => {
+        const payload = res.data;
+        setDocs(Array.isArray(payload) ? payload : (payload as any).data ?? []);
+      })
       .catch(() => message.error('Error al cargar los documentos'))
       .finally(() => setLoadingDocs(false));
   }, []);

@@ -5,12 +5,13 @@
 
 /* ── CONTAINER ───────────────────────────────────────────── */
 .document-preview {
-  flex: 1;
+  height: 100%;
   overflow: auto;
   background: #fff;
   padding: 24px;
   border-radius: 8px;
   border: 1px solid #f0f0f0;
+  box-sizing: border-box;
 }
 
 .document-preview--loading {
