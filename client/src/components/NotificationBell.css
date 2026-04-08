@@ -1,0 +1,184 @@
+/* ========================================================
+   NotificationBell — Header bell + popover panel
+   ======================================================== */
+
+/* ── TRIGGER BUTTON ──────────────────────────────────────── */
+.notification-bell__trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background 0.15s ease;
+  line-height: 1;
+}
+
+.notification-bell__trigger:hover {
+  background: #f5f5f5;
+}
+
+.notification-bell__icon {
+  font-size: 18px;
+  color: #4b5563;
+  display: block;
+}
+
+.notification-bell__trigger:hover .notification-bell__icon {
+  color: #06175d;
+}
+
+/* ── POPOVER OVERLAY ─────────────────────────────────────── */
+.notification-bell__overlay .ant-popover-inner {
+  padding: 0 !important;
+  width: 360px;
+  max-width: 90vw;
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+.notification-bell__overlay .ant-popover-title {
+  padding: 12px 16px 10px;
+  font-size: 14px;
+  font-weight: 600;
+  border-bottom: 1px solid #f0f0f0;
+  margin: 0;
+}
+
+/* ── PANEL ───────────────────────────────────────────────── */
+.notification-bell__panel {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── NOTIFICATION LIST ───────────────────────────────────── */
+.notification-bell__list .ant-list-items {
+  max-height: 380px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #e5e7eb transparent;
+}
+
+.notification-bell__list .ant-list-items::-webkit-scrollbar {
+  width: 4px;
+}
+
+.notification-bell__list .ant-list-items::-webkit-scrollbar-thumb {
+  background: #e5e7eb;
+  border-radius: 2px;
+}
+
+.notification-bell__list .ant-list-item {
+  padding: 0 !important;
+  border-bottom: 1px solid #f5f5f5 !important;
+}
+
+.notification-bell__list .ant-list-item:last-child {
+  border-bottom: none !important;
+}
+
+/* ── NOTIFICATION ITEM ───────────────────────────────────── */
+.notification-item {
+  cursor: pointer;
+  transition: background 0.12s ease;
+  position: relative;
+}
+
+.notification-item:hover {
+  background: #f9fafb;
+}
+
+/* Unread state: left accent border + subtle background */
+.notification-item--unread {
+  background: #f0f3ff;
+}
+
+.notification-item--unread::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: #06175d;
+  border-radius: 0 2px 2px 0;
+}
+
+.notification-item--unread:hover {
+  background: #e8ecfa;
+}
+
+.notification-item__content {
+  padding: 10px 16px 10px 20px;
+  width: 100%;
+}
+
+.notification-item--unread .notification-item__content {
+  padding-left: 20px;
+}
+
+.notification-item__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 3px;
+}
+
+.notification-item__title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+  line-height: 1.4;
+  flex: 1;
+  min-width: 0;
+}
+
+.notification-item__time {
+  font-size: 11px;
+  color: #9ca3af;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.notification-item__body.ant-typography {
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.5;
+  margin-bottom: 0 !important;
+}
+
+/* ── EMPTY STATE ─────────────────────────────────────────── */
+.notification-bell__empty {
+  padding: 32px 16px !important;
+}
+
+/* ── FOOTER ──────────────────────────────────────────────── */
+.notification-bell__footer {
+  padding: 8px 12px;
+  border-top: 1px solid #f0f0f0;
+  text-align: center;
+}
+
+.notification-bell__mark-all {
+  font-size: 12px;
+  color: #06175d;
+  padding: 0;
+  height: auto;
+}
+
+.notification-bell__mark-all:disabled {
+  color: #d1d5db;
+}
+
+/* ── POPOVER TITLE ROW ───────────────────────────────────── */
+.notification-bell__popover-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
