@@ -37,7 +37,9 @@ export function ProtectedRoute({ allowedRoles, children }: ProtectedRouteProps) 
         ? '/dashboard'
         : user.role === 'TUTOR'
           ? '/tutor'
-          : '/admin';
+          : user.role === 'REVIEWER'
+            ? '/reviewer'
+            : '/admin';
     return <Navigate to={defaultPath} replace />;
   }
 

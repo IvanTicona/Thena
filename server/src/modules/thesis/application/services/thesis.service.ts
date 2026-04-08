@@ -16,9 +16,9 @@ export class ThesisService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(studentId: string, dto: CreateThesisDto) {
-    // Check student doesn't already have a thesis
-    const existing = await this.prisma.client.thesisDocument.findUnique({
-      where: { studentId },
+    // Check student doesn't already have a thesis (non-deleted)
+    const existing = await this.prisma.client.thesisDocument.findFirst({
+      where: { studentId, deletedAt: null },
     });
 
     if (existing) {
@@ -27,25 +27,30 @@ export class ThesisService {
 
     // Validate tutor exists and has TUTOR role
     const tutor = await this.prisma.client.user.findUnique({
-      where: { id: dto.tutorId },
+      where: { id: dto.tutorId, deletedAt: null },
     });
 
     if (!tutor || tutor.role !== 'TUTOR') {
       throw new BadRequestException('Invalid tutor ID: user not found or not a tutor');
     }
 
-    // Create thesis + 8 chapters in a transaction
+    // Determine chapter count and titles
+    const chapterCount = dto.chapterCount ?? DEFAULT_CHAPTERS.length;
+    const chapterTitles = this.resolveChapterTitles(chapterCount);
+
+    // Create thesis + chapters in a transaction
     const thesis = await this.prisma.client.$transaction(async (tx) => {
       const newThesis = await tx.thesisDocument.create({
         data: {
           title: dto.title,
           studentId,
           tutorId: dto.tutorId,
+          chapterCount,
         },
       });
 
       await tx.chapter.createMany({
-        data: DEFAULT_CHAPTERS.map((title, index) => ({
+        data: chapterTitles.map((title, index) => ({
           number: index + 1,
           title,
           status: index === 0 ? 'DRAFT' : 'LOCKED',
@@ -66,9 +71,28 @@ export class ThesisService {
     return thesis;
   }
 
+  /**
+   * Resolves chapter titles for a given count.
+   * Uses DEFAULT_CHAPTERS when count matches, otherwise generates generic titles.
+   */
+  private resolveChapterTitles(count: number): string[] {
+    if (count === DEFAULT_CHAPTERS.length) {
+      return [...DEFAULT_CHAPTERS];
+    }
+    if (count <= DEFAULT_CHAPTERS.length) {
+      return [...DEFAULT_CHAPTERS].slice(0, count);
+    }
+    // More chapters than defaults: use defaults + generate extra
+    const titles = [...DEFAULT_CHAPTERS] as string[];
+    for (let i = DEFAULT_CHAPTERS.length + 1; i <= count; i++) {
+      titles.push(`Capítulo ${i}`);
+    }
+    return titles;
+  }
+
   async findMine(studentId: string) {
-    const thesis = await this.prisma.client.thesisDocument.findUnique({
-      where: { studentId },
+    const thesis = await this.prisma.client.thesisDocument.findFirst({
+      where: { studentId, deletedAt: null },
       include: {
         chapters: {
           orderBy: { number: 'asc' },
@@ -98,6 +122,49 @@ export class ThesisService {
         submissionCount: ch._count.submissions,
       })),
     };
+  }
+
+  async findForReviewer(reviewerId: string) {
+    // Find all student assignments where this reviewer is assigned
+    const assignments = await this.prisma.client.studentAssignment.findMany({
+      where: { reviewerId, active: true },
+      select: { studentId: true },
+    });
+
+    const studentIds = assignments.map((a) => a.studentId);
+
+    if (studentIds.length === 0) return [];
+
+    const theses = await this.prisma.client.thesisDocument.findMany({
+      where: { studentId: { in: studentIds }, deletedAt: null },
+      include: {
+        student: { select: { id: true, name: true, email: true } },
+        chapters: {
+          orderBy: { number: 'asc' },
+          include: {
+            submissions: {
+              orderBy: { versionNumber: 'desc' },
+              take: 1,
+              select: { id: true, versionNumber: true, submittedAt: true },
+            },
+            _count: { select: { submissions: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return theses.map((thesis) => ({
+      ...thesis,
+      chapters: thesis.chapters.map((ch) => ({
+        id: ch.id,
+        number: ch.number,
+        title: ch.title,
+        status: ch.status,
+        latestSubmission: ch.submissions[0] ?? null,
+        submissionCount: ch._count.submissions,
+      })),
+    }));
   }
 
   async findForTutor(tutorId: string) {

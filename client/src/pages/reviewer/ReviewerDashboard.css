@@ -1,0 +1,68 @@
+/* ========================================================
+   ReviewerDashboard — Reviewer overview with assigned student list
+   ======================================================== */
+
+/* ── LOADING CONTAINER ───────────────────────────────────── */
+.reviewer-dashboard__loading {
+  display: flex;
+  justify-content: center;
+  padding: 48px;
+}
+
+/* ── EMPTY STATE ─────────────────────────────────────────── */
+.reviewer-dashboard__empty {
+  text-align: center;
+  margin-top: 48px;
+}
+
+.reviewer-dashboard__empty-hint {
+  display: block;
+  margin-top: 8px;
+}
+
+/* ── THESIS CARD ─────────────────────────────────────────── */
+.reviewer-thesis-card {
+  margin-bottom: 16px;
+  border-radius: 8px;
+}
+
+.reviewer-thesis-card__header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.reviewer-thesis-card__avatar {
+  flex-shrink: 0;
+  background-color: #06175d;
+}
+
+.reviewer-thesis-card__student-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.reviewer-thesis-card__thesis-title {
+  margin-top: 4px;
+}
+
+.reviewer-thesis-card__progress {
+  width: 220px;
+  flex-shrink: 0;
+}
+
+.reviewer-thesis-card__toggle-btn {
+  flex-shrink: 0;
+}
+
+.reviewer-thesis-card__chapters {
+  margin-top: 16px;
+  border-top: 1px solid #f0f0f0;
+  padding-top: 12px;
+}
+
+.reviewer-thesis-card__chapter-number {
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 500;
+}

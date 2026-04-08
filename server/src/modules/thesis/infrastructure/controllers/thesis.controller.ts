@@ -33,6 +33,9 @@ export class ThesisController {
     if (user.role === 'STUDENT') {
       return this.thesisService.findMine(user.sub);
     }
+    if (user.role === 'REVIEWER') {
+      return this.thesisService.findForReviewer(user.sub);
+    }
     return this.thesisService.findForTutorWithFilters(user.sub, query);
   }
 
