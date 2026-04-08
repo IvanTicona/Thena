@@ -5,6 +5,9 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../../../shared/prisma/prisma.service.js';
+import { AuditService } from '../../../audit/application/audit.service.js';
+import { AuditAction } from '../../../audit/domain/audit.constants.js';
+import { UserRole } from '../../../auth/domain/auth.types.js';
 
 export interface ChapterListItem {
   id: string;
@@ -42,6 +45,7 @@ export interface ChapterApprovalResult {
   status: string;
   approvedBy: string | null;
   approvedAt: Date | null;
+  comment: string | null;
   nextChapter: {
     id: string;
     number: number;
@@ -53,6 +57,7 @@ export interface ChapterApprovalResult {
 export interface ChapterRejectionResult {
   id: string;
   status: string;
+  comment: string | null;
 }
 
 export interface RequestTutorReviewResult {
@@ -62,9 +67,12 @@ export interface RequestTutorReviewResult {
 
 @Injectable()
 export class ChapterService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditService: AuditService,
+  ) {}
 
-  async findAllForUser(userId: string, role: 'STUDENT' | 'TUTOR'): Promise<ChapterListItem[]> {
+  async findAllForUser(userId: string, role: UserRole): Promise<ChapterListItem[]> {
     let thesisIds: string[] = [];
 
     if (role === 'STUDENT') {
@@ -112,7 +120,7 @@ export class ChapterService {
     }));
   }
 
-  async findAllForThesis(thesisId: string, userId: string, role: 'STUDENT' | 'TUTOR'): Promise<ChapterListItem[]> {
+  async findAllForThesis(thesisId: string, userId: string, role: UserRole): Promise<ChapterListItem[]> {
     // Ownership check
     const thesis = await this.prisma.client.thesisDocument.findUnique({
       where: { id: thesisId },
@@ -158,7 +166,7 @@ export class ChapterService {
     }));
   }
 
-  async findById(id: string, userId: string, role: 'STUDENT' | 'TUTOR'): Promise<ChapterDetail> {
+  async findById(id: string, userId: string, role: UserRole): Promise<ChapterDetail> {
     const chapter = await this.prisma.client.chapter.findUnique({
       where: { id },
       include: {
@@ -202,7 +210,7 @@ export class ChapterService {
     };
   }
 
-  async approve(chapterId: string, tutorId: string): Promise<ChapterApprovalResult> {
+  async approve(chapterId: string, tutorId: string, comment?: string): Promise<ChapterApprovalResult> {
     const chapter = await this.prisma.client.chapter.findUnique({
       where: { id: chapterId },
       include: {
@@ -246,6 +254,7 @@ export class ChapterService {
         status: 'APPROVED',
         approvedBy: tutorId,
         approvedAt: new Date(),
+        ...(comment !== undefined && { comment }),
       },
     });
 
@@ -271,6 +280,15 @@ export class ChapterService {
       }
     }
 
+    // Audit log — fire-and-forget
+    void this.auditService.log({
+      action: AuditAction.APPROVE_CHAPTER,
+      actorId: tutorId,
+      entityType: 'chapter',
+      entityId: chapterId,
+      metadata: { chapterNumber: chapter.number, thesisId: chapter.thesis.id },
+    });
+
     return {
       id: approved.id,
       number: approved.number,
@@ -278,6 +296,7 @@ export class ChapterService {
       status: approved.status,
       approvedBy: approved.approvedBy,
       approvedAt: approved.approvedAt,
+      comment: approved.comment,
       nextChapter: nextChapter
         ? {
             id: nextChapter.id,
@@ -350,7 +369,7 @@ export class ChapterService {
     return { id: updated.id, status: updated.status };
   }
 
-  async reject(chapterId: string, tutorId: string): Promise<ChapterRejectionResult> {
+  async reject(chapterId: string, tutorId: string, comment?: string): Promise<ChapterRejectionResult> {
     const chapter = await this.prisma.client.chapter.findUnique({
       where: { id: chapterId },
       include: { thesis: { select: { tutorId: true } } },
@@ -371,9 +390,21 @@ export class ChapterService {
 
     const updated = await this.prisma.client.chapter.update({
       where: { id: chapterId },
-      data: { status: 'DRAFT' },
+      data: {
+        status: 'DRAFT',
+        ...(comment !== undefined && { comment }),
+      },
     });
 
-    return { id: updated.id, status: updated.status };
+    // Audit log — fire-and-forget
+    void this.auditService.log({
+      action: AuditAction.REJECT_CHAPTER,
+      actorId: tutorId,
+      entityType: 'chapter',
+      entityId: chapterId,
+      metadata: { chapterNumber: chapter.number },
+    });
+
+    return { id: updated.id, status: updated.status, comment: updated.comment };
   }
 }

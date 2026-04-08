@@ -46,24 +46,24 @@ export class ChapterController {
   @Patch(':id/approve')
   async approve(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() _dto: ApproveChapterDto,
+    @Body() dto: ApproveChapterDto,
     @CurrentUser() user: JwtPayload,
   ) {
     if (user.role !== 'TUTOR') {
       throw new ForbiddenException('Only tutors can approve chapters');
     }
-    return this.chapterService.approve(id, user.sub);
+    return this.chapterService.approve(id, user.sub, dto.comment);
   }
 
   @Patch(':id/reject')
   async reject(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() _dto: RejectChapterDto,
+    @Body() dto: RejectChapterDto,
     @CurrentUser() user: JwtPayload,
   ) {
     if (user.role !== 'TUTOR') {
       throw new ForbiddenException('Only tutors can reject chapters');
     }
-    return this.chapterService.reject(id, user.sub);
+    return this.chapterService.reject(id, user.sub, dto.comment);
   }
 }

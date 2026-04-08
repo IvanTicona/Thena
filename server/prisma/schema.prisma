@@ -137,6 +137,7 @@ model Chapter {
   thesisId   String        @map("thesis_id") @db.Uuid
   approvedBy String?       @map("approved_by") @db.Uuid
   approvedAt DateTime?     @map("approved_at")
+  comment    String?       @db.Text
   createdAt  DateTime      @default(now()) @map("created_at")
   updatedAt  DateTime      @default(now()) @updatedAt @map("updated_at")
 
@@ -223,7 +224,7 @@ model ReviewReport {
 
 model Observation {
   id              String              @id @default(uuid()) @db.Uuid
-  agentResultId   String              @map("agent_result_id") @db.Uuid
+  agentResultId   String?             @map("agent_result_id") @db.Uuid
   reviewReportId  String              @map("review_report_id") @db.Uuid
   type            AgentType
   severity        ObservationSeverity
@@ -240,7 +241,7 @@ model Observation {
   escalationLevel Int                 @default(0) @map("escalation_level") @db.SmallInt
 
   // Relations
-  agentResult  AgentResult  @relation(fields: [agentResultId], references: [id])
+  agentResult  AgentResult?  @relation(fields: [agentResultId], references: [id])
   reviewReport ReviewReport @relation(fields: [reviewReportId], references: [id])
   author       User?        @relation("ObservationAuthor", fields: [authorId], references: [id])
 

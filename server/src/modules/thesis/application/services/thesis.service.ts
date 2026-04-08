@@ -7,6 +7,8 @@ import {
 import { PrismaService } from '../../../../shared/prisma/prisma.service.js';
 import { CreateThesisDto } from '../dtos/create-thesis.dto.js';
 import { UpdateThesisDto } from '../dtos/update-thesis.dto.js';
+import { TutorDashboardQueryDto } from '../dtos/tutor-dashboard-query.dto.js';
+import { UserRole } from '../../../auth/domain/auth.types.js';
 import { DEFAULT_CHAPTERS } from '../../domain/thesis.types.js';
 
 @Injectable()
@@ -131,7 +133,48 @@ export class ThesisService {
     }));
   }
 
-  async findById(id: string, userId: string, role: 'STUDENT' | 'TUTOR') {
+  async findForTutorWithFilters(tutorId: string, query: TutorDashboardQueryDto) {
+    const theses = await this.prisma.client.thesisDocument.findMany({
+      where: {
+        tutorId,
+        ...(query.studentName && {
+          student: {
+            name: { contains: query.studentName, mode: 'insensitive' },
+          },
+        }),
+      },
+      include: {
+        student: { select: { id: true, name: true, email: true } },
+        chapters: {
+          orderBy: { number: 'asc' },
+          where: query.chapterStatus ? { status: query.chapterStatus as any } : undefined,
+          include: {
+            submissions: {
+              orderBy: { versionNumber: 'desc' },
+              take: 1,
+              select: { id: true, versionNumber: true, submittedAt: true },
+            },
+            _count: { select: { submissions: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return theses.map((thesis) => ({
+      ...thesis,
+      chapters: thesis.chapters.map((ch) => ({
+        id: ch.id,
+        number: ch.number,
+        title: ch.title,
+        status: ch.status,
+        latestSubmission: ch.submissions[0] ?? null,
+        submissionCount: ch._count.submissions,
+      })),
+    }));
+  }
+
+  async findById(id: string, userId: string, role: UserRole) {
     const thesis = await this.prisma.client.thesisDocument.findUnique({
       where: { id },
       include: {

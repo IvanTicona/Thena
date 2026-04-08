@@ -1,6 +1,15 @@
-// DTOs kept as empty marker classes — the action is implicit in the
-// route path (/approve, /reject) so no body payload is required.
+import { IsOptional, IsString, MaxLength } from 'class-validator';
 
-export class ApproveChapterDto {}
+export class ApproveChapterDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  comment?: string;
+}
 
-export class RejectChapterDto {}
+export class RejectChapterDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  comment?: string;
+}
