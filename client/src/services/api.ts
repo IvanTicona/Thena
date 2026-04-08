@@ -230,7 +230,7 @@ export interface Assignment {
   student?: AdminUser;
   tutor?: AdminUser;
   reviewer?: AdminUser | null;
-  createdAt: string;
+  assignedAt: string;
 }
 
 export interface CreateAssignmentDto {

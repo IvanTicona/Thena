@@ -4,7 +4,7 @@ import {
   Table,
   Button,
   Popconfirm,
-  message,
+  App,
   Tag,
   Card,
   Upload,
@@ -38,6 +38,7 @@ const LAYER_COLORS: Record<LayerType, string> = {
 };
 
 export default function KnowledgeBaseAdmin() {
+  const { message } = App.useApp();
   const [docs, setDocs] = useState<KnowledgeDoc[]>([]);
   const [chunks, setChunks] = useState<AdminKnowledgeChunk[]>([]);
   const [loadingDocs, setLoadingDocs] = useState(true);

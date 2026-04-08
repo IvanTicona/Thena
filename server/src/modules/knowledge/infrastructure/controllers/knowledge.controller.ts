@@ -11,15 +11,25 @@ import {
   MaxFileSizeValidator,
   FileTypeValidator,
   ParseUUIDPipe,
+  UseGuards,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { KnowledgeService } from '../../application/services/knowledge.service.js';
 import { CurrentUser } from '../../../../modules/auth/infrastructure/decorators/current-user.decorator.js';
+import { Roles } from '../../../../modules/auth/infrastructure/decorators/roles.decorator.js';
+import { RolesGuard } from '../../../../modules/auth/infrastructure/guards/roles.guard.js';
 import { JwtPayload } from '../../../../modules/auth/domain/auth.types.js';
 
 @Controller('knowledge')
 export class KnowledgeController {
   constructor(private readonly knowledgeService: KnowledgeService) {}
+
+  @Get('admin')
+  @UseGuards(RolesGuard)
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  async listAllChunks() {
+    return this.knowledgeService.listAllChunks();
+  }
 
   @Get()
   async list(

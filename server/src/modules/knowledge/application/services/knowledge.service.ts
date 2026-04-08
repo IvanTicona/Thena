@@ -36,6 +36,14 @@ export interface EngineIngestionResult {
   layer: string;
 }
 
+export interface AdminKnowledgeChunk {
+  id: string;
+  sourceDocument: string;
+  layer: string;
+  content: string;
+  createdAt: Date;
+}
+
 @Injectable()
 export class KnowledgeService {
   private engineUrl: string;
@@ -227,5 +235,26 @@ export class KnowledgeService {
     });
 
     return { id, deleted: true };
+  }
+
+  async listAllChunks(): Promise<AdminKnowledgeChunk[]> {
+    const chunks = await this.prisma.client.knowledgeChunk.findMany({
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        sourceDocument: true,
+        layer: true,
+        content: true,
+        createdAt: true,
+      },
+    });
+
+    return chunks.map((c) => ({
+      id: c.id,
+      sourceDocument: c.sourceDocument,
+      layer: c.layer,
+      content: c.content,
+      createdAt: c.createdAt,
+    }));
   }
 }

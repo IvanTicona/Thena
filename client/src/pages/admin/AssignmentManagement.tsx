@@ -8,7 +8,7 @@ import {
   Modal,
   Form,
   Select,
-  message,
+  App,
   Tag,
 } from 'antd';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
@@ -24,7 +24,6 @@ import { formatDate } from '../../utils/format';
 import './AssignmentManagement.css';
 
 const { Title } = Typography;
-const { Option } = Select;
 
 interface AssignmentFormValues {
   studentId: string;
@@ -33,6 +32,7 @@ interface AssignmentFormValues {
 }
 
 export default function AssignmentManagement() {
+  const { message } = App.useApp();
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
@@ -77,7 +77,7 @@ export default function AssignmentManagement() {
       const [studentsRes, tutorsRes, reviewersRes] = await Promise.all([
         adminUsersApi.list({ role: 'STUDENT', limit: 100 }),
         adminUsersApi.list({ role: 'TUTOR', limit: 100 }),
-        adminUsersApi.list({ role: 'TUTOR', limit: 100 }),
+        adminUsersApi.list({ role: 'REVIEWER', limit: 100 }),
       ]);
       setStudents(studentsRes.data.data);
       setTutors(tutorsRes.data.data);
@@ -176,8 +176,8 @@ export default function AssignmentManagement() {
     },
     {
       title: 'Fecha',
-      dataIndex: 'createdAt',
-      key: 'createdAt',
+      dataIndex: 'assignedAt',
+      key: 'assignedAt',
       render: (d: string) => formatDate(d),
     },
     {

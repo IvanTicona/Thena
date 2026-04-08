@@ -13,15 +13,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Hydrate user from server on mount (relies on httpOnly cookie)
+  // Hydrate user from server on mount — solo si hay indicio de sesión activa
   useEffect(() => {
+    const hasSession = localStorage.getItem('hasSession') === 'true';
+    if (!hasSession) {
+      setIsLoading(false);
+      return;
+    }
+
     api
       .get<AuthUser>('/users/me')
       .then((res) => {
         setUser(res.data);
       })
       .catch(() => {
-        // 401 o error de red — usuario no autenticado
+        // Cookie expiró o fue revocada — limpiar flag
+        localStorage.removeItem('hasSession');
         setUser(null);
       })
       .finally(() => {
@@ -31,6 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async (email: string, password: string) => {
     const res = await api.post<AuthUser>('/auth/login', { email, password });
+    localStorage.setItem('hasSession', 'true');
     setUser(res.data);
     return res.data;
   }, []);
@@ -48,6 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         password,
         role,
       });
+      localStorage.setItem('hasSession', 'true');
       setUser(res.data);
     },
     [],
@@ -60,6 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Ignorar errores de logout — limpiar estado de todas formas
       if (!(err instanceof ApiError)) throw err;
     } finally {
+      localStorage.removeItem('hasSession');
       setUser(null);
     }
   }, []);
