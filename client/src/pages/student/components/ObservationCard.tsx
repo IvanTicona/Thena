@@ -1,4 +1,5 @@
 import { Card, Tag, Tooltip, Typography } from 'antd';
+import { RobotOutlined, UserOutlined } from '@ant-design/icons';
 import type { Observation } from '../../../types';
 import { SEVERITY_CONFIG, AGENT_LABELS } from './observation-config';
 import './ObservationCard.css';
@@ -13,11 +14,17 @@ interface ObservationCardProps {
 
 export default function ObservationCard({ observation, isSelected, onClick }: ObservationCardProps) {
   const cfg = SEVERITY_CONFIG[observation.severity];
+  const isEscalated = (observation.escalation_level ?? 0) > 0;
+  const isThena = !observation.source || observation.source === 'SYSTEM';
 
   return (
     <Card
       size="small"
-      className={`observation-card${isSelected ? ' observation-card--selected' : ''}`}
+      className={[
+        'observation-card',
+        isSelected ? 'observation-card--selected' : '',
+        isEscalated ? 'observation-card--escalated' : '',
+      ].filter(Boolean).join(' ')}
       style={{ '--card-severity-color': cfg.color } as React.CSSProperties}
       data-card-id={observation.id}
       onClick={() => onClick(observation)}
@@ -27,6 +34,24 @@ export default function ObservationCard({ observation, isSelected, onClick }: Ob
           {cfg.label}
         </Tag>
         <Tag>{AGENT_LABELS[observation.type]}</Tag>
+        {/* Source badge: Thena (blue) or tutor name (green) */}
+        {isThena ? (
+          <Tag
+            icon={<RobotOutlined />}
+            color="blue"
+            className="observation-card__source-badge"
+          >
+            Thena
+          </Tag>
+        ) : (
+          <Tag
+            icon={<UserOutlined />}
+            color="green"
+            className="observation-card__source-badge"
+          >
+            {observation.authorName ?? 'Tutor'}
+          </Tag>
+        )}
       </div>
       <Text>{observation.message}</Text>
       {observation.suggestion && (

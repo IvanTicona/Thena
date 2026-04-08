@@ -170,6 +170,20 @@
   margin-right: 4px;
 }
 
+/* ── HISTORY BUTTON ──────────────────────────────────────── */
+.chapter-detail__history-btn {
+  color: #6b7280 !important;
+  font-size: 12px;
+}
+
+/* ── ACTIONS CELL ────────────────────────────────────────── */
+.chapter-detail__actions-cell {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0;
+}
+
 /* ── MOBILE ──────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .chapter-detail__header {

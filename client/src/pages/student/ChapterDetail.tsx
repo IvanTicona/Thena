@@ -15,6 +15,8 @@ import {
   EyeOutlined,
   InboxOutlined,
   CheckCircleOutlined,
+  DownloadOutlined,
+  HistoryOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -36,6 +38,7 @@ export default function ChapterDetail() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [requestingReview, setRequestingReview] = useState(false);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
@@ -97,6 +100,28 @@ export default function ChapterDetail() {
       );
     } finally {
       setRequestingReview(false);
+    }
+  };
+
+  const handleDownload = async (submission: Submission) => {
+    setDownloadingId(submission.id);
+    try {
+      const res = await submissionsApi.downloadFile(submission.id);
+      const blob = new Blob([res.data as BlobPart], {
+        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = submission.fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      void message.error('No se pudo descargar el archivo. Intentá de nuevo.');
+    } finally {
+      setDownloadingId(null);
     }
   };
 
@@ -181,34 +206,30 @@ export default function ChapterDetail() {
     {
       title: 'Acciones',
       key: 'actions',
-      width: 140,
+      width: 200,
       render: (_, record) => {
         const job = record.reviewJob;
-        if (!job) return null;
-
-        if (job.status === 'COMPLETED') {
-          return (
+        return (
+          <div className="chapter-detail__actions-cell">
+            {job && (job.status === 'COMPLETED' || job.status === 'QUEUED' || job.status === 'PROCESSING') && (
+              <Button
+                type="link"
+                icon={<EyeOutlined />}
+                onClick={() => navigate(`/chapters/${id}/review/${job.id}`)}
+              >
+                {job.status === 'COMPLETED' ? 'Ver revisión' : 'Ver progreso'}
+              </Button>
+            )}
             <Button
               type="link"
-              icon={<EyeOutlined />}
-              onClick={() => navigate(`/chapters/${id}/review/${job.id}`)}
+              icon={<DownloadOutlined />}
+              loading={downloadingId === record.id}
+              onClick={() => handleDownload(record)}
             >
-              Ver Revisión
+              Descargar
             </Button>
-          );
-        }
-        if (job.status === 'QUEUED' || job.status === 'PROCESSING') {
-          return (
-            <Button
-              type="link"
-              icon={<EyeOutlined />}
-              onClick={() => navigate(`/chapters/${id}/review/${job.id}`)}
-            >
-              Ver Progreso
-            </Button>
-          );
-        }
-        return null;
+          </div>
+        );
       },
     },
   ];
@@ -346,6 +367,17 @@ export default function ChapterDetail() {
           >
             {statusCfg.label}
           </Tag>
+          {submissions.length > 0 && (
+            <Button
+              type="text"
+              size="small"
+              icon={<HistoryOutlined />}
+              onClick={() => navigate(`/chapters/${id}/history`)}
+              className="chapter-detail__history-btn"
+            >
+              Historial
+            </Button>
+          )}
         </div>
       </div>
 

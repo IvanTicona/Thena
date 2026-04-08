@@ -1,0 +1,110 @@
+/* ========================================================
+   ChapterHistory — Chapter version history page
+   BEM: .chapter-history__element--modifier
+   ======================================================== */
+
+/* ── BACK BUTTON ─────────────────────────────────────────── */
+.chapter-history__back-btn {
+  margin-bottom: 16px;
+}
+
+/* ── PAGE HEADER ─────────────────────────────────────────── */
+.chapter-history__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.chapter-history__header-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.chapter-history__chapter-title.ant-typography {
+  margin: 0 !important;
+  color: #111827;
+}
+
+.chapter-history__status-tag {
+  flex-shrink: 0;
+  font-size: 13px;
+  padding: 2px 10px;
+  align-self: flex-start;
+  margin-top: 4px;
+}
+
+/* ── STATS ROW ───────────────────────────────────────────── */
+.chapter-history__stats {
+  margin-bottom: 20px !important;
+}
+
+.chapter-history__stat-card {
+  height: 100%;
+}
+
+/* ── TABLE CARD ──────────────────────────────────────────── */
+.chapter-history__table-card {
+  margin-top: 0;
+}
+
+/* ── FILE CELL ───────────────────────────────────────────── */
+.chapter-history__file-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.chapter-history__file-icon {
+  color: #06175d;
+  flex-shrink: 0;
+}
+
+.chapter-history__file-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 220px;
+}
+
+/* ── ACTIONS CELL ────────────────────────────────────────── */
+.chapter-history__actions-cell {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0;
+}
+
+/* ── LATEST ROW HIGHLIGHT ────────────────────────────────── */
+.chapter-history__row--latest > td {
+  background: #f6f7fb !important;
+}
+
+/* ── ALERT ───────────────────────────────────────────────── */
+.chapter-history__alert {
+  max-width: 600px;
+  margin: 60px auto;
+}
+
+/* ── MOBILE ──────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .chapter-history__header {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .chapter-history__file-name {
+    max-width: 140px;
+  }
+
+  .chapter-history__stat-card .ant-statistic-content-value {
+    font-size: 20px !important;
+  }
+
+  .chapter-history__table-card .ant-table-wrapper {
+    overflow-x: auto;
+  }
+}

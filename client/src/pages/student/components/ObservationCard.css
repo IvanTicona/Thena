@@ -17,6 +17,16 @@
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--card-severity-color, #06175d) 20%, transparent);
 }
 
+/* Escalated state — orange border for level=1, red for level>=2 */
+.observation-card--escalated {
+  border-left: 3px solid #faad14 !important;
+}
+
+.observation-card--escalated.observation-card--selected {
+  border-left-color: #fa8c16 !important;
+  box-shadow: 0 0 0 2px rgba(250, 173, 20, 0.2);
+}
+
 /* ── HEADER ROW (tags) ───────────────────────────────────── */
 .observation-card__header {
   display: flex;
@@ -24,6 +34,12 @@
   margin-bottom: 4px;
   align-items: center;
   flex-wrap: wrap;
+}
+
+/* ── SOURCE BADGE ────────────────────────────────────────── */
+.observation-card__source-badge {
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 /* ── SUGGESTION TEXT ─────────────────────────────────────── */
@@ -49,4 +65,15 @@
   font-size: 11px !important;
   display: block !important;
   margin-top: 4px !important;
+}
+
+/* ── MOBILE ──────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .observation-card__header {
+    gap: 4px;
+  }
+
+  .observation-card__source-badge {
+    margin-left: 0;
+  }
 }

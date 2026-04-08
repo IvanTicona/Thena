@@ -1,4 +1,4 @@
-export type UserRole = 'STUDENT' | 'TUTOR' | 'ADMIN' | 'SUPER_ADMIN';
+export type UserRole = 'STUDENT' | 'TUTOR' | 'REVIEWER' | 'ADMIN' | 'SUPER_ADMIN';
 
 export interface User {
   id: string;
@@ -43,6 +43,7 @@ export type JobStatus = 'QUEUED' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
 
 export type AgentType = 'STRUCTURE' | 'METHODOLOGY' | 'COHERENCE';
 export type Severity = 'INFO' | 'SUGGESTION' | 'WARNING' | 'ERROR';
+export type ObservationSource = 'SYSTEM' | 'TUTOR';
 
 export interface Observation {
   id: string;
@@ -54,6 +55,12 @@ export interface Observation {
   offsetStart: number | null;
   offsetEnd: number | null;
   sourceReference: SourceReference | null;
+  /** Who created this observation: SYSTEM (Thena AI) or TUTOR (manual) */
+  source?: ObservationSource;
+  /** Display name of the author (tutor's name for TUTOR observations) */
+  authorName?: string | null;
+  /** Escalation level: 0 = normal, >0 = escalated (orange/red border) */
+  escalation_level?: number;
 }
 
 export interface SourceReference {
