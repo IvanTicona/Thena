@@ -20,6 +20,12 @@ const TutorDashboard = lazy(() => import('./pages/tutor/TutorDashboard'));
 const KnowledgeBase = lazy(() => import('./pages/tutor/KnowledgeBase'));
 const SubmissionReview = lazy(() => import('./pages/tutor/SubmissionReview'));
 
+/* ── Admin pages ──────────────────────────────────────────── */
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
+const UserManagement = lazy(() => import('./pages/admin/UserManagement'));
+const AssignmentManagement = lazy(() => import('./pages/admin/AssignmentManagement'));
+const KnowledgeBaseAdmin = lazy(() => import('./pages/admin/KnowledgeBaseAdmin'));
+
 function App() {
   return (
     <ConfigProvider
@@ -101,6 +107,18 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+
+              {/* Admin routes */}
+              <Route
+                element={
+                  <ProtectedRoute allowedRoles={['ADMIN', 'SUPER_ADMIN']} />
+                }
+              >
+                <Route path="/admin" element={<AdminDashboard />} />
+                <Route path="/admin/users" element={<UserManagement />} />
+                <Route path="/admin/assignments" element={<AssignmentManagement />} />
+                <Route path="/admin/knowledge" element={<KnowledgeBaseAdmin />} />
+              </Route>
             </Route>
           </Route>
           </Routes>

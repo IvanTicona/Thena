@@ -12,11 +12,15 @@ import {
   LogoutOutlined,
   MenuOutlined,
   UserOutlined,
+  UsergroupAddOutlined,
+  LinkOutlined,
+  BookOutlined,
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/useAuth';
 import { ChaptersProvider, useChapters } from '../../contexts/ChaptersContext';
 import { ChapterTimeline } from './ChapterTimeline';
+import { NotificationBell } from '../NotificationBell';
 import type { Chapter } from '../../types';
 import './AppLayout.css';
 
@@ -34,6 +38,7 @@ function AppLayoutInner({ chapters }: { chapters: Chapter[] }) {
   const location = useLocation();
 
   const isStudent = user?.role === 'STUDENT';
+  const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
   const showSidebar = isStudent && location.pathname.startsWith('/chapters');
 
   const [siderCollapsed, setSiderCollapsed] = useState(false);
@@ -48,9 +53,25 @@ function AppLayoutInner({ chapters }: { chapters: Chapter[] }) {
     { key: '/tutor/knowledge', icon: <DatabaseOutlined />, label: 'Base de Conocimiento' },
   ];
 
-  const tutorSelectedKey =
+  const adminMenuItems = [
+    { key: '/admin', icon: <DashboardOutlined />, label: 'Panel Admin' },
+    { key: '/admin/users', icon: <UsergroupAddOutlined />, label: 'Usuarios' },
+    { key: '/admin/assignments', icon: <LinkOutlined />, label: 'Asignaciones' },
+    { key: '/admin/knowledge', icon: <BookOutlined />, label: 'Base de Conocimiento' },
+  ];
+
+  const activeMenuItems = isAdmin ? adminMenuItems : tutorMenuItems;
+
+  // For admin: match longest prefix to handle /admin vs /admin/users etc
+  const nonAdminSelectedKey =
     tutorMenuItems.find((item) => location.pathname.startsWith(item.key))?.key ||
     tutorMenuItems[0]?.key;
+
+  const adminSelectedKey =
+    [...adminMenuItems].reverse().find((item) => location.pathname.startsWith(item.key))?.key ||
+    adminMenuItems[0]?.key;
+
+  const selectedKey = isAdmin ? adminSelectedKey : nonAdminSelectedKey;
 
   const userMenuItems = [
     {
@@ -61,6 +82,8 @@ function AppLayoutInner({ chapters }: { chapters: Chapter[] }) {
       onClick: handleLogout,
     },
   ];
+
+  const brandTarget = isStudent ? '/dashboard' : isAdmin ? '/admin' : '/tutor';
 
   /* ── "Revisión" smart navigation ────────────────────────── */
   const handleNavClick = (key: string) => {
@@ -94,7 +117,7 @@ function AppLayoutInner({ chapters }: { chapters: Chapter[] }) {
           <Title
             level={4}
             className="app-layout__brand"
-            onClick={() => navigate(isStudent ? '/dashboard' : '/tutor')}
+            onClick={() => navigate(brandTarget)}
           >
             THENA
           </Title>
@@ -129,21 +152,24 @@ function AppLayoutInner({ chapters }: { chapters: Chapter[] }) {
           </nav>
         )}
 
-        {/* Right: user dropdown */}
-        <Dropdown
-          menu={{ items: userMenuItems }}
-          trigger={['click']}
-          placement="bottomRight"
-        >
-          <Button type="text" icon={<UserOutlined />} className="app-layout__user-btn">
-            <Text className="app-layout__user-name">{user?.name ?? 'Usuario'}</Text>
-          </Button>
-        </Dropdown>
+        {/* Right: notification bell + user dropdown */}
+        <div className="app-layout__header-right">
+          <NotificationBell />
+          <Dropdown
+            menu={{ items: userMenuItems }}
+            trigger={['click']}
+            placement="bottomRight"
+          >
+            <Button type="text" icon={<UserOutlined />} className="app-layout__user-btn">
+              <Text className="app-layout__user-name">{user?.name ?? 'Usuario'}</Text>
+            </Button>
+          </Dropdown>
+        </div>
       </Header>
 
       <Layout>
         {/* Sidebar: ChapterTimeline for students (always mounted, width transitions),
-            standard Menu for tutors */}
+            standard Menu for tutors and admins */}
         {isStudent ? (
           <>
             {/* Backdrop overlay for mobile sidebar */}
@@ -182,8 +208,8 @@ function AppLayoutInner({ chapters }: { chapters: Chapter[] }) {
           >
             <Menu
               mode="inline"
-              selectedKeys={[tutorSelectedKey]}
-              items={tutorMenuItems}
+              selectedKeys={[selectedKey]}
+              items={activeMenuItems}
               onClick={({ key }) => navigate(key)}
               className="app-layout__menu"
             />
@@ -203,13 +229,13 @@ function StudentAppLayout() {
   return <AppLayoutInner chapters={chapters} />;
 }
 
-function TutorAppLayout() {
+function NonStudentAppLayout() {
   return <AppLayoutInner chapters={[]} />;
 }
 
 /**
  * AppLayout wraps the inner layout with ChaptersProvider for students.
- * Tutors skip the provider since they don't need shared chapter state.
+ * Tutors and admins skip the provider since they don't need shared chapter state.
  */
 export function AppLayout() {
   const { user } = useAuth();
@@ -223,5 +249,5 @@ export function AppLayout() {
     );
   }
 
-  return <TutorAppLayout />;
+  return <NonStudentAppLayout />;
 }

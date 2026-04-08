@@ -1,0 +1,57 @@
+.admin-dashboard {
+  padding: 0;
+}
+
+.admin-dashboard__loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+}
+
+.admin-dashboard__header {
+  margin-bottom: 24px;
+}
+
+.admin-dashboard__header .ant-typography:first-child {
+  margin-bottom: 4px;
+}
+
+.admin-dashboard__stats {
+  margin-bottom: 32px;
+}
+
+.admin-dashboard__section-title {
+  margin-bottom: 16px !important;
+}
+
+.admin-dashboard__quick-card {
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 160px;
+}
+
+.admin-dashboard__quick-card .ant-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.admin-dashboard__quick-icon {
+  font-size: 24px;
+  color: #06175d;
+  margin-bottom: 4px;
+}
+
+.admin-dashboard__quick-desc {
+  display: block;
+  font-size: 13px;
+}
+
+.admin-dashboard__quick-btn {
+  padding: 0;
+  height: auto;
+  margin-top: auto;
+}

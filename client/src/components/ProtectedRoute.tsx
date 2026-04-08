@@ -1,9 +1,10 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { Spin } from 'antd';
 import { useAuth } from '../contexts/useAuth';
+import type { UserRole } from '../contexts/auth.context';
 
 interface ProtectedRouteProps {
-  allowedRoles?: ('STUDENT' | 'TUTOR')[];
+  allowedRoles?: UserRole[];
   children?: React.ReactNode;
 }
 
@@ -31,7 +32,12 @@ export function ProtectedRoute({ allowedRoles, children }: ProtectedRouteProps) 
 
   if (allowedRoles && user && !allowedRoles.includes(user.role)) {
     // Redirect to their default page based on role
-    const defaultPath = user.role === 'STUDENT' ? '/dashboard' : '/tutor';
+    const defaultPath =
+      user.role === 'STUDENT'
+        ? '/dashboard'
+        : user.role === 'TUTOR'
+          ? '/tutor'
+          : '/admin';
     return <Navigate to={defaultPath} replace />;
   }
 

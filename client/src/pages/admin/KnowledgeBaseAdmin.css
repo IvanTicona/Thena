@@ -1,0 +1,43 @@
+.knowledge-base-admin .ant-typography:first-child {
+  margin-bottom: 24px;
+}
+
+.knowledge-base-admin__upload-card {
+  margin-bottom: 16px;
+}
+
+.knowledge-base-admin__upload-card .ant-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.knowledge-base-admin__upload-hint {
+  display: block;
+}
+
+.knowledge-base-admin__docs-card {
+  margin-bottom: 16px;
+}
+
+.knowledge-base-admin__chunks-card {
+  margin-bottom: 16px;
+}
+
+.knowledge-base-admin__file-icon {
+  margin-right: 8px;
+  color: #06175d;
+}
+
+.knowledge-base-admin__chunk-id {
+  font-family: monospace;
+  font-size: 12px;
+}
+
+.knowledge-base-admin__chunk-content {
+  font-size: 12px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

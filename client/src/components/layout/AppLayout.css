@@ -87,11 +87,17 @@
 }
 
 /* ── USER BUTTON ─────────────────────────────────────────── */
+.app-layout__header-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+
 .app-layout__user-btn {
   display: flex !important;
   align-items: center;
   gap: 6px;
-  margin-left: auto;
 }
 
 .app-layout__user-name {

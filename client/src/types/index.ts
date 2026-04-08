@@ -1,8 +1,10 @@
+export type UserRole = 'STUDENT' | 'TUTOR' | 'ADMIN' | 'SUPER_ADMIN';
+
 export interface User {
   id: string;
   email: string;
   name: string;
-  role: 'STUDENT' | 'TUTOR';
+  role: UserRole;
   createdAt: string;
 }
 
@@ -90,7 +92,7 @@ export interface ReviewResult {
 
 export interface KnowledgeDoc {
   sourceDocument: string;
-  layer: 'TUTOR' | 'INSTITUTIONAL';
+  layer: 'TUTOR' | 'INSTITUTIONAL' | 'BIBLIOGRAPHY';
   chunkCount: number;
   lastUpdated: string;
 }

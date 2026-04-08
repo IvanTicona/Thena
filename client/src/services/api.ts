@@ -7,6 +7,7 @@ import type {
   ThesisDocument,
   TutorSummary,
   KnowledgeDoc,
+  UserRole,
 } from '../types';
 import { ApiError } from './api-error';
 
@@ -126,6 +127,8 @@ export const submissionsApi = {
 
 export const reviewsApi = {
   getByJobId: (jobId: string) => api.get<ReviewResult>(`/reviews/${jobId}`),
+  exportPdf: (jobId: string) =>
+    api.get(`/reviews/${jobId}/export`, { responseType: 'blob' }),
 };
 
 export const knowledgeApi = {
@@ -169,6 +172,150 @@ export const thesisApi = {
 
 export const usersApi = {
   getTutors: () => api.get<TutorSummary[]>('/users/tutors'),
+};
+
+// --- Admin API types ---
+
+export interface AdminUser {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  createdAt: string;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
+export interface CreateUserDto {
+  name: string;
+  email: string;
+  password: string;
+  role: UserRole;
+}
+
+export interface UpdateUserDto {
+  name?: string;
+  email?: string;
+  role?: UserRole;
+}
+
+export interface Assignment {
+  id: string;
+  studentId: string;
+  tutorId: string;
+  reviewerId?: string | null;
+  student?: AdminUser;
+  tutor?: AdminUser;
+  reviewer?: AdminUser | null;
+  createdAt: string;
+}
+
+export interface CreateAssignmentDto {
+  studentId: string;
+  tutorId: string;
+  reviewerId?: string;
+}
+
+export interface AdminKnowledgeChunk {
+  id: string;
+  sourceDocument: string;
+  layer: 'INSTITUTIONAL' | 'TUTOR' | 'BIBLIOGRAPHY';
+  content: string;
+  createdAt: string;
+}
+
+export interface GetUsersParams {
+  page?: number;
+  limit?: number;
+  role?: UserRole;
+}
+
+export interface GetAssignmentsParams {
+  page?: number;
+  limit?: number;
+}
+
+// --- Admin API functions ---
+
+export const adminUsersApi = {
+  list: (params?: GetUsersParams) =>
+    api.get<PaginatedResponse<AdminUser>>('/users', { params }),
+  create: (data: CreateUserDto) =>
+    api.post<AdminUser>('/users', data),
+  update: (id: string, data: UpdateUserDto) =>
+    api.patch<AdminUser>(`/users/${id}`, data),
+  delete: (id: string) =>
+    api.delete(`/users/${id}`),
+};
+
+export const adminAssignmentsApi = {
+  list: (params?: GetAssignmentsParams) =>
+    api.get<PaginatedResponse<Assignment>>('/assignments', { params }),
+  create: (data: CreateAssignmentDto) =>
+    api.post<Assignment>('/assignments', data),
+  delete: (id: string) =>
+    api.delete(`/assignments/${id}`),
+};
+
+export const adminKnowledgeApi = {
+  listAll: () =>
+    api.get<AdminKnowledgeChunk[]>('/knowledge/admin'),
+  uploadBibliography: (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post('/knowledge/upload?layer=BIBLIOGRAPHY', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 120000,
+    });
+  },
+  deleteChunk: (id: string) =>
+    api.delete(`/knowledge/chunk/${id}`),
+};
+
+// ── Notifications ─────────────────────────────────────────────────────────────
+
+export type NotificationType =
+  | 'NEW_SUBMISSION'
+  | 'REVIEW_COMPLETE'
+  | 'CHAPTER_APPROVED'
+  | 'CHAPTER_REJECTED'
+  | 'INACTIVITY_ALERT'
+  | 'ESCALATION_ALERT';
+
+export interface Notification {
+  id: string;
+  type: NotificationType;
+  title: string;
+  body: string;
+  read: boolean;
+  metadata: Record<string, unknown> | null;
+  createdAt: string;
+}
+
+export interface PaginatedNotifications {
+  data: Notification[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  unreadCount: number;
+}
+
+export const notificationsApi = {
+  getAll: (page = 1, limit = 20) =>
+    api.get<PaginatedNotifications>('/notifications', { params: { page, limit } }),
+  markAsRead: (id: string) =>
+    api.patch<{ id: string; read: boolean }>(`/notifications/${id}/read`),
+  markAllAsRead: () =>
+    api.patch<{ count: number }>('/notifications/read-all'),
 };
 
 // Re-export KnowledgeDoc type for consumers that import it from here
