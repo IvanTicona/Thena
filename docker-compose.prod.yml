@@ -28,10 +28,19 @@ services:
   # ---------------------------------------------------------------------------
   # Redis — production overrides
   # Enable Redis AUTH (P1-18 requirement)
+  # IMPORTANT: Set REDIS_PASSWORD in .env, then also update REDIS_URL to:
+  #   REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379
+  # Both the server and engine read REDIS_URL — without the password in the
+  # URL they will fail to connect once requirepass is active.
   # ---------------------------------------------------------------------------
   redis:
     ports: []
     command: "redis-server --requirepass ${REDIS_PASSWORD}"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "--no-auth-warning", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   # ---------------------------------------------------------------------------
   # MinIO — production overrides
