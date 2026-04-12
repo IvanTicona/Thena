@@ -187,6 +187,8 @@ export const thesisApi = {
 
 export const usersApi = {
   getTutors: () => api.get<TutorSummary[]>('/users/tutors'),
+  changePassword: (currentPassword: string, newPassword: string) =>
+    api.patch<{ success: true }>('/users/me/password', { currentPassword, newPassword }),
 };
 
 // --- Admin API types ---

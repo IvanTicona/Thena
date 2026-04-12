@@ -6,10 +6,12 @@ import {
   Button,
   Dropdown,
 } from 'antd';
+import { ChangePasswordModal } from './ChangePasswordModal';
 import {
   DashboardOutlined,
   DatabaseOutlined,
   LogoutOutlined,
+  LockOutlined,
   MenuOutlined,
   UserOutlined,
   UsergroupAddOutlined,
@@ -47,6 +49,7 @@ function AppLayoutInner({ chapters }: { chapters: Chapter[] }) {
   const showSidebar = isStudent && location.pathname.startsWith('/chapters');
 
   const [siderCollapsed, setSiderCollapsed] = useState(false);
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
 
   const handleLogout = async () => {
     await logout();
@@ -113,6 +116,15 @@ function AppLayoutInner({ chapters }: { chapters: Chapter[] }) {
         : nonAdminSelectedKey;
 
   const userMenuItems = [
+    {
+      key: 'change-password',
+      icon: <LockOutlined />,
+      label: 'Cambiar contraseña',
+      onClick: () => setChangePasswordOpen(true),
+    },
+    {
+      type: 'divider' as const,
+    },
     {
       key: 'logout',
       icon: <LogoutOutlined />,
@@ -259,6 +271,11 @@ function AppLayoutInner({ chapters }: { chapters: Chapter[] }) {
           <Outlet />
         </Content>
       </Layout>
+
+      <ChangePasswordModal
+        open={changePasswordOpen}
+        onClose={() => setChangePasswordOpen(false)}
+      />
     </Layout>
   );
 }
