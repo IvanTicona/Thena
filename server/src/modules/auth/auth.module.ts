@@ -22,7 +22,7 @@ import { AuditModule } from '../audit/audit.module.js';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        secret: config.get<string>('JWT_ACCESS_SECRET', 'changeme-access'),
+        secret: config.getOrThrow<string>('JWT_ACCESS_SECRET'),
         signOptions: {
           expiresIn: config.get('JWT_ACCESS_EXPIRY', '15m') as any,
         },

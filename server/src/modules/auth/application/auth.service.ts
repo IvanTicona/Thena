@@ -75,7 +75,7 @@ export class AuthService {
     const accessToken = this.jwtService.sign(
       { ...payload },
       {
-        secret: this.config.get<string>('JWT_ACCESS_SECRET', 'changeme-access'),
+        secret: this.config.getOrThrow<string>('JWT_ACCESS_SECRET'),
         expiresIn: this.config.get('JWT_ACCESS_EXPIRY', '15m') as any,
       },
     );
@@ -83,10 +83,7 @@ export class AuthService {
     const refreshToken = this.jwtService.sign(
       { ...payload },
       {
-        secret: this.config.get<string>(
-          'JWT_REFRESH_SECRET',
-          'changeme-refresh',
-        ),
+        secret: this.config.getOrThrow<string>('JWT_REFRESH_SECRET'),
         expiresIn: this.config.get('JWT_REFRESH_EXPIRY', '7d') as any,
       },
     );
@@ -112,7 +109,7 @@ export class AuthService {
     const accessToken = this.jwtService.sign(
       { ...payload },
       {
-        secret: this.config.get<string>('JWT_ACCESS_SECRET', 'changeme-access'),
+        secret: this.config.getOrThrow<string>('JWT_ACCESS_SECRET'),
         expiresIn: this.config.get('JWT_ACCESS_EXPIRY', '15m') as any,
       },
     );
