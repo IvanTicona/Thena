@@ -34,7 +34,7 @@ services:
       retries: 5
 
   minio:
-    image: minio/minio:latest
+    image: minio/minio:latest  # Dev: latest OK. Production: pin to a RELEASE tag (see docker-compose.prod.yml)
     container_name: thena-minio
     environment:
       MINIO_ROOT_USER: thena
@@ -55,6 +55,7 @@ services:
     build:
       context: ./server
       dockerfile: Dockerfile
+      target: development
       network: host
     container_name: thena-server
     env_file:
@@ -76,6 +77,7 @@ services:
     build:
       context: ./engine
       dockerfile: Dockerfile
+      target: development
       network: host
     container_name: thena-engine
     env_file:
@@ -96,6 +98,7 @@ services:
     build:
       context: ./client
       dockerfile: Dockerfile
+      target: development
       network: host
     container_name: thena-client
     ports:

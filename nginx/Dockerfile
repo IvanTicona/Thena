@@ -3,7 +3,7 @@
 # Based on nginx:alpine for minimal image size
 # =============================================================================
 
-FROM nginx:alpine
+FROM nginx:1.27-alpine
 
 # Remove the default nginx configuration
 RUN rm /etc/nginx/conf.d/default.conf

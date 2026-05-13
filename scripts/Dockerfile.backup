@@ -1,0 +1,24 @@
+# =============================================================================
+# Thena Backup Cron Image
+# =============================================================================
+# Bakes in PostgreSQL client + MinIO mc at build time — no runtime downloads.
+# mc is copied from the official minio/mc image (pinned version).
+# =============================================================================
+
+# Pull mc binary from the official MinIO client image (pinned, not latest)
+# To update: check https://hub.docker.com/r/minio/mc/tags and bump this line.
+FROM minio/mc:RELEASE.2025-05-21T01-59-54Z AS mc-source
+
+FROM alpine:3.19
+RUN apk add --no-cache postgresql-client tzdata
+
+# Copy mc binary from the official image (no runtime download)
+COPY --from=mc-source /usr/bin/mc /usr/local/bin/mc
+
+COPY backup.sh /scripts/backup.sh
+RUN chmod +x /scripts/backup.sh
+
+# Register daily cron: 0 2 * * * = 02:00 UTC
+RUN echo '0 2 * * * /scripts/backup.sh >> /var/log/backup.log 2>&1' > /etc/crontabs/root
+
+CMD ["crond", "-f", "-l", "2"]
