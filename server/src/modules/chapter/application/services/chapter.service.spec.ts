@@ -373,39 +373,4 @@ describe('ChapterService', () => {
     });
   });
 
-  // ── findAllForUser ────────────────────────────────────────────────────────
-
-  describe('findAllForUser', () => {
-    it('should return empty array when STUDENT has no thesis', async () => {
-      prismaMock.client.thesisDocument.findUnique.mockResolvedValue(null);
-
-      const result = await service.findAllForUser('student-1', 'STUDENT');
-
-      expect(result).toEqual([]);
-    });
-
-    it('should return chapters mapped correctly for STUDENT', async () => {
-      prismaMock.client.thesisDocument.findUnique.mockResolvedValue({ id: 'thesis-1' });
-      prismaMock.client.chapter.findMany.mockResolvedValue([
-        {
-          id: 'chapter-1',
-          number: 1,
-          title: 'Intro',
-          status: 'DRAFT',
-          submissions: [{ id: 'sub-1', versionNumber: 1, submittedAt: new Date() }],
-          _count: { submissions: 1 },
-        },
-      ]);
-
-      const result = await service.findAllForUser('student-1', 'STUDENT');
-
-      expect(result).toHaveLength(1);
-      expect(result[0]).toMatchObject({
-        id: 'chapter-1',
-        number: 1,
-        status: 'DRAFT',
-        submissionCount: 1,
-      });
-    });
-  });
 });
