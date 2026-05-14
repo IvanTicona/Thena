@@ -71,14 +71,7 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const { accessToken } = await this.authService.refresh(user.sub);
-    const payload: JwtPayload = {
-      sub: user.sub,
-      email: user.email,
-      role: user.role,
-    };
-    const tokens = this.authService.generateTokens(payload);
     res.cookie('access_token', accessToken, this.authService.getCookieOptions('access'));
-    void tokens; // refresh endpoint only updates access cookie
     return { message: 'ok' };
   }
 
