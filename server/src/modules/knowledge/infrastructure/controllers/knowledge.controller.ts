@@ -72,7 +72,7 @@ export class KnowledgeController {
     const effectiveLayer = user?.role === 'TUTOR' ? layer : 'INSTITUTIONAL';
     const ownerId = effectiveLayer === 'TUTOR' ? userId : null;
 
-    return this.knowledgeService.upload(file, effectiveLayer, ownerId);
+    return this.knowledgeService.upload(file, effectiveLayer, ownerId, userId ?? 'system');
   }
 
   @Delete('chunk/:id')

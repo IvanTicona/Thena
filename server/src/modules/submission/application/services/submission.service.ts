@@ -171,6 +171,14 @@ export class SubmissionService {
       metadata: { chapterId, versionNumber },
     });
 
+    void this.auditService.log({
+      action: AuditAction.GENERATE_REVIEW,
+      actorId: studentId,
+      entityType: 'review_job',
+      entityId: result.reviewJob.id,
+      metadata: { submissionId: result.submission.id, chapterId, versionNumber },
+    });
+
     // Notification for tutor — fire-and-forget (errors swallowed in NotificationService)
     // Notify the tutor assigned to this thesis that a new submission was made
     if (chapter.thesis.tutorId) {

@@ -6,6 +6,8 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../../../shared/prisma/prisma.service.js';
+import { AuditService } from '../../../audit/application/audit.service.js';
+import { AuditAction } from '../../../audit/domain/audit.constants.js';
 
 type KnowledgeLayer = 'TUTOR' | 'INSTITUTIONAL';
 
@@ -51,6 +53,7 @@ export class KnowledgeService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
+    private readonly auditService: AuditService,
   ) {
     this.engineUrl = this.config.get<string>(
       'ENGINE_URL',
@@ -108,6 +111,7 @@ export class KnowledgeService {
     file: Express.Multer.File,
     layer: string,
     ownerId: string | null,
+    actorId: string,
   ): Promise<EngineIngestionResult> {
     const allowedMimes = [
       'application/pdf',
@@ -141,7 +145,17 @@ export class KnowledgeService {
       throw new BadRequestException(`Engine ingestion failed: ${error}`);
     }
 
-    return response.json() as Promise<EngineIngestionResult>;
+    const ingestionResult = await response.json() as EngineIngestionResult;
+
+    void this.auditService.log({
+      action: AuditAction.UPLOAD_KNOWLEDGE,
+      actorId,
+      entityType: 'knowledge',
+      entityId: file.originalname,
+      metadata: { layer, chunksCreated: ingestionResult.chunks_created, sourceDocument: ingestionResult.source_document },
+    });
+
+    return ingestionResult;
   }
 
   async deleteBySource(
@@ -172,6 +186,17 @@ export class KnowledgeService {
       const result = await this.prisma.client.knowledgeChunk.deleteMany({
         where: { sourceDocument, layer: 'INSTITUTIONAL' },
       });
+
+      if (ownerId) {
+        void this.auditService.log({
+          action: AuditAction.DELETE_KNOWLEDGE,
+          actorId: ownerId,
+          entityType: 'knowledge',
+          entityId: sourceDocument,
+          metadata: { layer: 'INSTITUTIONAL', deletedChunks: result.count },
+        });
+      }
+
       return { sourceDocument, deletedChunks: result.count };
     }
 
@@ -194,6 +219,16 @@ export class KnowledgeService {
     const result = await this.prisma.client.knowledgeChunk.deleteMany({
       where,
     });
+
+    if (ownerId) {
+      void this.auditService.log({
+        action: AuditAction.DELETE_KNOWLEDGE,
+        actorId: ownerId,
+        entityType: 'knowledge',
+        entityId: sourceDocument,
+        metadata: { layer: 'TUTOR', deletedChunks: result.count },
+      });
+    }
 
     return {
       sourceDocument,
@@ -222,6 +257,17 @@ export class KnowledgeService {
         );
       }
       await this.prisma.client.knowledgeChunk.delete({ where: { id } });
+
+      if (ownerId) {
+        void this.auditService.log({
+          action: AuditAction.DELETE_KNOWLEDGE,
+          actorId: ownerId,
+          entityType: 'knowledge',
+          entityId: id,
+          metadata: { layer: 'INSTITUTIONAL', sourceDocument: chunk.sourceDocument },
+        });
+      }
+
       return { id, deleted: true };
     }
 
@@ -233,6 +279,16 @@ export class KnowledgeService {
     await this.prisma.client.knowledgeChunk.delete({
       where: { id },
     });
+
+    if (ownerId) {
+      void this.auditService.log({
+        action: AuditAction.DELETE_KNOWLEDGE,
+        actorId: ownerId,
+        entityType: 'knowledge',
+        entityId: id,
+        metadata: { layer: 'TUTOR', sourceDocument: chunk.sourceDocument },
+      });
+    }
 
     return { id, deleted: true };
   }

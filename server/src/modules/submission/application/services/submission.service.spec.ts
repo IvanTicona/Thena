@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { getQueueToken } from '@nestjs/bullmq';
-import { SubmissionService } from '../submission.service.js';
+import { SubmissionService } from './submission.service.js';
 import { PrismaService } from '../../../../shared/prisma/prisma.service.js';
 import { StorageService } from '../../../../shared/storage/storage.service.js';
 import { AuditService } from '../../../audit/application/audit.service.js';

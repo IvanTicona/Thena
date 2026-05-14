@@ -3,8 +3,10 @@ import { ReviewController } from './infrastructure/controllers/review.controller
 import { ReviewService } from './application/services/review.service.js';
 import { ObservationController } from './infrastructure/controllers/observation.controller.js';
 import { ObservationService } from './application/services/observation.service.js';
+import { AuditModule } from '../audit/audit.module.js';
 
 @Module({
+  imports: [AuditModule],
   controllers: [ReviewController, ObservationController],
   providers: [ReviewService, ObservationService],
 })

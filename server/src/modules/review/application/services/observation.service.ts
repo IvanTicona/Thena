@@ -4,6 +4,8 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../../../../shared/prisma/prisma.service.js';
+import { AuditService } from '../../../audit/application/audit.service.js';
+import { AuditAction } from '../../../audit/domain/audit.constants.js';
 import { CreateObservationDto, UpdateObservationDto } from '../dtos/observation.dto.js';
 
 export interface ObservationResult {
@@ -26,7 +28,10 @@ export interface ObservationResult {
 
 @Injectable()
 export class ObservationService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditService: AuditService,
+  ) {}
 
   async create(tutorId: string, dto: CreateObservationDto): Promise<ObservationResult> {
     // Verify the review report exists and belongs to a thesis assigned to this tutor
@@ -77,6 +82,14 @@ export class ObservationService {
       include: {
         author: { select: { id: true, name: true } },
       },
+    });
+
+    void this.auditService.log({
+      action: AuditAction.ADD_OBSERVATION,
+      actorId: tutorId,
+      entityType: 'observation',
+      entityId: observation.id,
+      metadata: { reviewReportId: dto.reviewId, type: dto.type, severity: dto.severity },
     });
 
     return this.mapObservation(observation);
@@ -147,6 +160,14 @@ export class ObservationService {
 
     await this.prisma.client.observation.delete({
       where: { id: observationId },
+    });
+
+    void this.auditService.log({
+      action: AuditAction.DELETE_OBSERVATION,
+      actorId: tutorId,
+      entityType: 'observation',
+      entityId: observationId,
+      metadata: { reviewReportId: observation.reviewReportId },
     });
   }
 
