@@ -3,7 +3,6 @@ import type { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import type {
   Chapter,
   Submission,
-  ReviewResult,
   Observation,
   ThesisDocument,
   TutorSummary,
@@ -112,11 +111,8 @@ export interface ReviewDiffResult {
 }
 
 export const chaptersApi = {
-  list: () => api.get<Chapter[]>('/chapters'),
   getById: (id: string) => api.get<ChapterDetailData>(`/chapters/${id}`),
   requestTutorReview: (id: string) => api.patch(`/chapters/${id}/request-review`),
-  approve: (id: string) => api.patch(`/chapters/${id}/approve`),
-  reject: (id: string) => api.patch(`/chapters/${id}/reject`),
 };
 
 export const submissionsApi = {
@@ -133,7 +129,6 @@ export const submissionsApi = {
 };
 
 export const reviewsApi = {
-  getByJobId: (jobId: string) => api.get<ReviewResult>(`/reviews/${jobId}`),
   exportPdf: (jobId: string) =>
     api.get(`/reviews/${jobId}/export`, { responseType: 'blob' }),
   getDiff: (submissionV1: string, submissionV2: string) =>
@@ -167,14 +162,10 @@ export interface CreateThesisDto {
 
 export const thesisApi = {
   create: (data: CreateThesisDto) => api.post<ThesisDocument>('/theses', data),
-  list: () => api.get<ThesisDocument[]>('/theses'),
-  getById: (id: string) => api.get<ThesisDocument>(`/theses/${id}`),
 
-  /**
-   * For students: GET /theses returns a single object or null (not an array).
-   * NestJS serializes null as an empty response body, which Axios may parse
-   * as "" instead of null. This helper normalizes the result.
-   */
+  // For students: GET /theses returns a single object or null (not an array).
+  // NestJS serializes null as an empty response body, which Axios may parse
+  // as "" instead of null. This helper normalizes the result.
   findMine: async (): Promise<ThesisDocument | null> => {
     const res = await api.get<ThesisDocument | null>('/theses');
     const data = res.data;
