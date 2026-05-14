@@ -326,6 +326,29 @@ export const notificationsApi = {
     api.patch<{ count: number }>('/notifications/read-all'),
 };
 
+// ── Alerts ────────────────────────────────────────────────────────────────────
+
+export interface Alert {
+  id: string;
+  thesisId: string;
+  type: string;
+  triggeredAt: string;
+  resolvedAt: string | null;
+  metadata: Record<string, unknown> | null;
+  thesis: {
+    id: string;
+    title: string;
+    student: { id: string; name: string; email: string };
+  };
+}
+
+export const alertsApi = {
+  getActive: (thesisId?: string) =>
+    api.get<Alert[]>('/alerts', { params: thesisId ? { thesisId } : {} }),
+  resolve: (id: string) =>
+    api.patch<{ id: string; resolvedAt: string }>(`/alerts/${id}/resolve`),
+};
+
 // Re-export KnowledgeDoc type for consumers that import it from here
 export type { KnowledgeDoc } from '../types';
 

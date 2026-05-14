@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Layout,
   Menu,
   Typography,
   Button,
   Dropdown,
+  Badge,
 } from 'antd';
 import { ChangePasswordModal } from './ChangePasswordModal';
 import {
@@ -20,7 +21,9 @@ import {
   AuditOutlined,
   EyeOutlined,
   BarChartOutlined,
+  WarningOutlined,
 } from '@ant-design/icons';
+import { alertsApi } from '../../services/api';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/useAuth';
 import { ChaptersProvider, useChapters } from '../../contexts/ChaptersContext';
@@ -50,6 +53,12 @@ function AppLayoutInner({ chapters }: { chapters: Chapter[] }) {
 
   const [siderCollapsed, setSiderCollapsed] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+  const [alertCount, setAlertCount] = useState(0);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    alertsApi.getActive().then((res) => setAlertCount(res.data.length)).catch(() => {});
+  }, [isAdmin]);
 
   const handleLogout = async () => {
     await logout();
@@ -65,12 +74,20 @@ function AppLayoutInner({ chapters }: { chapters: Chapter[] }) {
     { key: '/tutor/knowledge', icon: <DatabaseOutlined />, label: 'Base de Conocimiento' },
   ];
 
+  const alertsLabel = (
+    <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      Alertas
+      {alertCount > 0 && <Badge count={alertCount} size="small" />}
+    </span>
+  );
+
   const adminMenuItems = [
     { key: '/admin', icon: <DashboardOutlined />, label: 'Panel Admin' },
     { key: '/admin/users', icon: <UsergroupAddOutlined />, label: 'Usuarios' },
     { key: '/admin/assignments', icon: <LinkOutlined />, label: 'Asignaciones' },
     { key: '/admin/knowledge', icon: <BookOutlined />, label: 'Base de Conocimiento' },
     { key: '/admin/metrics', icon: <BarChartOutlined />, label: 'Métricas' },
+    { key: '/admin/alerts', icon: <WarningOutlined />, label: alertsLabel },
   ];
 
   const superAdminMenuItems = [
@@ -79,6 +96,7 @@ function AppLayoutInner({ chapters }: { chapters: Chapter[] }) {
     { key: '/admin/assignments', icon: <LinkOutlined />, label: 'Asignaciones' },
     { key: '/admin/knowledge', icon: <BookOutlined />, label: 'Base de Conocimiento' },
     { key: '/admin/metrics', icon: <BarChartOutlined />, label: 'Métricas' },
+    { key: '/admin/alerts', icon: <WarningOutlined />, label: alertsLabel },
     { key: '/superadmin/audit', icon: <AuditOutlined />, label: 'Auditoría' },
   ];
 

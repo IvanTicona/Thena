@@ -27,6 +27,7 @@ const UserManagement = lazy(() => import('./pages/admin/UserManagement'));
 const AssignmentManagement = lazy(() => import('./pages/admin/AssignmentManagement'));
 const KnowledgeBaseAdmin = lazy(() => import('./pages/admin/KnowledgeBaseAdmin'));
 const MetricsDashboard = lazy(() => import('./pages/admin/MetricsDashboard'));
+const AlertsPage = lazy(() => import('./pages/admin/AlertsPage'));
 
 /* ── Reviewer pages ───────────────────────────────────────── */
 const ReviewerDashboard = lazy(() => import('./pages/reviewer/ReviewerDashboard'));
@@ -147,6 +148,7 @@ function App() {
                 <Route path="/admin/assignments" element={<AssignmentManagement />} />
                 <Route path="/admin/knowledge" element={<KnowledgeBaseAdmin />} />
                 <Route path="/admin/metrics" element={<MetricsDashboard />} />
+                <Route path="/admin/alerts" element={<AlertsPage />} />
               </Route>
 
               {/* Super Admin routes */}
