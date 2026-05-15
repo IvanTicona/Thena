@@ -1,10 +1,10 @@
-import { useEffect, useState, useCallback } from 'react';
-import { Typography, Spin, App, Empty } from 'antd';
+import { useEffect, useState, useCallback, useMemo } from 'react';
+import { Typography, Spin, App, Empty, Input, Select } from 'antd';
 import { thesisApi } from '../../services/api';
 import api from '../../services/api';
 import { ApiError } from '../../services/api-error';
 import { ThesisCard } from '../../components/ThesisCard';
-import type { ThesisDocument } from '../../types';
+import type { ThesisDocument, ChapterStatus } from '../../types';
 import './TutorDashboard.css';
 
 const { Title, Text } = Typography;
@@ -12,6 +12,8 @@ const { Title, Text } = Typography;
 export default function TutorDashboard() {
   const [theses, setTheses] = useState<ThesisDocument[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchText, setSearchText] = useState('');
+  const [statusFilter, setStatusFilter] = useState<ChapterStatus | 'ALL'>('ALL');
   const { modal, message } = App.useApp();
 
   const refetchTheses = useCallback(() => {
@@ -34,6 +36,22 @@ export default function TutorDashboard() {
   }, [refetchTheses]);
 
   useEffect(() => { document.title = 'Panel del Tutor — Thena'; }, []);
+
+  const filteredTheses = useMemo(() => {
+    return theses.filter((thesis) => {
+      if (searchText.trim()) {
+        const q = searchText.toLowerCase();
+        const matchesStudent = thesis.student?.name?.toLowerCase().includes(q) ?? false;
+        const matchesTitle = thesis.title.toLowerCase().includes(q);
+        if (!matchesStudent && !matchesTitle) return false;
+      }
+      if (statusFilter !== 'ALL') {
+        const hasStatus = thesis.chapters?.some((c) => c.status === statusFilter) ?? false;
+        if (!hasStatus) return false;
+      }
+      return true;
+    });
+  }, [theses, searchText, statusFilter]);
 
   const handleApprove = (chapterId: string, chapterTitle: string) => {
     modal.confirm({
@@ -93,14 +111,44 @@ export default function TutorDashboard() {
           </Text>
         </div>
       ) : (
-        theses.map((thesis) => (
-          <ThesisCard
-            key={thesis.id}
-            thesis={thesis}
-            onApprove={handleApprove}
-            onReject={handleReject}
-          />
-        ))
+        <>
+          <div className="tutor-dashboard__filters">
+            <Input.Search
+              placeholder="Buscar por estudiante o título..."
+              allowClear
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              className="tutor-dashboard__search"
+            />
+            <Select
+              value={statusFilter}
+              onChange={setStatusFilter}
+              className="tutor-dashboard__status-select"
+              options={[
+                { value: 'ALL', label: 'Todos los estados' },
+                { value: 'IN_REVIEW', label: 'En revisión del tutor' },
+                { value: 'DRAFT', label: 'Borrador' },
+                { value: 'APPROVED', label: 'Aprobado' },
+                { value: 'LOCKED', label: 'Bloqueado' },
+              ]}
+            />
+          </div>
+
+          {filteredTheses.length === 0 ? (
+            <div className="tutor-dashboard__empty">
+              <Empty description="No hay resultados para los filtros aplicados" />
+            </div>
+          ) : (
+            filteredTheses.map((thesis) => (
+              <ThesisCard
+                key={thesis.id}
+                thesis={thesis}
+                onApprove={handleApprove}
+                onReject={handleReject}
+              />
+            ))
+          )}
+        </>
       )}
     </div>
   );

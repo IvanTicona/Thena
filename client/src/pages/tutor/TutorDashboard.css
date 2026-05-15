@@ -19,3 +19,20 @@
   display: block;
   margin-top: 8px;
 }
+
+/* ── FILTERS ─────────────────────────────────────────────── */
+.tutor-dashboard__filters {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.tutor-dashboard__search {
+  flex: 1;
+  min-width: 220px;
+}
+
+.tutor-dashboard__status-select {
+  width: 220px;
+}
