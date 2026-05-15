@@ -8,4 +8,10 @@ export default defineConfig({
     host: true,
     allowedHosts: ['thena.skynetupb.store', 'lab.skynetupb.store'],
   },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.ts'],
+    css: false,
+  },
 })
