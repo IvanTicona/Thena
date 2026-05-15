@@ -27,7 +27,7 @@ import { CHAPTER_STATUS, JOB_STATUS } from '../../utils/status';
 import { formatDateTime } from '../../utils/format';
 import './ChapterDetail.css';
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 const { Dragger } = Upload;
 
 export default function ChapterDetail() {

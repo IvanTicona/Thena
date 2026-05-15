@@ -47,7 +47,7 @@ export function ChangePasswordModal({ open, onClose }: ChangePasswordModalProps)
       okText="Guardar"
       cancelText="Cancelar"
       confirmLoading={loading}
-      destroyOnHide
+      destroyOnHidden
     >
       <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
         <Form.Item

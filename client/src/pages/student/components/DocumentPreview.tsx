@@ -279,7 +279,7 @@ const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
               remarkPlugins={[remarkGfm]}
               rehypePlugins={[rehypeRaw]}
               components={{
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                // @ts-expect-error — custom element not in react-markdown's Components type
                 'obs-highlight': ({ node, children, ...props }: any) => {
                   const obsId = props['data-obs-id'] as string;
                   const severity = props['data-severity'] as Severity;

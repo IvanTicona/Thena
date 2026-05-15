@@ -37,7 +37,7 @@ const agentStepStatus = (status: string): 'finish' | 'process' | 'wait' => {
 };
 
 export default function SubmissionReview() {
-  const { submissionId } = useParams<{ submissionId: string }>();
+  useParams<{ submissionId: string }>();
   const [searchParams] = useSearchParams();
   const chapterId = searchParams.get('chapterId');
   const navigate = useNavigate();
@@ -98,8 +98,7 @@ export default function SubmissionReview() {
       content:
         '¿Estás seguro de rechazar este capítulo? El estudiante deberá subir una nueva versión.',
       okText: 'Rechazar',
-      okType: 'default',
-      danger: true,
+      okButtonProps: { danger: true },
       cancelText: 'Cancelar',
       onOk: async () => {
         try {

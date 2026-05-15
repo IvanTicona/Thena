@@ -61,8 +61,7 @@ export default function TutorDashboard() {
       title: 'Rechazar capítulo',
       content: `¿Estás seguro de rechazar "${chapterTitle}"? El estudiante deberá subir una nueva versión.`,
       okText: 'Rechazar',
-      okType: 'default',
-      danger: true,
+      okButtonProps: { danger: true },
       cancelText: 'Cancelar',
       onOk: async () => {
         try {

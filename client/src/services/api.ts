@@ -111,6 +111,7 @@ export interface ReviewDiffResult {
 }
 
 export const chaptersApi = {
+  list: () => api.get<PaginatedResponse<Chapter> | Chapter[]>('/chapters'),
   getById: (id: string) => api.get<ChapterDetailData>(`/chapters/${id}`),
   requestTutorReview: (id: string) => api.patch(`/chapters/${id}/request-review`),
 };
@@ -161,6 +162,7 @@ export interface CreateThesisDto {
 }
 
 export const thesisApi = {
+  list: () => api.get<PaginatedResponse<ThesisDocument> | ThesisDocument[]>('/theses'),
   create: (data: CreateThesisDto) => api.post<ThesisDocument>('/theses', data),
 
   // For students: GET /theses returns a single object or null (not an array).

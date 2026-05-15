@@ -1,7 +1,6 @@
 import React from 'react';
 import {
   CheckCircleFilled,
-  ClockCircleOutlined,
   EditOutlined,
   LockOutlined,
   SyncOutlined,
