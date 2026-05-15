@@ -23,7 +23,8 @@ const makeJwtMock = () => ({
 });
 
 const makeConfigMock = () => ({
-  get: jest.fn((key: string, fallback?: unknown) => fallback ?? undefined),
+  get: jest.fn((key: string, fallback?: unknown) => fallback ?? 'mock-secret'),
+  getOrThrow: jest.fn((_key: string) => 'mock-secret'),
 });
 
 const makeAuditMock = () => ({
