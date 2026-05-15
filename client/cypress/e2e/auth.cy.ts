@@ -100,4 +100,40 @@ describe('Auth Flow', () => {
       cy.url().should('include', '/login');
     });
   });
+
+  // ── Change Password ───────────────────────────────────────
+
+  describe('Change Password', () => {
+    beforeEach(() => {
+      cy.loginByApi(studentEmail, studentPassword);
+      cy.visit('/dashboard');
+    });
+
+    it('opens the change password modal from the user menu', () => {
+      cy.get('.app-layout__user-btn').click();
+      cy.contains('.ant-dropdown-menu-item', 'Cambiar Contraseña').click();
+      cy.get('.ant-modal-content', { timeout: 5000 }).should('be.visible');
+      cy.contains('Cambiar Contraseña').should('be.visible');
+    });
+
+    it('closes the change password modal with Cancel', () => {
+      cy.get('.app-layout__user-btn').click();
+      cy.contains('.ant-dropdown-menu-item', 'Cambiar Contraseña').click();
+      cy.get('.ant-modal-content', { timeout: 5000 }).should('be.visible');
+      cy.contains('button', 'Cancelar').click();
+      cy.get('.ant-modal-content').should('not.exist');
+    });
+
+    it('shows validation errors when submitting empty form', () => {
+      cy.get('.app-layout__user-btn').click();
+      cy.contains('.ant-dropdown-menu-item', 'Cambiar Contraseña').click();
+      cy.get('.ant-modal-content', { timeout: 5000 }).should('be.visible');
+      cy.contains('button', 'Guardar').click();
+      // Ant Design Form should show required field errors
+      cy.get('.ant-form-item-explain-error', { timeout: 5000 }).should(
+        'have.length.gte',
+        1,
+      );
+    });
+  });
 });

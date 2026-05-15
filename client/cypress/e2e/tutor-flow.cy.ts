@@ -260,6 +260,43 @@ describe('Tutor Flow', () => {
     });
   });
 
+  // ── Tutor Dashboard Filters ───────────────────────────────
+
+  describe('Tutor Dashboard Search and Filter', () => {
+    it('shows the search input and status filter', () => {
+      cy.visit('/tutor');
+      cy.get('.tutor-dashboard__loading', { timeout: 8000 }).should('not.exist');
+
+      cy.get('.thesis-card, .tutor-dashboard__empty', { timeout: 10000 }).then(($el) => {
+        if ($el.hasClass('thesis-card') || $el.length > 0) {
+          cy.get('.tutor-dashboard__search').should('exist');
+          cy.get('.tutor-dashboard__status-select').should('exist');
+        } else {
+          cy.log('No theses — filter controls not shown in empty state');
+        }
+      });
+    });
+
+    it('filters theses when searching by student name', () => {
+      cy.visit('/tutor');
+      cy.get('.tutor-dashboard__loading', { timeout: 8000 }).should('not.exist');
+
+      cy.get('.thesis-card', { timeout: 10000 }).then(($cards) => {
+        if ($cards.length > 0) {
+          // Type a search term that should match nothing
+          cy.get('.tutor-dashboard__search input').type('xyznotexist123');
+          cy.get('.ant-empty', { timeout: 5000 }).should('exist');
+
+          // Clear and verify cards return
+          cy.get('.tutor-dashboard__search input').clear();
+          cy.get('.thesis-card', { timeout: 5000 }).should('have.length.gte', 1);
+        } else {
+          cy.log('No theses to filter');
+        }
+      });
+    });
+  });
+
   // ── Knowledge Base navigation ─────────────────────────────
 
   describe('Knowledge Base', () => {
