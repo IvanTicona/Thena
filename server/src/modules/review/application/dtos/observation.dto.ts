@@ -26,17 +26,17 @@ export enum ObservationSeverityEnum {
 
 export class CreateObservationDto {
   @IsUUID()
-  reviewId: string;
+  reviewId!: string;
 
   @IsEnum(ObservationTypeEnum)
-  type: ObservationTypeEnum;
+  type!: ObservationTypeEnum;
 
   @IsEnum(ObservationSeverityEnum)
-  severity: ObservationSeverityEnum;
+  severity!: ObservationSeverityEnum;
 
   @IsString()
   @IsNotEmpty()
-  message: string;
+  message!: string;
 
   @IsOptional()
   @IsString()

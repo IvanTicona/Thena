@@ -6,7 +6,14 @@ import {
 import { PrismaService } from '../../../../shared/prisma/prisma.service.js';
 import { AuditService } from '../../../audit/application/audit.service.js';
 import { AuditAction } from '../../../audit/domain/audit.constants.js';
-import { CreateObservationDto, UpdateObservationDto } from '../dtos/observation.dto.js';
+import {
+  CreateObservationDto,
+  UpdateObservationDto,
+} from '../dtos/observation.dto.js';
+import type {
+  AgentType,
+  ObservationSeverity,
+} from '../../../../generated/prisma/enums.js';
 
 export interface ObservationResult {
   id: string;
@@ -33,8 +40,10 @@ export class ObservationService {
     private readonly auditService: AuditService,
   ) {}
 
-  async create(tutorId: string, dto: CreateObservationDto): Promise<ObservationResult> {
-    // Verify the review report exists and belongs to a thesis assigned to this tutor
+  async create(
+    tutorId: string,
+    dto: CreateObservationDto,
+  ): Promise<ObservationResult> {
     const report = await this.prisma.client.reviewReport.findUnique({
       where: { id: dto.reviewId },
       include: {
@@ -68,13 +77,13 @@ export class ObservationService {
     const observation = await this.prisma.client.observation.create({
       data: {
         reviewReportId: dto.reviewId,
-        type: dto.type as any,
-        severity: dto.severity as any,
+        type: dto.type as unknown as AgentType,
+        severity: dto.severity as unknown as ObservationSeverity,
         message: dto.message,
-        suggestion: dto.suggestion ?? null,
-        textFragment: dto.textFragment ?? null,
-        offsetStart: dto.offsetStart ?? null,
-        offsetEnd: dto.offsetEnd ?? null,
+        suggestion: dto.suggestion !== undefined ? dto.suggestion : null,
+        textFragment: dto.textFragment !== undefined ? dto.textFragment : null,
+        offsetStart: dto.offsetStart !== undefined ? dto.offsetStart : null,
+        offsetEnd: dto.offsetEnd !== undefined ? dto.offsetEnd : null,
         source: 'TUTOR',
         authorId: tutorId,
         isMutable: true,
@@ -89,7 +98,11 @@ export class ObservationService {
       actorId: tutorId,
       entityType: 'observation',
       entityId: observation.id,
-      metadata: { reviewReportId: dto.reviewId, type: dto.type, severity: dto.severity },
+      metadata: {
+        reviewReportId: dto.reviewId,
+        type: dto.type,
+        severity: dto.severity,
+      },
     });
 
     return this.mapObservation(observation);
@@ -111,12 +124,10 @@ export class ObservationService {
       throw new NotFoundException('Observation not found');
     }
 
-    // Only mutable (tutor) observations can be edited
     if (!observation.isMutable || observation.source !== 'TUTOR') {
       throw new ForbiddenException('System observations cannot be modified');
     }
 
-    // Only the author can edit their observation
     if (observation.authorId !== tutorId) {
       throw new ForbiddenException('You can only edit your own observations');
     }
@@ -124,10 +135,14 @@ export class ObservationService {
     const updated = await this.prisma.client.observation.update({
       where: { id: observationId },
       data: {
-        ...(dto.severity !== undefined && { severity: dto.severity as any }),
+        ...(dto.severity !== undefined && {
+          severity: dto.severity as unknown as ObservationSeverity,
+        }),
         ...(dto.message !== undefined && { message: dto.message }),
         ...(dto.suggestion !== undefined && { suggestion: dto.suggestion }),
-        ...(dto.textFragment !== undefined && { textFragment: dto.textFragment }),
+        ...(dto.textFragment !== undefined && {
+          textFragment: dto.textFragment,
+        }),
         ...(dto.offsetStart !== undefined && { offsetStart: dto.offsetStart }),
         ...(dto.offsetEnd !== undefined && { offsetEnd: dto.offsetEnd }),
       },
@@ -148,12 +163,10 @@ export class ObservationService {
       throw new NotFoundException('Observation not found');
     }
 
-    // Only mutable (tutor) observations can be deleted
     if (!observation.isMutable || observation.source !== 'TUTOR') {
       throw new ForbiddenException('System observations cannot be deleted');
     }
 
-    // Only the author can delete their observation
     if (observation.authorId !== tutorId) {
       throw new ForbiddenException('You can only delete your own observations');
     }

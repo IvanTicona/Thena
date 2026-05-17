@@ -6,10 +6,10 @@ import {
   ParseUUIDPipe,
   Res,
 } from '@nestjs/common';
-import { Response } from 'express';
+import type { Response } from 'express';
 import { ReviewService } from '../../application/services/review.service.js';
 import { CurrentUser } from '../../../auth/infrastructure/decorators/current-user.decorator.js';
-import { JwtPayload } from '../../../auth/domain/auth.types.js';
+import type { JwtPayload } from '../../../auth/domain/auth.types.js';
 
 @Controller('reviews')
 export class ReviewController {
@@ -20,8 +20,7 @@ export class ReviewController {
     @Query('chapterId', ParseUUIDPipe) chapterId: string,
     @CurrentUser() user: JwtPayload,
   ) {
-    // P0-7: Enforce ownership only for STUDENT role — tutors can view any review
-    const ownershipUserId = user?.role === 'STUDENT' ? user.sub : undefined;
+    const ownershipUserId = user.role === 'STUDENT' ? user.sub : undefined;
     return this.reviewService.findLatestByChapterId(chapterId, ownershipUserId);
   }
 
@@ -31,8 +30,12 @@ export class ReviewController {
     @Query('submissionV2', ParseUUIDPipe) submissionV2: string,
     @CurrentUser() user: JwtPayload,
   ) {
-    const ownershipUserId = user?.role === 'STUDENT' ? user.sub : undefined;
-    return this.reviewService.getDiff(submissionV1, submissionV2, ownershipUserId);
+    const ownershipUserId = user.role === 'STUDENT' ? user.sub : undefined;
+    return this.reviewService.getDiff(
+      submissionV1,
+      submissionV2,
+      ownershipUserId,
+    );
   }
 
   @Get(':jobId/export')
@@ -60,8 +63,7 @@ export class ReviewController {
     @Param('jobId', ParseUUIDPipe) jobId: string,
     @CurrentUser() user: JwtPayload,
   ) {
-    // P0-7: Enforce ownership only for STUDENT role — tutors can view any review
-    const ownershipUserId = user?.role === 'STUDENT' ? user.sub : undefined;
+    const ownershipUserId = user.role === 'STUDENT' ? user.sub : undefined;
     return this.reviewService.findByJobId(jobId, ownershipUserId);
   }
 }

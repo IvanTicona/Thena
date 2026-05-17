@@ -3,7 +3,10 @@ import { NotFoundException, ForbiddenException } from '@nestjs/common';
 import { ObservationService } from './observation.service.js';
 import { PrismaService } from '../../../../shared/prisma/prisma.service.js';
 import { AuditService } from '../../../audit/application/audit.service.js';
-import { ObservationTypeEnum, ObservationSeverityEnum } from '../dtos/observation.dto.js';
+import {
+  ObservationTypeEnum,
+  ObservationSeverityEnum,
+} from '../dtos/observation.dto.js';
 
 // ── Mock factories ──────────────────────────────────────────────────────────
 
@@ -91,43 +94,54 @@ describe('ObservationService', () => {
     it('should throw NotFoundException when review report not found', async () => {
       prismaMock.client.reviewReport.findUnique.mockResolvedValue(null);
 
-      await expect(service.create('tutor-1', dto)).rejects.toThrow(NotFoundException);
+      await expect(service.create('tutor-1', dto)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw ForbiddenException when tutor is not assigned to the thesis', async () => {
-      prismaMock.client.reviewReport.findUnique.mockResolvedValue(makeDeepReport('other-tutor'));
+      prismaMock.client.reviewReport.findUnique.mockResolvedValue(
+        makeDeepReport('other-tutor'),
+      );
 
-      await expect(service.create('tutor-1', dto)).rejects.toThrow(ForbiddenException);
+      await expect(service.create('tutor-1', dto)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should create and return the observation', async () => {
-      prismaMock.client.reviewReport.findUnique.mockResolvedValue(makeDeepReport('tutor-1'));
+      prismaMock.client.reviewReport.findUnique.mockResolvedValue(
+        makeDeepReport('tutor-1'),
+      );
       prismaMock.client.observation.create.mockResolvedValue(baseObs);
 
       const result = await service.create('tutor-1', dto);
 
       expect(result.id).toBe('obs-1');
       expect(result.source).toBe('TUTOR');
-      expect(prismaMock.client.observation.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
-            source: 'TUTOR',
-            authorId: 'tutor-1',
-            isMutable: true,
-          }),
-        }),
-      );
+      const [createCall] = prismaMock.client.observation.create.mock
+        .calls[0] as [
+        { data: { source: string; authorId: string; isMutable: boolean } },
+      ];
+      expect(createCall.data.source).toBe('TUTOR');
+      expect(createCall.data.authorId).toBe('tutor-1');
+      expect(createCall.data.isMutable).toBe(true);
     });
 
     it('should fire-and-forget audit log after creation', async () => {
-      prismaMock.client.reviewReport.findUnique.mockResolvedValue(makeDeepReport('tutor-1'));
+      prismaMock.client.reviewReport.findUnique.mockResolvedValue(
+        makeDeepReport('tutor-1'),
+      );
       prismaMock.client.observation.create.mockResolvedValue(baseObs);
 
       await service.create('tutor-1', dto);
       await new Promise((r) => setImmediate(r));
 
       expect(auditMock.log).toHaveBeenCalledWith(
-        expect.objectContaining({ action: 'ADD_OBSERVATION', actorId: 'tutor-1' }),
+        expect.objectContaining({
+          action: 'ADD_OBSERVATION',
+          actorId: 'tutor-1',
+        }),
       );
     });
   });
@@ -138,9 +152,9 @@ describe('ObservationService', () => {
     it('should throw NotFoundException when observation not found', async () => {
       prismaMock.client.observation.findUnique.mockResolvedValue(null);
 
-      await expect(service.update('nonexistent', 'tutor-1', { message: 'New' })).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.update('nonexistent', 'tutor-1', { message: 'New' }),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should throw ForbiddenException for immutable (AI-generated) observations', async () => {
@@ -150,9 +164,9 @@ describe('ObservationService', () => {
         source: 'AI',
       });
 
-      await expect(service.update('obs-1', 'tutor-1', { message: 'New' })).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(
+        service.update('obs-1', 'tutor-1', { message: 'New' }),
+      ).rejects.toThrow(ForbiddenException);
     });
 
     it('should throw ForbiddenException when tutor is not the author', async () => {
@@ -161,16 +175,21 @@ describe('ObservationService', () => {
         authorId: 'other-tutor',
       });
 
-      await expect(service.update('obs-1', 'tutor-1', { message: 'New' })).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(
+        service.update('obs-1', 'tutor-1', { message: 'New' }),
+      ).rejects.toThrow(ForbiddenException);
     });
 
     it('should update and return the observation', async () => {
       prismaMock.client.observation.findUnique.mockResolvedValue(baseObs);
-      prismaMock.client.observation.update.mockResolvedValue({ ...baseObs, message: 'Updated' });
+      prismaMock.client.observation.update.mockResolvedValue({
+        ...baseObs,
+        message: 'Updated',
+      });
 
-      const result = await service.update('obs-1', 'tutor-1', { message: 'Updated' });
+      const result = await service.update('obs-1', 'tutor-1', {
+        message: 'Updated',
+      });
 
       expect(result.message).toBe('Updated');
     });
@@ -182,7 +201,9 @@ describe('ObservationService', () => {
     it('should throw NotFoundException when observation not found', async () => {
       prismaMock.client.observation.findUnique.mockResolvedValue(null);
 
-      await expect(service.remove('nonexistent', 'tutor-1')).rejects.toThrow(NotFoundException);
+      await expect(service.remove('nonexistent', 'tutor-1')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw ForbiddenException for system observations', async () => {
@@ -192,7 +213,9 @@ describe('ObservationService', () => {
         source: 'AI',
       });
 
-      await expect(service.remove('obs-1', 'tutor-1')).rejects.toThrow(ForbiddenException);
+      await expect(service.remove('obs-1', 'tutor-1')).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should throw ForbiddenException when not the author', async () => {
@@ -201,7 +224,9 @@ describe('ObservationService', () => {
         authorId: 'other-tutor',
       });
 
-      await expect(service.remove('obs-1', 'tutor-1')).rejects.toThrow(ForbiddenException);
+      await expect(service.remove('obs-1', 'tutor-1')).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should delete the observation', async () => {
@@ -223,7 +248,10 @@ describe('ObservationService', () => {
       await new Promise((r) => setImmediate(r));
 
       expect(auditMock.log).toHaveBeenCalledWith(
-        expect.objectContaining({ action: 'DELETE_OBSERVATION', actorId: 'tutor-1' }),
+        expect.objectContaining({
+          action: 'DELETE_OBSERVATION',
+          actorId: 'tutor-1',
+        }),
       );
     });
   });

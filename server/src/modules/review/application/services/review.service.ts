@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../../../../shared/prisma/prisma.service.js';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -86,10 +90,10 @@ function parseBySeverity(value: unknown): BySeverity {
   }
   const obj = value as Record<string, number>;
   return {
-    INFO: obj.INFO ?? 0,
-    SUGGESTION: obj.SUGGESTION ?? 0,
-    WARNING: obj.WARNING ?? 0,
-    ERROR: obj.ERROR ?? 0,
+    INFO: obj.INFO !== undefined ? obj.INFO : 0,
+    SUGGESTION: obj.SUGGESTION !== undefined ? obj.SUGGESTION : 0,
+    WARNING: obj.WARNING !== undefined ? obj.WARNING : 0,
+    ERROR: obj.ERROR !== undefined ? obj.ERROR : 0,
   };
 }
 
@@ -97,7 +101,10 @@ function parseBySeverity(value: unknown): BySeverity {
 export class ReviewService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findByJobId(jobId: string, requestingUserId?: string): Promise<ReviewJobResult> {
+  async findByJobId(
+    jobId: string,
+    requestingUserId?: string,
+  ): Promise<ReviewJobResult> {
     const job = await this.prisma.client.reviewJob.findUnique({
       where: { id: jobId },
       include: {
@@ -123,9 +130,8 @@ export class ReviewService {
       throw new NotFoundException('Review job not found');
     }
 
-    // P0-7: Ownership check — only the student who owns the chapter can view its review.
     // Tutors bypass this check (they access reviews via their own dashboard endpoints).
-    if (requestingUserId) {
+    if (requestingUserId !== undefined) {
       const studentId = job.submission.chapter.thesis.studentId;
       if (studentId !== requestingUserId) {
         throw new ForbiddenException('No tenés permiso para ver esta revisión');
@@ -149,7 +155,6 @@ export class ReviewService {
       return base;
     }
 
-    // Fetch observations for the completed report
     const observations = await this.prisma.client.observation.findMany({
       where: { reviewReportId: job.reviewReport.id },
       include: { author: { select: { name: true } } },
@@ -176,7 +181,7 @@ export class ReviewService {
         sourceReference: parseSourceReference(o.sourceReference),
         source: o.source,
         authorId: o.authorId,
-        authorName: o.author?.name ?? null,
+        authorName: o.author !== null ? o.author.name : null,
         isMutable: o.isMutable,
         escalationLevel: o.escalationLevel,
       })),
@@ -184,7 +189,10 @@ export class ReviewService {
     };
   }
 
-  async findLatestByChapterId(chapterId: string, requestingUserId?: string): Promise<ReviewJobResult> {
+  async findLatestByChapterId(
+    chapterId: string,
+    requestingUserId?: string,
+  ): Promise<ReviewJobResult> {
     const submission = await this.prisma.client.submission.findFirst({
       where: { chapterId },
       orderBy: { versionNumber: 'desc' },
@@ -203,8 +211,9 @@ export class ReviewService {
     submissionV2Id: string,
     requestingUserId?: string,
   ): Promise<ReviewDiffResult> {
-    // Fetch observations for both submissions via their review reports
-    const getObsForSubmission = async (submissionId: string): Promise<ReviewObservation[]> => {
+    const getObsForSubmission = async (
+      submissionId: string,
+    ): Promise<ReviewObservation[]> => {
       const job = await this.prisma.client.reviewJob.findUnique({
         where: { submissionId },
         include: { reviewReport: true },
@@ -214,14 +223,20 @@ export class ReviewService {
         return [];
       }
 
-      // Ownership check — only the student who owns the chapter can diff
-      if (requestingUserId) {
+      if (requestingUserId !== undefined) {
         const submission = await this.prisma.client.submission.findUnique({
           where: { id: submissionId },
-          select: { chapter: { select: { thesis: { select: { studentId: true } } } } },
+          select: {
+            chapter: { select: { thesis: { select: { studentId: true } } } },
+          },
         });
-        if (submission?.chapter.thesis.studentId !== requestingUserId) {
-          throw new ForbiddenException('No tenés permiso para ver esta revisión');
+        if (
+          submission === null ||
+          submission.chapter.thesis.studentId !== requestingUserId
+        ) {
+          throw new ForbiddenException(
+            'No tenés permiso para ver esta revisión',
+          );
         }
       }
 
@@ -243,7 +258,7 @@ export class ReviewService {
         sourceReference: parseSourceReference(o.sourceReference),
         source: o.source,
         authorId: o.authorId,
-        authorName: o.author?.name ?? null,
+        authorName: o.author !== null ? o.author.name : null,
         isMutable: o.isMutable,
         escalationLevel: o.escalationLevel,
       }));
@@ -290,16 +305,19 @@ export class ReviewService {
       throw new NotFoundException('Review job not found');
     }
 
-    // Ownership check: STUDENTs can only export their own; TUTORs can export any
     if (userRole === 'STUDENT') {
       const studentId = job.submission.chapter.thesis.studentId;
       if (studentId !== userId) {
-        throw new ForbiddenException('No tenés permiso para exportar esta revisión');
+        throw new ForbiddenException(
+          'No tenés permiso para exportar esta revisión',
+        );
       }
     }
 
     if (job.status !== 'COMPLETED' || !job.reviewReport) {
-      throw new ForbiddenException('Solo se pueden exportar revisiones completadas');
+      throw new ForbiddenException(
+        'Solo se pueden exportar revisiones completadas',
+      );
     }
 
     const observations = await this.prisma.client.observation.findMany({
@@ -339,14 +357,6 @@ export class ReviewService {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Diff helpers
-// ---------------------------------------------------------------------------
-
-/**
- * Compute word-overlap similarity between two strings.
- * Returns a value in [0, 1] — 1 means identical content.
- */
 function wordOverlapSimilarity(a: string, b: string): number {
   const tokenize = (s: string) =>
     s
@@ -369,10 +379,6 @@ function wordOverlapSimilarity(a: string, b: string): number {
   return (overlap * 2) / (wordsA.size + wordsB.size);
 }
 
-/**
- * Match observations by (type + severity + message similarity ≥ 80%).
- * Returns { resolved, persisting, new }.
- */
 function diffObservations(
   v1: ReviewObservation[],
   v2: ReviewObservation[],
@@ -413,10 +419,6 @@ function diffObservations(
 
   return { resolved, persisting, new: newObservations };
 }
-
-// ---------------------------------------------------------------------------
-// PDF builder helpers
-// ---------------------------------------------------------------------------
 
 const SEVERITY_COLORS: Record<string, string> = {
   ERROR: '#ff4d4f',
@@ -483,14 +485,15 @@ function buildPdfBuffer(input: PdfBuildInput): Promise<Buffer> {
     const MARGIN = 56;
     const CONTENT_WIDTH = doc.page.width - MARGIN * 2;
 
-    // ── Header ──
     doc
       .fillColor('#1a1a2e')
       .font('Helvetica-Bold')
       .fontSize(20)
       .text('Thena \u2014 Reporte de Revisi\u00f3n', MARGIN, 56);
 
-    const dateStr = (input.completedAt ?? new Date()).toLocaleDateString('es-AR', {
+    const dateStr = (
+      input.completedAt !== null ? input.completedAt : new Date()
+    ).toLocaleDateString('es-AR', {
       day: '2-digit',
       month: 'long',
       year: 'numeric',
@@ -504,7 +507,6 @@ function buildPdfBuffer(input: PdfBuildInput): Promise<Buffer> {
 
     doc.moveDown(0.5);
 
-    // Thesis + chapter info box
     const infoBoxY = doc.y;
     const infoBoxH = 66;
     doc
@@ -537,10 +539,8 @@ function buildPdfBuffer(input: PdfBuildInput): Promise<Buffer> {
         { width: CONTENT_WIDTH - 24 },
       );
 
-    // Move cursor below the info box
     doc.text('', MARGIN, infoBoxY + infoBoxH + 16);
 
-    // ── Summary section ──
     drawSectionTitle(doc, 'Resumen', MARGIN, CONTENT_WIDTH);
     doc.moveDown(0.3);
 
@@ -548,11 +548,13 @@ function buildPdfBuffer(input: PdfBuildInput): Promise<Buffer> {
       .fillColor('#222222')
       .font('Helvetica')
       .fontSize(10)
-      .text(input.summaryText, MARGIN, doc.y, { width: CONTENT_WIDTH, align: 'justify' });
+      .text(input.summaryText, MARGIN, doc.y, {
+        width: CONTENT_WIDTH,
+        align: 'justify',
+      });
 
     doc.moveDown(0.8);
 
-    // Totals
     doc
       .fillColor('#333333')
       .font('Helvetica-Bold')
@@ -564,8 +566,12 @@ function buildPdfBuffer(input: PdfBuildInput): Promise<Buffer> {
 
     doc.moveDown(0.4);
 
-    // Severity stats — rendered inline on current line
-    const sevOrder: Array<keyof BySeverity> = ['ERROR', 'WARNING', 'SUGGESTION', 'INFO'];
+    const sevOrder: Array<keyof BySeverity> = [
+      'ERROR',
+      'WARNING',
+      'SUGGESTION',
+      'INFO',
+    ];
     const statY = doc.y;
     let statX = MARGIN;
     const badgeH = 16;
@@ -577,24 +583,22 @@ function buildPdfBuffer(input: PdfBuildInput): Promise<Buffer> {
       const color = SEVERITY_COLORS[sev];
       const label = `${SEVERITY_LABELS[sev]}: ${count}`;
 
-      doc
-        .roundedRect(statX, statY, badgeW, badgeH, 3)
-        .fillColor(color)
-        .fill();
+      doc.roundedRect(statX, statY, badgeW, badgeH, 3).fillColor(color).fill();
 
       doc
         .fillColor('#ffffff')
         .font('Helvetica-Bold')
         .fontSize(8)
-        .text(label, statX + 5, statY + 4, { width: badgeW - 8, lineBreak: false });
+        .text(label, statX + 5, statY + 4, {
+          width: badgeW - 8,
+          lineBreak: false,
+        });
 
       statX += badgeW + 6;
     }
 
-    // Move cursor below the badges
     doc.text('', MARGIN, statY + badgeH + 16);
 
-    // ── Observations section ──
     drawSectionTitle(doc, 'Observaciones', MARGIN, CONTENT_WIDTH);
     doc.moveDown(0.5);
 
@@ -605,15 +609,22 @@ function buildPdfBuffer(input: PdfBuildInput): Promise<Buffer> {
         .fontSize(10)
         .text('No se encontraron observaciones.', MARGIN, doc.y);
     } else {
-      // Group by agent type
       const grouped = new Map<string, PdfObservation[]>();
       for (const obs of input.observations) {
-        const arr = grouped.get(obs.type) ?? [];
-        arr.push(obs);
-        grouped.set(obs.type, arr);
+        if (!grouped.has(obs.type)) {
+          grouped.set(obs.type, []);
+        }
+        grouped.get(obs.type)!.push(obs);
       }
 
-      const agentOrder = ['STRUCTURE', 'METHODOLOGY', 'COHERENCE', 'CITATIONS', 'FORMAT', 'INTEGRITY'];
+      const agentOrder = [
+        'STRUCTURE',
+        'METHODOLOGY',
+        'COHERENCE',
+        'CITATIONS',
+        'FORMAT',
+        'INTEGRITY',
+      ];
 
       for (const agentType of agentOrder) {
         const group = grouped.get(agentType);
@@ -621,13 +632,13 @@ function buildPdfBuffer(input: PdfBuildInput): Promise<Buffer> {
 
         doc.moveDown(0.5);
 
-        // Page break check before agent header
         if (doc.y > doc.page.height - 130) {
           doc.addPage();
         }
 
-        // Agent group header
-        const agentLabel = AGENT_LABELS[agentType] ?? agentType;
+        const agentLabelValue = AGENT_LABELS[agentType];
+        const agentLabel =
+          agentLabelValue !== undefined ? agentLabelValue : agentType;
         doc
           .fillColor('#1a1a2e')
           .font('Helvetica-Bold')
@@ -645,8 +656,8 @@ function buildPdfBuffer(input: PdfBuildInput): Promise<Buffer> {
         doc.moveDown(0.5);
 
         for (const obs of group) {
-          // Page break check before each observation
-          const estHeight = 70 + (obs.textFragment ? 40 : 0) + (obs.suggestion ? 30 : 0);
+          const estHeight =
+            70 + (obs.textFragment ? 40 : 0) + (obs.suggestion ? 30 : 0);
           if (doc.y + estHeight > doc.page.height - 70) {
             doc.addPage();
           }
@@ -657,14 +668,18 @@ function buildPdfBuffer(input: PdfBuildInput): Promise<Buffer> {
       }
     }
 
-    // ── Footers on all pages ──
     addFooters(doc);
 
     doc.end();
   });
 }
 
-function drawSectionTitle(doc: PDFKit.PDFDocument, text: string, x: number, width: number) {
+function drawSectionTitle(
+  doc: PDFKit.PDFDocument,
+  text: string,
+  x: number,
+  width: number,
+) {
   doc
     .fillColor('#1a1a2e')
     .font('Helvetica-Bold')
@@ -688,47 +703,45 @@ function renderObservation(
   x: number,
   width: number,
 ) {
-  const color = SEVERITY_COLORS[obs.severity] ?? '#888888';
+  const colorValue = SEVERITY_COLORS[obs.severity];
+  const color = colorValue !== undefined ? colorValue : '#888888';
   const boxY = doc.y;
 
-  // Severity badge
   const badgeW = 80;
   const badgeH = 16;
-  doc
-    .roundedRect(x, boxY, badgeW, badgeH, 3)
-    .fillColor(color)
-    .fill();
+  doc.roundedRect(x, boxY, badgeW, badgeH, 3).fillColor(color).fill();
 
-  const sevLabel = SEVERITY_LABELS[obs.severity] ?? obs.severity;
+  const sevLabelValue = SEVERITY_LABELS[obs.severity];
+  const sevLabel = sevLabelValue !== undefined ? sevLabelValue : obs.severity;
   doc
     .fillColor('#ffffff')
     .font('Helvetica-Bold')
     .fontSize(7)
-    .text(sevLabel.toUpperCase(), x + 6, boxY + 4, { width: badgeW - 10, lineBreak: false });
+    .text(sevLabel.toUpperCase(), x + 6, boxY + 4, {
+      width: badgeW - 10,
+      lineBreak: false,
+    });
 
-  // Source badge
   const sourceBadgeX = x + badgeW + 6;
   const sourceLabel = obs.source === 'TUTOR' ? 'Tutor' : 'Thena';
   const sourceBg = obs.source === 'TUTOR' ? '#722ed1' : '#1890ff';
-  doc
-    .roundedRect(sourceBadgeX, boxY, 44, badgeH, 3)
-    .fillColor(sourceBg)
-    .fill();
+  doc.roundedRect(sourceBadgeX, boxY, 44, badgeH, 3).fillColor(sourceBg).fill();
 
   doc
     .fillColor('#ffffff')
     .font('Helvetica-Bold')
     .fontSize(7)
-    .text(sourceLabel, sourceBadgeX + 6, boxY + 4, { width: 32, lineBreak: false });
+    .text(sourceLabel, sourceBadgeX + 6, boxY + 4, {
+      width: 32,
+      lineBreak: false,
+    });
 
-  // Message text
   doc
     .fillColor('#111111')
     .font('Helvetica')
     .fontSize(10)
     .text(obs.message, x + 4, boxY + badgeH + 6, { width: width - 4 });
 
-  // Text fragment (quoted)
   if (obs.textFragment) {
     doc.moveDown(0.25);
     const fragY = doc.y;
@@ -743,17 +756,17 @@ function renderObservation(
       .text(`"${obs.textFragment}"`, x + 12, fragY, { width: width - 12 });
   }
 
-  // Suggestion
   if (obs.suggestion) {
     doc.moveDown(0.25);
     doc
       .fillColor('#444444')
       .font('Helvetica')
       .fontSize(9)
-      .text(`\u2192 Sugerencia: ${obs.suggestion}`, x + 4, doc.y, { width: width - 4 });
+      .text(`\u2192 Sugerencia: ${obs.suggestion}`, x + 4, doc.y, {
+        width: width - 4,
+      });
   }
 
-  // Bottom separator line
   doc.moveDown(0.25);
   doc
     .moveTo(x, doc.y)
@@ -771,7 +784,8 @@ function addFooters(doc: PDFKit.PDFDocument) {
   const range = docWithBuffer.bufferedPageRange?.();
   if (!range) return;
 
-  const footerText = 'Generado por Thena \u2014 Sistema de Revisi\u00f3n de Proyectos de Grado';
+  const footerText =
+    'Generado por Thena \u2014 Sistema de Revisi\u00f3n de Proyectos de Grado';
 
   for (let i = 0; i < range.count; i++) {
     doc.switchToPage(range.start + i);
@@ -791,7 +805,11 @@ function addFooters(doc: PDFKit.PDFDocument) {
       .fillColor('#999999')
       .font('Helvetica')
       .fontSize(8)
-      .text(footerText, 56, footerY, { width: pageWidth - 112, align: 'left', lineBreak: false });
+      .text(footerText, 56, footerY, {
+        width: pageWidth - 112,
+        align: 'left',
+        lineBreak: false,
+      });
 
     doc
       .fillColor('#999999')

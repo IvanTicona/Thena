@@ -1,6 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
-import { ReviewService } from '../services/review.service.js';
+import {
+  ReviewService,
+  type ReviewJobCompleted,
+} from '../services/review.service.js';
 import { PrismaService } from '../../../../shared/prisma/prisma.service.js';
 
 // ── Mock factories ──────────────────────────────────────────────────────────
@@ -77,15 +80,24 @@ describe('ReviewService', () => {
     it('should throw NotFoundException when job does not exist', async () => {
       prismaMock.client.reviewJob.findUnique.mockResolvedValue(null);
 
-      await expect(service.findByJobId('job-999')).rejects.toThrow(NotFoundException);
+      await expect(service.findByJobId('job-999')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw ForbiddenException when student is not the owner', async () => {
       prismaMock.client.reviewJob.findUnique.mockResolvedValue(
-        makeBaseJob({ submission: { markdownContent: null, chapter: { thesis: { studentId: 'other-student' } } } }),
+        makeBaseJob({
+          submission: {
+            markdownContent: null,
+            chapter: { thesis: { studentId: 'other-student' } },
+          },
+        }),
       );
 
-      await expect(service.findByJobId('job-1', 'student-1')).rejects.toThrow(ForbiddenException);
+      await expect(service.findByJobId('job-1', 'student-1')).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should return base job data for non-completed job', async () => {
@@ -109,7 +121,9 @@ describe('ReviewService', () => {
     });
 
     it('should return full report and observations for COMPLETED job', async () => {
-      prismaMock.client.reviewJob.findUnique.mockResolvedValue(makeCompletedJob());
+      prismaMock.client.reviewJob.findUnique.mockResolvedValue(
+        makeCompletedJob(),
+      );
       prismaMock.client.observation.findMany.mockResolvedValue([
         {
           id: 'obs-1',
@@ -123,12 +137,16 @@ describe('ReviewService', () => {
           sourceReference: null,
           source: 'AI',
           authorId: null,
+          author: null,
           isMutable: false,
           escalationLevel: 0,
         },
       ]);
 
-      const result = await service.findByJobId('job-1', 'student-1') as any;
+      const result = (await service.findByJobId(
+        'job-1',
+        'student-1',
+      )) as ReviewJobCompleted;
 
       expect(result.status).toBe('COMPLETED');
       expect(result.report).toBeDefined();
@@ -137,10 +155,15 @@ describe('ReviewService', () => {
     });
 
     it('should correctly parse bySeverity from job report', async () => {
-      prismaMock.client.reviewJob.findUnique.mockResolvedValue(makeCompletedJob());
+      prismaMock.client.reviewJob.findUnique.mockResolvedValue(
+        makeCompletedJob(),
+      );
       prismaMock.client.observation.findMany.mockResolvedValue([]);
 
-      const result = await service.findByJobId('job-1', 'student-1') as any;
+      const result = (await service.findByJobId(
+        'job-1',
+        'student-1',
+      )) as ReviewJobCompleted;
 
       expect(result.report.bySeverity).toMatchObject({
         INFO: 1,
@@ -157,22 +180,31 @@ describe('ReviewService', () => {
     it('should throw NotFoundException when no submission with review exists for chapter', async () => {
       prismaMock.client.submission.findFirst.mockResolvedValue(null);
 
-      await expect(service.findLatestByChapterId('chapter-1')).rejects.toThrow(NotFoundException);
+      await expect(service.findLatestByChapterId('chapter-1')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw NotFoundException when latest submission has no review job', async () => {
-      prismaMock.client.submission.findFirst.mockResolvedValue({ reviewJob: null });
+      prismaMock.client.submission.findFirst.mockResolvedValue({
+        reviewJob: null,
+      });
 
-      await expect(service.findLatestByChapterId('chapter-1')).rejects.toThrow(NotFoundException);
+      await expect(service.findLatestByChapterId('chapter-1')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
-    it('should delegate to findByJobId with the latest submission\'s job id', async () => {
+    it("should delegate to findByJobId with the latest submission's job id", async () => {
       prismaMock.client.submission.findFirst.mockResolvedValue({
         reviewJob: { id: 'job-1' },
       });
       prismaMock.client.reviewJob.findUnique.mockResolvedValue(makeBaseJob());
 
-      const result = await service.findLatestByChapterId('chapter-1', 'student-1');
+      const result = await service.findLatestByChapterId(
+        'chapter-1',
+        'student-1',
+      );
 
       expect(prismaMock.client.reviewJob.findUnique).toHaveBeenCalledWith(
         expect.objectContaining({ where: { id: 'job-1' } }),
@@ -187,16 +219,21 @@ describe('ReviewService', () => {
     it('should throw NotFoundException when job does not exist', async () => {
       prismaMock.client.reviewJob.findUnique.mockResolvedValue(null);
 
-      await expect(service.generatePdfReport('job-1', 'student-1', 'STUDENT')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.generatePdfReport('job-1', 'student-1', 'STUDENT'),
+      ).rejects.toThrow(NotFoundException);
     });
 
-    it('should throw ForbiddenException when STUDENT tries to export someone else\'s report', async () => {
+    it("should throw ForbiddenException when STUDENT tries to export someone else's report", async () => {
       prismaMock.client.reviewJob.findUnique.mockResolvedValue({
         id: 'job-1',
         status: 'COMPLETED',
-        reviewReport: { id: 'report-1', summaryText: 'ok', totalObservations: 0, bySeverity: {} },
+        reviewReport: {
+          id: 'report-1',
+          summaryText: 'ok',
+          totalObservations: 0,
+          bySeverity: {},
+        },
         submission: {
           versionNumber: 1,
           chapter: {
@@ -254,7 +291,11 @@ describe('ReviewService', () => {
       });
       prismaMock.client.observation.findMany.mockResolvedValue([]);
 
-      const result = await service.generatePdfReport('job-1', 'student-1', 'STUDENT');
+      const result = await service.generatePdfReport(
+        'job-1',
+        'student-1',
+        'STUDENT',
+      );
 
       expect(Buffer.isBuffer(result.buffer)).toBe(true);
       expect(result.filename).toMatch(/thena-reporte-cap1-v1\.pdf/);
