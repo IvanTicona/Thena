@@ -3,8 +3,6 @@ import type { Response } from 'express';
 import { AuditService } from '../../application/audit.service.js';
 import { QueryAuditLogsDto } from '../../application/dtos/query-audit-logs.dto.js';
 import { Roles } from '../../../../modules/auth/infrastructure/decorators/roles.decorator.js';
-import { CurrentUser } from '../../../../modules/auth/infrastructure/decorators/current-user.decorator.js';
-import { JwtPayload } from '../../../../modules/auth/domain/auth.types.js';
 
 @Controller('audit-logs')
 @Roles('SUPER_ADMIN')
@@ -12,10 +10,7 @@ export class AuditController {
   constructor(private readonly auditService: AuditService) {}
 
   @Get()
-  async findAll(
-    @Query() query: QueryAuditLogsDto,
-    @CurrentUser() _user: JwtPayload,
-  ) {
+  async findAll(@Query() query: QueryAuditLogsDto) {
     return this.auditService.findAll({
       action: query.action,
       actorId: query.actorId,
@@ -28,11 +23,7 @@ export class AuditController {
   }
 
   @Get('export')
-  async exportCsv(
-    @Query() query: QueryAuditLogsDto,
-    @CurrentUser() _user: JwtPayload,
-    @Res() res: Response,
-  ) {
+  async exportCsv(@Query() query: QueryAuditLogsDto, @Res() res: Response) {
     const csv = await this.auditService.exportCsv({
       action: query.action,
       actorId: query.actorId,

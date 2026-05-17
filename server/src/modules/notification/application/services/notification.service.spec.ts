@@ -53,22 +53,27 @@ describe('NotificationService', () => {
         createdAt: new Date(),
       });
 
-      await service.create('user-1', 'NEW_SUBMISSION', 'Nueva entrega', 'Se recibió una entrega');
-
-      expect(prismaMock.client.notification.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
-            userId: 'user-1',
-            type: 'NEW_SUBMISSION',
-            title: 'Nueva entrega',
-            body: 'Se recibió una entrega',
-          }),
-        }),
+      await service.create(
+        'user-1',
+        'NEW_SUBMISSION',
+        'Nueva entrega',
+        'Se recibió una entrega',
       );
+
+      const [createCall] = prismaMock.client.notification.create.mock
+        .calls[0] as [
+        { data: { userId: string; type: string; title: string; body: string } },
+      ];
+      expect(createCall.data.userId).toBe('user-1');
+      expect(createCall.data.type).toBe('NEW_SUBMISSION');
+      expect(createCall.data.title).toBe('Nueva entrega');
+      expect(createCall.data.body).toBe('Se recibió una entrega');
     });
 
     it('should swallow errors and NOT throw when Prisma fails', async () => {
-      prismaMock.client.notification.create.mockRejectedValue(new Error('DB down'));
+      prismaMock.client.notification.create.mockRejectedValue(
+        new Error('DB down'),
+      );
 
       // Should resolve without throwing
       await expect(
@@ -76,22 +81,30 @@ describe('NotificationService', () => {
       ).resolves.toBeUndefined();
     });
 
-    it('should pass empty object as metadata when none provided', async () => {
+    it('should not pass metadata when none provided — DB default applies', async () => {
       prismaMock.client.notification.create.mockResolvedValue({});
 
       await service.create('user-1', 'NEW_SUBMISSION', 'title', 'body');
 
-      const createCall = prismaMock.client.notification.create.mock.calls[0][0];
-      expect(createCall.data.metadata).toEqual({});
+      const [createCall] = prismaMock.client.notification.create.mock
+        .calls[0] as [{ data: { metadata?: object } }];
+      expect(createCall.data.metadata).toBeUndefined();
     });
 
     it('should pass custom metadata when provided', async () => {
       prismaMock.client.notification.create.mockResolvedValue({});
 
       const metadata = { submissionId: 'sub-1', chapterId: 'ch-1' };
-      await service.create('user-1', 'NEW_SUBMISSION', 'title', 'body', metadata);
+      await service.create(
+        'user-1',
+        'NEW_SUBMISSION',
+        'title',
+        'body',
+        metadata,
+      );
 
-      const createCall = prismaMock.client.notification.create.mock.calls[0][0];
+      const [createCall] = prismaMock.client.notification.create.mock
+        .calls[0] as [{ data: { metadata: object } }];
       expect(createCall.data.metadata).toEqual(metadata);
     });
   });
@@ -101,29 +114,40 @@ describe('NotificationService', () => {
   describe('findByUser', () => {
     it('should return paginated notifications with unread count', async () => {
       const mockNotifications = [
-        { id: 'notif-1', type: 'NEW_SUBMISSION', title: 'Title', body: 'Body', read: false, metadata: {}, createdAt: new Date() },
+        {
+          id: 'notif-1',
+          type: 'NEW_SUBMISSION',
+          title: 'Title',
+          body: 'Body',
+          read: false,
+          metadata: {},
+          createdAt: new Date(),
+        },
       ];
-      prismaMock.client.notification.findMany.mockResolvedValue(mockNotifications);
+      prismaMock.client.notification.findMany.mockResolvedValue(
+        mockNotifications,
+      );
       prismaMock.client.notification.count
-        .mockResolvedValueOnce(1)  // total
+        .mockResolvedValueOnce(1) // total
         .mockResolvedValueOnce(1); // unread
 
-      const result = await service.findByUser('user-1');
+      const result = await service.findByUser('user-1', 1, 20);
 
       expect(result.data).toHaveLength(1);
       expect(result.total).toBe(1);
       expect(result.unreadCount).toBe(1);
     });
 
-    it('should use default page=1 and limit=20', async () => {
+    it('should use page=1 and limit=20 when passed', async () => {
       prismaMock.client.notification.findMany.mockResolvedValue([]);
       prismaMock.client.notification.count.mockResolvedValue(0);
 
-      await service.findByUser('user-1');
+      await service.findByUser('user-1', 1, 20);
 
-      expect(prismaMock.client.notification.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ skip: 0, take: 20 }),
-      );
+      const [findCall] = prismaMock.client.notification.findMany.mock
+        .calls[0] as [{ skip: number; take: number }];
+      expect(findCall.skip).toBe(0);
+      expect(findCall.take).toBe(20);
     });
 
     it('should paginate correctly with custom page and limit', async () => {
@@ -132,22 +156,12 @@ describe('NotificationService', () => {
 
       const result = await service.findByUser('user-1', 3, 10);
 
-      expect(prismaMock.client.notification.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ skip: 20, take: 10 }),
-      );
+      const [findCall] = prismaMock.client.notification.findMany.mock
+        .calls[0] as [{ skip: number; take: number }];
+      expect(findCall.skip).toBe(20);
+      expect(findCall.take).toBe(10);
       expect(result.page).toBe(3);
       expect(result.totalPages).toBe(5);
-    });
-
-    it('should cap limit at 100', async () => {
-      prismaMock.client.notification.findMany.mockResolvedValue([]);
-      prismaMock.client.notification.count.mockResolvedValue(0);
-
-      await service.findByUser('user-1', 1, 999);
-
-      expect(prismaMock.client.notification.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ take: 100 }),
-      );
     });
   });
 
@@ -164,8 +178,15 @@ describe('NotificationService', () => {
     });
 
     it('should mark notification as read when owned by user', async () => {
-      prismaMock.client.notification.findFirst.mockResolvedValue({ id: 'notif-1', userId: 'user-1', read: false });
-      prismaMock.client.notification.update.mockResolvedValue({ id: 'notif-1', read: true });
+      prismaMock.client.notification.findFirst.mockResolvedValue({
+        id: 'notif-1',
+        userId: 'user-1',
+        read: false,
+      });
+      prismaMock.client.notification.update.mockResolvedValue({
+        id: 'notif-1',
+        read: true,
+      });
 
       const result = await service.markAsRead('notif-1', 'user-1');
 

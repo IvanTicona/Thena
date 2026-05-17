@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
-import { AuditActionType } from '../domain/audit.constants.js';
+import type { AuditActionType } from '../domain/audit.constants.js';
 
 export interface LogAuditOptions {
   action: AuditActionType;
@@ -16,8 +16,8 @@ export interface AuditLogFilters {
   entityType?: string;
   dateFrom?: Date;
   dateTo?: Date;
-  page?: number;
-  limit?: number;
+  page: number;
+  limit: number;
 }
 
 export interface PaginatedAuditLogs {
@@ -58,7 +58,9 @@ export class AuditService {
           actorId: options.actorId,
           entityType: options.entityType,
           entityId: options.entityId,
-          metadata: (options.metadata ?? {}) as object,
+          ...(options.metadata !== undefined
+            ? { metadata: options.metadata as object }
+            : {}),
         },
       });
     } catch (error) {
@@ -67,7 +69,9 @@ export class AuditService {
     }
   }
 
-  async exportCsv(filters: Omit<AuditLogFilters, 'page' | 'limit'>): Promise<string> {
+  async exportCsv(
+    filters: Omit<AuditLogFilters, 'page' | 'limit'>,
+  ): Promise<string> {
     const where: Record<string, unknown> = {};
 
     if (filters.action) {
@@ -105,10 +109,20 @@ export class AuditService {
       },
     });
 
-    const header = ['id', 'action', 'actorId', 'actorName', 'actorEmail', 'actorRole', 'entityType', 'entityId', 'createdAt'];
+    const header = [
+      'id',
+      'action',
+      'actorId',
+      'actorName',
+      'actorEmail',
+      'actorRole',
+      'entityType',
+      'entityId',
+      'createdAt',
+    ];
 
     const escape = (value: string) => {
-      const str = String(value ?? '');
+      const str = String(value);
       if (str.includes(',') || str.includes('"') || str.includes('\n')) {
         return `"${str.replace(/"/g, '""')}"`;
       }
@@ -120,9 +134,9 @@ export class AuditService {
         row.id,
         row.action,
         row.actorId,
-        row.actor?.name ?? '',
-        row.actor?.email ?? '',
-        row.actor?.role ?? '',
+        row.actor.name,
+        row.actor.email,
+        row.actor.role,
         row.entityType,
         row.entityId,
         row.createdAt.toISOString(),
@@ -135,9 +149,7 @@ export class AuditService {
   }
 
   async findAll(filters: AuditLogFilters): Promise<PaginatedAuditLogs> {
-    const page = Math.max(1, filters.page ?? 1);
-    const limit = Math.min(100, Math.max(1, filters.limit ?? 20));
-    const skip = (page - 1) * limit;
+    const skip = (filters.page - 1) * filters.limit;
 
     const where: Record<string, unknown> = {};
 
@@ -164,7 +176,7 @@ export class AuditService {
       this.prisma.client.auditLog.findMany({
         where,
         skip,
-        take: limit,
+        take: filters.limit,
         orderBy: { createdAt: 'desc' },
         include: {
           actor: {
@@ -183,9 +195,9 @@ export class AuditService {
     return {
       data,
       total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
+      page: filters.page,
+      limit: filters.limit,
+      totalPages: Math.ceil(total / filters.limit),
     };
   }
 }

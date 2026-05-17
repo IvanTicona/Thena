@@ -41,29 +41,30 @@ export class NotificationService {
           type,
           title,
           body,
-          metadata: (metadata ?? {}) as object,
+          ...(metadata !== undefined ? { metadata: metadata as object } : {}),
         },
       });
     } catch (error) {
       // Log to console but do NOT propagate — notifications must not break business logic
-      console.error('[NotificationService] Failed to create notification:', error);
+      console.error(
+        '[NotificationService] Failed to create notification:',
+        error,
+      );
     }
   }
 
   async findByUser(
     userId: string,
-    page?: number,
-    limit?: number,
+    page: number,
+    limit: number,
   ): Promise<PaginatedNotifications> {
-    const currentPage = Math.max(1, page ?? 1);
-    const currentLimit = Math.min(100, Math.max(1, limit ?? 20));
-    const skip = (currentPage - 1) * currentLimit;
+    const skip = (page - 1) * limit;
 
     const [data, total, unreadCount] = await Promise.all([
       this.prisma.client.notification.findMany({
         where: { userId },
         skip,
-        take: currentLimit,
+        take: limit,
         orderBy: { createdAt: 'desc' },
         select: {
           id: true,
@@ -82,9 +83,9 @@ export class NotificationService {
     return {
       data,
       total,
-      page: currentPage,
-      limit: currentLimit,
-      totalPages: Math.ceil(total / currentLimit),
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
       unreadCount,
     };
   }
@@ -95,7 +96,10 @@ export class NotificationService {
     });
   }
 
-  async markAsRead(id: string, userId: string): Promise<{ id: string; read: boolean }> {
+  async markAsRead(
+    id: string,
+    userId: string,
+  ): Promise<{ id: string; read: boolean }> {
     // Verify ownership — findFirst returns null if not found or not owned
     const notification = await this.prisma.client.notification.findFirst({
       where: { id, userId },

@@ -1,5 +1,13 @@
-import { IsOptional, IsString, IsUUID, IsDateString, IsInt, Min, Max } from 'class-validator';
-import { Transform, Type } from 'class-transformer';
+import {
+  IsOptional,
+  IsString,
+  IsUUID,
+  IsDateString,
+  IsInt,
+  Min,
+  Max,
+} from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class QueryAuditLogsDto {
   @IsOptional()
@@ -26,12 +34,12 @@ export class QueryAuditLogsDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  page?: number = 1;
+  page: number = 1;
 
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
   @Max(100)
-  limit?: number = 20;
+  limit: number = 20;
 }
