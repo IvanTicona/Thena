@@ -11,7 +11,6 @@ import { AuditAction } from '../../../audit/domain/audit.constants.js';
 
 type KnowledgeLayer = 'TUTOR' | 'INSTITUTIONAL';
 
-/** Roles allowed to delete INSTITUTIONAL knowledge chunks */
 const INSTITUTIONAL_ADMIN_ROLES = ['ADMIN', 'SUPER_ADMIN'] as const;
 
 export interface KnowledgeDocumentSummary {
@@ -55,23 +54,24 @@ export class KnowledgeService {
     private readonly config: ConfigService,
     private readonly auditService: AuditService,
   ) {
-    this.engineUrl = this.config.get<string>(
-      'ENGINE_URL',
-      'http://engine:8000',
-    );
+    this.engineUrl = this.config.getOrThrow<string>('ENGINE_URL');
   }
 
   async listByOwner(
     ownerId: string | null,
-    layer?: string,
-    page?: number,
-    limit?: number,
+    layer: string | undefined,
+    page: number,
+    limit: number,
   ): Promise<{
     data: KnowledgeDocumentSummary[];
     meta: { page: number; limit: number; total: number; totalPages: number };
   }> {
-    const resolvedLayer: KnowledgeLayer =
-      (layer as KnowledgeLayer) ?? (ownerId ? undefined : 'INSTITUTIONAL');
+    const resolvedLayer: KnowledgeLayer | undefined =
+      layer !== undefined
+        ? (layer as KnowledgeLayer)
+        : ownerId !== null
+          ? undefined
+          : 'INSTITUTIONAL';
 
     const chunks = await this.prisma.client.knowledgeChunk.groupBy({
       by: ['sourceDocument', 'layer'],
@@ -90,20 +90,13 @@ export class KnowledgeService {
       lastUpdated: group._max.createdAt,
     }));
 
-    const resolvedPage = Math.max(1, page ?? 1);
-    const resolvedLimit = Math.min(100, Math.max(1, limit ?? 20));
-    const skip = (resolvedPage - 1) * resolvedLimit;
+    const skip = (page - 1) * limit;
     const total = allItems.length;
-    const data = allItems.slice(skip, skip + resolvedLimit);
+    const data = allItems.slice(skip, skip + limit);
 
     return {
       data,
-      meta: {
-        page: resolvedPage,
-        limit: resolvedLimit,
-        total,
-        totalPages: Math.ceil(total / resolvedLimit),
-      },
+      meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
     };
   }
 
@@ -122,7 +115,6 @@ export class KnowledgeService {
       throw new BadRequestException('Only PDF and DOCX files are supported');
     }
 
-    // Forward to engine for processing
     const formData = new FormData();
     formData.append(
       'file',
@@ -145,14 +137,18 @@ export class KnowledgeService {
       throw new BadRequestException(`Engine ingestion failed: ${error}`);
     }
 
-    const ingestionResult = await response.json() as EngineIngestionResult;
+    const ingestionResult = (await response.json()) as EngineIngestionResult;
 
     void this.auditService.log({
       action: AuditAction.UPLOAD_KNOWLEDGE,
       actorId,
       entityType: 'knowledge',
       entityId: file.originalname,
-      metadata: { layer, chunksCreated: ingestionResult.chunks_created, sourceDocument: ingestionResult.source_document },
+      metadata: {
+        layer,
+        chunksCreated: ingestionResult.chunks_created,
+        sourceDocument: ingestionResult.source_document,
+      },
     });
 
     return ingestionResult;
@@ -163,7 +159,6 @@ export class KnowledgeService {
     ownerId: string | null,
     userRole?: string | null,
   ): Promise<KnowledgeDeletionResult> {
-    // Peek at the layer before attempting deletion
     const sample = await this.prisma.client.knowledgeChunk.findFirst({
       where: { sourceDocument },
       select: { layer: true, ownerId: true },
@@ -175,14 +170,15 @@ export class KnowledgeService {
       );
     }
 
-    // P0-8: INSTITUTIONAL chunks can only be deleted by ADMIN or SUPER_ADMIN
     if (sample.layer === 'INSTITUTIONAL') {
-      if (!userRole || !(INSTITUTIONAL_ADMIN_ROLES as readonly string[]).includes(userRole)) {
+      if (
+        !userRole ||
+        !(INSTITUTIONAL_ADMIN_ROLES as readonly string[]).includes(userRole)
+      ) {
         throw new ForbiddenException(
           'Solo los administradores pueden eliminar conocimiento institucional',
         );
       }
-      // Admin delete: remove all chunks for this source regardless of ownerId
       const result = await this.prisma.client.knowledgeChunk.deleteMany({
         where: { sourceDocument, layer: 'INSTITUTIONAL' },
       });
@@ -200,7 +196,6 @@ export class KnowledgeService {
       return { sourceDocument, deletedChunks: result.count };
     }
 
-    // TUTOR layer: only the owner can delete
     const where = {
       sourceDocument,
       ...(ownerId && { ownerId }),
@@ -249,9 +244,11 @@ export class KnowledgeService {
       throw new NotFoundException(`Knowledge chunk not found: ${id}`);
     }
 
-    // P0-8: INSTITUTIONAL chunks can only be deleted by ADMIN or SUPER_ADMIN
     if (chunk.layer === 'INSTITUTIONAL') {
-      if (!userRole || !(INSTITUTIONAL_ADMIN_ROLES as readonly string[]).includes(userRole)) {
+      if (
+        !userRole ||
+        !(INSTITUTIONAL_ADMIN_ROLES as readonly string[]).includes(userRole)
+      ) {
         throw new ForbiddenException(
           'Solo los administradores pueden eliminar conocimiento institucional',
         );
@@ -264,15 +261,17 @@ export class KnowledgeService {
           actorId: ownerId,
           entityType: 'knowledge',
           entityId: id,
-          metadata: { layer: 'INSTITUTIONAL', sourceDocument: chunk.sourceDocument },
+          metadata: {
+            layer: 'INSTITUTIONAL',
+            sourceDocument: chunk.sourceDocument,
+          },
         });
       }
 
       return { id, deleted: true };
     }
 
-    // TUTOR layer: only the owner can delete
-    if (ownerId && chunk.ownerId !== ownerId) {
+    if (ownerId !== null && chunk.ownerId !== ownerId) {
       throw new NotFoundException(`Knowledge chunk not found: ${id}`);
     }
 

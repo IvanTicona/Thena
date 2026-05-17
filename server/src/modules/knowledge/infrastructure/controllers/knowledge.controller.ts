@@ -18,7 +18,7 @@ import { KnowledgeService } from '../../application/services/knowledge.service.j
 import { CurrentUser } from '../../../../modules/auth/infrastructure/decorators/current-user.decorator.js';
 import { Roles } from '../../../../modules/auth/infrastructure/decorators/roles.decorator.js';
 import { RolesGuard } from '../../../../modules/auth/infrastructure/guards/roles.guard.js';
-import { JwtPayload } from '../../../../modules/auth/domain/auth.types.js';
+import type { JwtPayload } from '../../../../modules/auth/domain/auth.types.js';
 
 @Controller('knowledge')
 export class KnowledgeController {
@@ -38,12 +38,10 @@ export class KnowledgeController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
-    const userId = user?.sub ?? null;
-    const pageNum = page ? Math.max(1, parseInt(page, 10)) : 1;
-    const limitNum = limit ? Math.min(100, Math.max(1, parseInt(limit, 10))) : 20;
-    // Tutors see their own + institutional; if no user, show institutional only
+    const pageNum = page !== undefined ? parseInt(page, 10) : 1;
+    const limitNum = limit !== undefined ? parseInt(limit, 10) : 20;
     return this.knowledgeService.listByOwner(
-      layer === 'INSTITUTIONAL' ? null : userId,
+      layer === 'INSTITUTIONAL' ? null : user.sub,
       layer,
       pageNum,
       limitNum,
@@ -68,11 +66,15 @@ export class KnowledgeController {
     file: Express.Multer.File,
     @Query('layer') layer: string = 'TUTOR',
   ) {
-    const userId = user?.sub ?? null;
-    const effectiveLayer = user?.role === 'TUTOR' ? layer : 'INSTITUTIONAL';
-    const ownerId = effectiveLayer === 'TUTOR' ? userId : null;
+    const effectiveLayer = user.role === 'TUTOR' ? layer : 'INSTITUTIONAL';
+    const ownerId = effectiveLayer === 'TUTOR' ? user.sub : null;
 
-    return this.knowledgeService.upload(file, effectiveLayer, ownerId, userId ?? 'system');
+    return this.knowledgeService.upload(
+      file,
+      effectiveLayer,
+      ownerId,
+      user.sub,
+    );
   }
 
   @Delete('chunk/:id')
@@ -80,10 +82,7 @@ export class KnowledgeController {
     @CurrentUser() user: JwtPayload,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
-    const userId = user?.sub ?? null;
-    const userRole = user?.role ?? null;
-    // P0-8: Pass role so service can enforce ADMIN-only for INSTITUTIONAL chunks
-    return this.knowledgeService.deleteById(id, userId, userRole);
+    return this.knowledgeService.deleteById(id, user.sub, user.role);
   }
 
   @Delete(':sourceDocument')
@@ -91,9 +90,10 @@ export class KnowledgeController {
     @CurrentUser() user: JwtPayload,
     @Param('sourceDocument') sourceDocument: string,
   ) {
-    const userId = user?.sub ?? null;
-    const userRole = user?.role ?? null;
-    // P0-8: Pass role so service can enforce ADMIN-only for INSTITUTIONAL chunks
-    return this.knowledgeService.deleteBySource(sourceDocument, userId, userRole);
+    return this.knowledgeService.deleteBySource(
+      sourceDocument,
+      user.sub,
+      user.role,
+    );
   }
 }
