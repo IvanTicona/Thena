@@ -44,34 +44,39 @@ export class AssignmentService {
     private readonly auditService: AuditService,
   ) {}
 
-  async create(dto: CreateAssignmentDto, actorId: string): Promise<AssignmentItem> {
-    // Validate student exists and has STUDENT role
+  async create(
+    dto: CreateAssignmentDto,
+    actorId: string,
+  ): Promise<AssignmentItem> {
     const student = await this.prisma.client.user.findUnique({
       where: { id: dto.studentId },
     });
     if (!student || student.role !== 'STUDENT') {
-      throw new BadRequestException('Invalid studentId: user not found or not a student');
+      throw new BadRequestException(
+        'Invalid studentId: user not found or not a student',
+      );
     }
 
-    // Validate tutor exists and has TUTOR role
     const tutor = await this.prisma.client.user.findUnique({
       where: { id: dto.tutorId },
     });
     if (!tutor || tutor.role !== 'TUTOR') {
-      throw new BadRequestException('Invalid tutorId: user not found or not a tutor');
+      throw new BadRequestException(
+        'Invalid tutorId: user not found or not a tutor',
+      );
     }
 
-    // Validate reviewer if provided
-    if (dto.reviewerId) {
+    if (dto.reviewerId !== undefined) {
       const reviewer = await this.prisma.client.user.findUnique({
         where: { id: dto.reviewerId },
       });
       if (!reviewer || reviewer.role !== 'REVIEWER') {
-        throw new BadRequestException('Invalid reviewerId: user not found or not a reviewer');
+        throw new BadRequestException(
+          'Invalid reviewerId: user not found or not a reviewer',
+        );
       }
     }
 
-    // Check for existing assignment for this student
     const existing = await this.prisma.client.studentAssignment.findUnique({
       where: { studentId: dto.studentId },
     });
@@ -83,7 +88,7 @@ export class AssignmentService {
       data: {
         studentId: dto.studentId,
         tutorId: dto.tutorId,
-        reviewerId: dto.reviewerId ?? null,
+        ...(dto.reviewerId !== undefined ? { reviewerId: dto.reviewerId } : {}),
       },
       include: {
         student: { select: { id: true, name: true, email: true } },
@@ -100,7 +105,7 @@ export class AssignmentService {
       metadata: {
         studentId: dto.studentId,
         tutorId: dto.tutorId,
-        reviewerId: dto.reviewerId ?? null,
+        ...(dto.reviewerId !== undefined ? { reviewerId: dto.reviewerId } : {}),
       },
     });
 
@@ -114,9 +119,10 @@ export class AssignmentService {
     };
   }
 
-  async findPaginated(query: AssignmentListQueryDto): Promise<PaginatedAssignments> {
-    const page = Math.max(1, query.page ?? 1);
-    const limit = Math.min(100, Math.max(1, query.limit ?? 20));
+  async findPaginated(
+    query: AssignmentListQueryDto,
+  ): Promise<PaginatedAssignments> {
+    const { page, limit } = query;
     const skip = (page - 1) * limit;
 
     const [assignments, total] = await Promise.all([
@@ -151,7 +157,10 @@ export class AssignmentService {
     };
   }
 
-  async delete(id: string, actorId: string): Promise<{ id: string; deleted: true }> {
+  async delete(
+    id: string,
+    actorId: string,
+  ): Promise<{ id: string; deleted: true }> {
     const assignment = await this.prisma.client.studentAssignment.findUnique({
       where: { id },
     });

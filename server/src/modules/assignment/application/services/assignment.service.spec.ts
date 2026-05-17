@@ -29,9 +29,19 @@ const makeAuditMock = () => ({
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-const student = { id: 'student-1', name: 'Student', email: 's@s.com', role: 'STUDENT' };
+const student = {
+  id: 'student-1',
+  name: 'Student',
+  email: 's@s.com',
+  role: 'STUDENT',
+};
 const tutor = { id: 'tutor-1', name: 'Tutor', email: 't@t.com', role: 'TUTOR' };
-const reviewer = { id: 'reviewer-1', name: 'Reviewer', email: 'r@r.com', role: 'REVIEWER' };
+const reviewer = {
+  id: 'reviewer-1',
+  name: 'Reviewer',
+  email: 'r@r.com',
+  role: 'REVIEWER',
+};
 
 const baseAssignment = {
   id: 'assign-1',
@@ -74,13 +84,20 @@ describe('AssignmentService', () => {
     it('should throw BadRequestException when student not found', async () => {
       prismaMock.client.user.findUnique.mockResolvedValueOnce(null);
 
-      await expect(service.create(dto, 'admin-1')).rejects.toThrow(BadRequestException);
+      await expect(service.create(dto, 'admin-1')).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw BadRequestException when user is not STUDENT role', async () => {
-      prismaMock.client.user.findUnique.mockResolvedValueOnce({ ...student, role: 'TUTOR' });
+      prismaMock.client.user.findUnique.mockResolvedValueOnce({
+        ...student,
+        role: 'TUTOR',
+      });
 
-      await expect(service.create(dto, 'admin-1')).rejects.toThrow(BadRequestException);
+      await expect(service.create(dto, 'admin-1')).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw BadRequestException when tutor not found', async () => {
@@ -88,7 +105,9 @@ describe('AssignmentService', () => {
         .mockResolvedValueOnce(student)
         .mockResolvedValueOnce(null);
 
-      await expect(service.create(dto, 'admin-1')).rejects.toThrow(BadRequestException);
+      await expect(service.create(dto, 'admin-1')).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw BadRequestException when tutor does not have TUTOR role', async () => {
@@ -96,7 +115,9 @@ describe('AssignmentService', () => {
         .mockResolvedValueOnce(student)
         .mockResolvedValueOnce({ ...tutor, role: 'STUDENT' });
 
-      await expect(service.create(dto, 'admin-1')).rejects.toThrow(BadRequestException);
+      await expect(service.create(dto, 'admin-1')).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw BadRequestException when reviewer not found', async () => {
@@ -115,9 +136,13 @@ describe('AssignmentService', () => {
       prismaMock.client.user.findUnique
         .mockResolvedValueOnce(student)
         .mockResolvedValueOnce(tutor);
-      prismaMock.client.studentAssignment.findUnique.mockResolvedValue(baseAssignment);
+      prismaMock.client.studentAssignment.findUnique.mockResolvedValue(
+        baseAssignment,
+      );
 
-      await expect(service.create(dto, 'admin-1')).rejects.toThrow(ConflictException);
+      await expect(service.create(dto, 'admin-1')).rejects.toThrow(
+        ConflictException,
+      );
     });
 
     it('should create and return the assignment', async () => {
@@ -125,7 +150,9 @@ describe('AssignmentService', () => {
         .mockResolvedValueOnce(student)
         .mockResolvedValueOnce(tutor);
       prismaMock.client.studentAssignment.findUnique.mockResolvedValue(null);
-      prismaMock.client.studentAssignment.create.mockResolvedValue(baseAssignment);
+      prismaMock.client.studentAssignment.create.mockResolvedValue(
+        baseAssignment,
+      );
 
       const result = await service.create(dto, 'admin-1');
 
@@ -145,7 +172,10 @@ describe('AssignmentService', () => {
         reviewer: { id: 'reviewer-1', name: 'Reviewer', email: 'r@r.com' },
       });
 
-      const result = await service.create({ ...dto, reviewerId: 'reviewer-1' }, 'admin-1');
+      const result = await service.create(
+        { ...dto, reviewerId: 'reviewer-1' },
+        'admin-1',
+      );
 
       expect(result.reviewer).not.toBeNull();
     });
@@ -155,7 +185,9 @@ describe('AssignmentService', () => {
 
   describe('findPaginated', () => {
     it('should return paginated assignments', async () => {
-      prismaMock.client.studentAssignment.findMany.mockResolvedValue([baseAssignment]);
+      prismaMock.client.studentAssignment.findMany.mockResolvedValue([
+        baseAssignment,
+      ]);
       prismaMock.client.studentAssignment.count.mockResolvedValue(1);
 
       const result = await service.findPaginated({ page: 1, limit: 10 });
@@ -181,12 +213,18 @@ describe('AssignmentService', () => {
     it('should throw NotFoundException when assignment not found', async () => {
       prismaMock.client.studentAssignment.findUnique.mockResolvedValue(null);
 
-      await expect(service.delete('nonexistent', 'admin-1')).rejects.toThrow(NotFoundException);
+      await expect(service.delete('nonexistent', 'admin-1')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should delete and return confirmation', async () => {
-      prismaMock.client.studentAssignment.findUnique.mockResolvedValue(baseAssignment);
-      prismaMock.client.studentAssignment.delete.mockResolvedValue(baseAssignment);
+      prismaMock.client.studentAssignment.findUnique.mockResolvedValue(
+        baseAssignment,
+      );
+      prismaMock.client.studentAssignment.delete.mockResolvedValue(
+        baseAssignment,
+      );
 
       const result = await service.delete('assign-1', 'admin-1');
 
