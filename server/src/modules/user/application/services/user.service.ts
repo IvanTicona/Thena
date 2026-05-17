@@ -39,8 +39,6 @@ export class UserService {
     });
   }
 
-  // ─── Admin User Management ────────────────────────────────────────────
-
   async create(
     dto: CreateUserDto,
     actorId: string,
@@ -78,8 +76,7 @@ export class UserService {
   async findPaginated(
     query: UserListQueryDto,
   ): Promise<PaginatedUsersResponse> {
-    const page = query.page!;
-    const limit = query.limit!;
+    const { page, limit } = query;
     const skip = (page - 1) * limit;
 
     const where: Record<string, unknown> = { deletedAt: null };

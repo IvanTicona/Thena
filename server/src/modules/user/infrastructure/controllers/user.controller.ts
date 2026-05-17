@@ -27,8 +27,6 @@ import {
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  // ─── Current User ──────────────────────────────────────────────────────
-
   @Get('me')
   async getMe(@CurrentUser() user: JwtPayload) {
     return this.userService.getById(user.sub);
@@ -45,8 +43,6 @@ export class UserController {
       dto.newPassword,
     );
   }
-
-  // ─── Admin-only User Management ──────────────────────────────────────
 
   @Post()
   @Roles('ADMIN', 'SUPER_ADMIN')
