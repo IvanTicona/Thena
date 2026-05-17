@@ -4,6 +4,7 @@ import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { AppModule } from './app.module.js';
 import { LoggingInterceptor } from './shared/interceptors/logging.interceptor.js';
+import { requireEnv } from './shared/utils/require-env.js';
 
 /** Guard: reject insecure JWT secrets before accepting any connections. */
 function validateJwtSecrets(logger: Logger): void {
@@ -55,7 +56,7 @@ async function bootstrap() {
   app.useGlobalInterceptors(new LoggingInterceptor());
 
   app.enableCors({
-    origin: process.env.CORS_ORIGIN ?? 'http://localhost:5173',
+    origin: requireEnv('CORS_ORIGIN'),
     credentials: true,
     exposedHeaders: ['Content-Disposition'],
   });
@@ -63,8 +64,8 @@ async function bootstrap() {
   // Graceful shutdown — drains BullMQ and closes DB connections on SIGTERM
   app.enableShutdownHooks();
 
-  const port = process.env.PORT ?? 3000;
+  const port = parseInt(requireEnv('PORT_SERVER'), 10);
   await app.listen(port);
   logger.log(`Thena API running on port ${port}`);
 }
-bootstrap();
+void bootstrap();

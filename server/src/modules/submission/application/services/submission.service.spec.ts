@@ -3,7 +3,7 @@ import { BadRequestException, ForbiddenException, NotFoundException } from '@nes
 import { getQueueToken } from '@nestjs/bullmq';
 import { SubmissionService } from './submission.service.js';
 import { PrismaService } from '../../../../shared/prisma/prisma.service.js';
-import { StorageService } from '../../../../shared/storage/storage.service.js';
+import { MinioService } from '../../../../shared/minio/minio.service.js';
 import { AuditService } from '../../../audit/application/audit.service.js';
 import { NotificationService } from '../../../notification/application/notification.service.js';
 import { AlertService } from '../../../alert/application/alert.service.js';
@@ -101,7 +101,7 @@ describe('SubmissionService', () => {
       providers: [
         SubmissionService,
         { provide: PrismaService, useValue: prismaMock },
-        { provide: StorageService, useValue: storageMock },
+        { provide: MinioService, useValue: storageMock },
         { provide: getQueueToken('review'), useValue: queueMock },
         { provide: AuditService, useValue: auditMock },
         { provide: NotificationService, useValue: notificationMock },

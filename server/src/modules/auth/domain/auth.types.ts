@@ -1,6 +1,11 @@
 import { Request } from 'express';
 
-export type UserRole = 'STUDENT' | 'TUTOR' | 'REVIEWER' | 'ADMIN' | 'SUPER_ADMIN';
+export type UserRole =
+  | 'STUDENT'
+  | 'TUTOR'
+  | 'REVIEWER'
+  | 'ADMIN'
+  | 'SUPER_ADMIN';
 
 export interface JwtPayload {
   sub: string;
@@ -15,4 +20,8 @@ export interface AuthTokens {
 
 export interface AuthenticatedRequest extends Request {
   user: JwtPayload;
+}
+
+export interface MaybeAuthenticatedRequest extends Request {
+  user?: JwtPayload;
 }

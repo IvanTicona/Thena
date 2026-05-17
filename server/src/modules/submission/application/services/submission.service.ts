@@ -7,7 +7,7 @@ import {
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { PrismaService } from '../../../../shared/prisma/prisma.service.js';
-import { StorageService } from '../../../../shared/storage/storage.service.js';
+import { MinioService } from '../../../../shared/minio/minio.service.js';
 import { AuditService } from '../../../audit/application/audit.service.js';
 import { AuditAction } from '../../../audit/domain/audit.constants.js';
 import { NotificationService } from '../../../notification/application/notification.service.js';
@@ -20,7 +20,7 @@ const DOCX_MIME =
 export class SubmissionService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly storage: StorageService,
+    private readonly storage: MinioService,
     @InjectQueue('review') private readonly reviewQueue: Queue,
     private readonly auditService: AuditService,
     private readonly notificationService: NotificationService,
@@ -232,7 +232,7 @@ export class SubmissionService {
     }
 
     // fileUrl format: "thena-documents/<objectName>"
-    // StorageService.download expects only the objectName (without the bucket prefix)
+    // MinioService.download expects only the objectName (without the bucket prefix)
     const bucketPrefix = 'thena-documents/';
     const objectName = submission.fileUrl.startsWith(bucketPrefix)
       ? submission.fileUrl.slice(bucketPrefix.length)

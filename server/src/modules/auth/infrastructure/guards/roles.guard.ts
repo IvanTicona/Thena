@@ -6,7 +6,10 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ROLES_KEY } from '../decorators/roles.decorator.js';
-import { JwtPayload, UserRole } from '../../domain/auth.types.js';
+import type {
+  AuthenticatedRequest,
+  UserRole,
+} from '../../domain/auth.types.js';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -22,8 +25,8 @@ export class RolesGuard implements CanActivate {
       return true;
     }
 
-    const request = context.switchToHttp().getRequest();
-    const user = request.user as JwtPayload;
+    const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
+    const user = request.user;
 
     if (!user || !requiredRoles.includes(user.role)) {
       throw new ForbiddenException('Acceso denegado: rol insuficiente');

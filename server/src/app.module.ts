@@ -5,7 +5,8 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { ScheduleModule } from '@nestjs/schedule';
 import { APP_GUARD } from '@nestjs/core';
 import { PrismaModule } from './shared/prisma/prisma.module.js';
-import { StorageModule } from './shared/storage/storage.module.js';
+import { MinioModule } from './shared/minio/minio.module.js';
+import { RedisModule } from './shared/redis/redis.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { UserModule } from './modules/user/user.module.js';
 import { ChapterModule } from './modules/chapter/chapter.module.js';
@@ -40,15 +41,16 @@ import { MetricsModule } from './modules/metrics/metrics.module.js';
     ScheduleModule.forRoot(),
 
     PrismaModule,
+    MinioModule,
+    RedisModule,
     AuthModule,
-    StorageModule,
 
     BullModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         connection: {
-          url: config.get<string>('REDIS_URL', 'redis://redis:6379'),
+          url: config.getOrThrow<string>('REDIS_URL'),
         },
       }),
     }),
