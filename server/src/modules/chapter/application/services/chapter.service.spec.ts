@@ -1,5 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { ChapterService } from '../services/chapter.service.js';
 import { PrismaService } from '../../../../shared/prisma/prisma.service.js';
 import { AuditService } from '../../../audit/application/audit.service.js';
@@ -80,15 +84,25 @@ describe('ChapterService', () => {
     it('should throw NotFoundException when chapter does not exist', async () => {
       prismaMock.client.chapter.findUnique.mockResolvedValue(null);
 
-      await expect(service.approve('chapter-1', 'tutor-1')).rejects.toThrow(NotFoundException);
+      await expect(service.approve('chapter-1', 'tutor-1')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw ForbiddenException when tutor is not assigned to chapter', async () => {
       prismaMock.client.chapter.findUnique.mockResolvedValue(
-        makeChapter({ thesis: { id: 'thesis-1', studentId: 'student-1', tutorId: 'other-tutor' } }),
+        makeChapter({
+          thesis: {
+            id: 'thesis-1',
+            studentId: 'student-1',
+            tutorId: 'other-tutor',
+          },
+        }),
       );
 
-      await expect(service.approve('chapter-1', 'tutor-1')).rejects.toThrow(ForbiddenException);
+      await expect(service.approve('chapter-1', 'tutor-1')).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should throw BadRequestException when chapter is already APPROVED', async () => {
@@ -96,7 +110,9 @@ describe('ChapterService', () => {
         makeChapter({ status: 'APPROVED' }),
       );
 
-      await expect(service.approve('chapter-1', 'tutor-1')).rejects.toThrow(BadRequestException);
+      await expect(service.approve('chapter-1', 'tutor-1')).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw BadRequestException when no completed review exists', async () => {
@@ -106,7 +122,9 @@ describe('ChapterService', () => {
         }),
       );
 
-      await expect(service.approve('chapter-1', 'tutor-1')).rejects.toThrow(BadRequestException);
+      await expect(service.approve('chapter-1', 'tutor-1')).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should approve chapter with completed review and return result', async () => {
@@ -122,7 +140,9 @@ describe('ChapterService', () => {
 
       prismaMock.client.chapter.findUnique.mockResolvedValue(
         makeChapter({
-          submissions: [{ id: 'sub-1', reviewJob: { id: 'job-1', status: 'COMPLETED' } }],
+          submissions: [
+            { id: 'sub-1', reviewJob: { id: 'job-1', status: 'COMPLETED' } },
+          ],
         }),
       );
       prismaMock.client.chapter.update.mockResolvedValue(approvedChapter);
@@ -153,7 +173,9 @@ describe('ChapterService', () => {
 
       prismaMock.client.chapter.findUnique.mockResolvedValue(
         makeChapter({
-          submissions: [{ id: 'sub-1', reviewJob: { id: 'job-1', status: 'COMPLETED' } }],
+          submissions: [
+            { id: 'sub-1', reviewJob: { id: 'job-1', status: 'COMPLETED' } },
+          ],
         }),
       );
       prismaMock.client.chapter.update.mockResolvedValue(approvedChapter);
@@ -162,11 +184,12 @@ describe('ChapterService', () => {
 
       const result = await service.approve('chapter-1', 'tutor-1');
 
-      expect(prismaMock.client.chapter.updateMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ number: 2, status: 'LOCKED' }),
-        }),
-      );
+      const [updateManyCall] = prismaMock.client.chapter.updateMany.mock
+        .calls[0] as [
+        { where: { thesisId: string; number: number; status: string } },
+      ];
+      expect(updateManyCall.where.number).toBe(2);
+      expect(updateManyCall.where.status).toBe('LOCKED');
       expect(result.nextChapter).not.toBeNull();
       expect(result.nextChapter!.number).toBe(2);
     });
@@ -185,7 +208,9 @@ describe('ChapterService', () => {
       prismaMock.client.chapter.findUnique.mockResolvedValue(
         makeChapter({
           number: 8,
-          submissions: [{ id: 'sub-1', reviewJob: { id: 'job-1', status: 'COMPLETED' } }],
+          submissions: [
+            { id: 'sub-1', reviewJob: { id: 'job-1', status: 'COMPLETED' } },
+          ],
         }),
       );
       prismaMock.client.chapter.update.mockResolvedValue(approvedChapter);
@@ -208,7 +233,9 @@ describe('ChapterService', () => {
 
       prismaMock.client.chapter.findUnique.mockResolvedValue(
         makeChapter({
-          submissions: [{ id: 'sub-1', reviewJob: { id: 'job-1', status: 'COMPLETED' } }],
+          submissions: [
+            { id: 'sub-1', reviewJob: { id: 'job-1', status: 'COMPLETED' } },
+          ],
         }),
       );
       prismaMock.client.chapter.update.mockResolvedValue(approvedChapter);
@@ -235,15 +262,25 @@ describe('ChapterService', () => {
     it('should throw NotFoundException when chapter does not exist', async () => {
       prismaMock.client.chapter.findUnique.mockResolvedValue(null);
 
-      await expect(service.reject('chapter-1', 'tutor-1')).rejects.toThrow(NotFoundException);
+      await expect(service.reject('chapter-1', 'tutor-1')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw ForbiddenException when tutor is not assigned to chapter', async () => {
       prismaMock.client.chapter.findUnique.mockResolvedValue(
-        makeChapter({ thesis: { id: 'thesis-1', studentId: 'student-1', tutorId: 'other-tutor' } }),
+        makeChapter({
+          thesis: {
+            id: 'thesis-1',
+            studentId: 'student-1',
+            tutorId: 'other-tutor',
+          },
+        }),
       );
 
-      await expect(service.reject('chapter-1', 'tutor-1')).rejects.toThrow(ForbiddenException);
+      await expect(service.reject('chapter-1', 'tutor-1')).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should throw BadRequestException when chapter is already APPROVED', async () => {
@@ -251,7 +288,9 @@ describe('ChapterService', () => {
         makeChapter({ status: 'APPROVED' }),
       );
 
-      await expect(service.reject('chapter-1', 'tutor-1')).rejects.toThrow(BadRequestException);
+      await expect(service.reject('chapter-1', 'tutor-1')).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should set chapter status back to DRAFT with optional comment', async () => {
@@ -264,19 +303,25 @@ describe('ChapterService', () => {
         comment: 'Needs more work',
       });
 
-      const result = await service.reject('chapter-1', 'tutor-1', 'Needs more work');
-
-      expect(prismaMock.client.chapter.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({ status: 'DRAFT', comment: 'Needs more work' }),
-        }),
+      const result = await service.reject(
+        'chapter-1',
+        'tutor-1',
+        'Needs more work',
       );
+
+      const [updateCall] = prismaMock.client.chapter.update.mock.calls[0] as [
+        { where: { id: string }; data: { status: string; comment?: string } },
+      ];
+      expect(updateCall.data.status).toBe('DRAFT');
+      expect(updateCall.data.comment).toBe('Needs more work');
       expect(result.status).toBe('DRAFT');
       expect(result.comment).toBe('Needs more work');
     });
 
     it('should fire audit log on rejection', async () => {
-      prismaMock.client.chapter.findUnique.mockResolvedValue(makeChapter({ status: 'IN_REVIEW' }));
+      prismaMock.client.chapter.findUnique.mockResolvedValue(
+        makeChapter({ status: 'IN_REVIEW' }),
+      );
       prismaMock.client.chapter.update.mockResolvedValue({
         id: 'chapter-1',
         status: 'DRAFT',
@@ -288,7 +333,10 @@ describe('ChapterService', () => {
       await new Promise((r) => setImmediate(r));
 
       expect(auditMock.log).toHaveBeenCalledWith(
-        expect.objectContaining({ action: 'REJECT_CHAPTER', actorId: 'tutor-1' }),
+        expect.objectContaining({
+          action: 'REJECT_CHAPTER',
+          actorId: 'tutor-1',
+        }),
       );
     });
   });
@@ -299,9 +347,9 @@ describe('ChapterService', () => {
     it('should throw NotFoundException when chapter does not exist', async () => {
       prismaMock.client.chapter.findUnique.mockResolvedValue(null);
 
-      await expect(service.requestTutorReview('chapter-1', 'student-1')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.requestTutorReview('chapter-1', 'student-1'),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should throw ForbiddenException when student does not own chapter', async () => {
@@ -309,9 +357,9 @@ describe('ChapterService', () => {
         makeChapter({ thesis: { studentId: 'other-student' } }),
       );
 
-      await expect(service.requestTutorReview('chapter-1', 'student-1')).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(
+        service.requestTutorReview('chapter-1', 'student-1'),
+      ).rejects.toThrow(ForbiddenException);
     });
 
     it('should throw BadRequestException when chapter is not in DRAFT status', async () => {
@@ -319,9 +367,9 @@ describe('ChapterService', () => {
         makeChapter({ status: 'IN_REVIEW' }),
       );
 
-      await expect(service.requestTutorReview('chapter-1', 'student-1')).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        service.requestTutorReview('chapter-1', 'student-1'),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should throw BadRequestException when no completed AI review exists', async () => {
@@ -331,9 +379,9 @@ describe('ChapterService', () => {
         }),
       );
 
-      await expect(service.requestTutorReview('chapter-1', 'student-1')).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        service.requestTutorReview('chapter-1', 'student-1'),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should throw BadRequestException when an active review is in progress', async () => {
@@ -346,9 +394,9 @@ describe('ChapterService', () => {
         }),
       );
 
-      await expect(service.requestTutorReview('chapter-1', 'student-1')).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        service.requestTutorReview('chapter-1', 'student-1'),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should set chapter status to IN_REVIEW on success', async () => {
@@ -372,5 +420,4 @@ describe('ChapterService', () => {
       );
     });
   });
-
 });

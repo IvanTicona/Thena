@@ -7,7 +7,7 @@ import {
 import { PrismaService } from '../../../../shared/prisma/prisma.service.js';
 import { AuditService } from '../../../audit/application/audit.service.js';
 import { AuditAction } from '../../../audit/domain/audit.constants.js';
-import { UserRole } from '../../../auth/domain/auth.types.js';
+import type { UserRole } from '../../../auth/domain/auth.types.js';
 import { NotificationService } from '../../../notification/application/notification.service.js';
 
 export interface ChapterDetail {
@@ -61,7 +61,11 @@ export class ChapterService {
     private readonly notificationService: NotificationService,
   ) {}
 
-  async findById(id: string, userId: string, role: UserRole): Promise<ChapterDetail> {
+  async findById(
+    id: string,
+    userId: string,
+    role: UserRole,
+  ): Promise<ChapterDetail> {
     const chapter = await this.prisma.client.chapter.findUnique({
       where: { id },
       include: {
@@ -85,7 +89,6 @@ export class ChapterService {
       throw new NotFoundException('Chapter not found');
     }
 
-    // Ownership check
     if (role === 'STUDENT' && chapter.thesis.studentId !== userId) {
       throw new ForbiddenException('Chapter does not belong to this student');
     }
@@ -105,7 +108,11 @@ export class ChapterService {
     };
   }
 
-  async approve(chapterId: string, tutorId: string, comment?: string): Promise<ChapterApprovalResult> {
+  async approve(
+    chapterId: string,
+    tutorId: string,
+    comment?: string,
+  ): Promise<ChapterApprovalResult> {
     const chapter = await this.prisma.client.chapter.findUnique({
       where: { id: chapterId },
       include: {
@@ -124,7 +131,6 @@ export class ChapterService {
       throw new NotFoundException('Chapter not found');
     }
 
-    // Ownership check: only the assigned tutor can approve
     if (chapter.thesis.tutorId !== tutorId) {
       throw new ForbiddenException('Chapter is not assigned to this tutor');
     }
@@ -133,7 +139,6 @@ export class ChapterService {
       throw new BadRequestException('Chapter is already approved');
     }
 
-    // Check that there's a completed review
     const latestSubmission = chapter.submissions[0];
     if (
       !latestSubmission?.reviewJob ||
@@ -142,7 +147,6 @@ export class ChapterService {
       throw new BadRequestException('Chapter has no completed review');
     }
 
-    // Approve the chapter
     const approved = await this.prisma.client.chapter.update({
       where: { id: chapterId },
       data: {
@@ -153,7 +157,6 @@ export class ChapterService {
       },
     });
 
-    // Unlock next chapter if it exists (scope by thesisId)
     let nextChapter = null;
     if (chapter.number < 8) {
       const updated = await this.prisma.client.chapter.updateMany({
@@ -175,7 +178,6 @@ export class ChapterService {
       }
     }
 
-    // Audit log — fire-and-forget
     void this.auditService.log({
       action: AuditAction.APPROVE_CHAPTER,
       actorId: tutorId,
@@ -184,7 +186,6 @@ export class ChapterService {
       metadata: { chapterNumber: chapter.number, thesisId: chapter.thesis.id },
     });
 
-    // Notification for student — fire-and-forget (errors swallowed in NotificationService)
     void this.notificationService.create(
       chapter.thesis.studentId,
       'CHAPTER_APPROVED',
@@ -241,7 +242,6 @@ export class ChapterService {
       );
     }
 
-    // Must have at least one completed AI review
     const hasCompletedReview = chapter.submissions.some(
       (s) => s.reviewJob?.status === 'COMPLETED',
     );
@@ -252,7 +252,6 @@ export class ChapterService {
       );
     }
 
-    // Must not have an active AI review in progress
     const hasActiveReview = chapter.submissions.some(
       (s) =>
         s.reviewJob?.status === 'QUEUED' ||
@@ -273,7 +272,11 @@ export class ChapterService {
     return { id: updated.id, status: updated.status };
   }
 
-  async reject(chapterId: string, tutorId: string, comment?: string): Promise<ChapterRejectionResult> {
+  async reject(
+    chapterId: string,
+    tutorId: string,
+    comment?: string,
+  ): Promise<ChapterRejectionResult> {
     const chapter = await this.prisma.client.chapter.findUnique({
       where: { id: chapterId },
       include: { thesis: { select: { tutorId: true, studentId: true } } },
@@ -283,7 +286,6 @@ export class ChapterService {
       throw new NotFoundException('Chapter not found');
     }
 
-    // Ownership check: only the assigned tutor can reject
     if (chapter.thesis.tutorId !== tutorId) {
       throw new ForbiddenException('Chapter is not assigned to this tutor');
     }
@@ -300,7 +302,6 @@ export class ChapterService {
       },
     });
 
-    // Audit log — fire-and-forget
     void this.auditService.log({
       action: AuditAction.REJECT_CHAPTER,
       actorId: tutorId,
@@ -309,7 +310,6 @@ export class ChapterService {
       metadata: { chapterNumber: chapter.number },
     });
 
-    // Notification for student — fire-and-forget (errors swallowed in NotificationService)
     void this.notificationService.create(
       chapter.thesis.studentId,
       'CHAPTER_REJECTED',

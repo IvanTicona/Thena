@@ -13,7 +13,7 @@ import {
   RejectChapterDto,
 } from '../../application/dtos/chapter-action.dto.js';
 import { CurrentUser } from '../../../../modules/auth/infrastructure/decorators/current-user.decorator.js';
-import { JwtPayload } from '../../../../modules/auth/domain/auth.types.js';
+import type { JwtPayload } from '../../../../modules/auth/domain/auth.types.js';
 
 @Controller('chapters')
 export class ChapterController {
