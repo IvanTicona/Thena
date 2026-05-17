@@ -16,18 +16,18 @@ export type AdminCreatableRole = 'TUTOR' | 'REVIEWER' | 'ADMIN';
 
 export class CreateUserDto {
   @IsEmail()
-  email: string;
+  email!: string;
 
   @IsString()
   @IsNotEmpty()
-  name: string;
+  name!: string;
 
   @IsString()
   @MinLength(8)
-  password: string;
+  password!: string;
 
   @IsEnum(['TUTOR', 'REVIEWER', 'ADMIN'])
-  role: AdminCreatableRole;
+  role!: AdminCreatableRole;
 }
 
 export class UpdateUserDto {
@@ -48,11 +48,11 @@ export class UpdateUserDto {
 export class ChangePasswordDto {
   @IsString()
   @IsNotEmpty()
-  currentPassword: string;
+  currentPassword!: string;
 
   @IsString()
   @MinLength(8)
-  newPassword: string;
+  newPassword!: string;
 }
 
 export class UserListQueryDto {

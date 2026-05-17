@@ -14,7 +14,7 @@ import { UserService } from '../../application/services/user.service.js';
 import { CurrentUser } from '../../../../modules/auth/infrastructure/decorators/current-user.decorator.js';
 import { Roles } from '../../../../modules/auth/infrastructure/decorators/roles.decorator.js';
 import { RolesGuard } from '../../../../modules/auth/infrastructure/guards/roles.guard.js';
-import { JwtPayload } from '../../../../modules/auth/domain/auth.types.js';
+import type { JwtPayload } from '../../../../modules/auth/domain/auth.types.js';
 import {
   CreateUserDto,
   UpdateUserDto,
@@ -22,6 +22,7 @@ import {
   UserListQueryDto,
 } from '../../application/dtos/user.dto.js';
 
+@UseGuards(RolesGuard)
 @Controller('users')
 export class UserController {
   constructor(private readonly userService: UserService) {}
@@ -30,7 +31,7 @@ export class UserController {
 
   @Get('me')
   async getMe(@CurrentUser() user: JwtPayload) {
-    return this.userService.findById(user.sub);
+    return this.userService.getById(user.sub);
   }
 
   @Patch('me/password')
@@ -48,36 +49,29 @@ export class UserController {
   // ─── Admin-only User Management ──────────────────────────────────────
 
   @Post()
-  @UseGuards(RolesGuard)
   @Roles('ADMIN', 'SUPER_ADMIN')
-  async create(
-    @Body() dto: CreateUserDto,
-    @CurrentUser() actor: JwtPayload,
-  ) {
+  async create(@Body() dto: CreateUserDto, @CurrentUser() actor: JwtPayload) {
     return this.userService.create(dto, actor.sub);
   }
 
   @Get()
-  @UseGuards(RolesGuard)
   @Roles('ADMIN', 'SUPER_ADMIN')
-  async findAll(@Query() query: UserListQueryDto) {
+  async findPaginated(@Query() query: UserListQueryDto) {
     return this.userService.findPaginated(query);
   }
 
   @Get('tutors')
-  async getTutors() {
+  async findTutors() {
     return this.userService.findTutors();
   }
 
   @Get(':id')
-  @UseGuards(RolesGuard)
   @Roles('ADMIN', 'SUPER_ADMIN')
   async getById(@Param('id', ParseUUIDPipe) id: string) {
     return this.userService.getById(id);
   }
 
   @Patch(':id')
-  @UseGuards(RolesGuard)
   @Roles('ADMIN', 'SUPER_ADMIN')
   async update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -88,7 +82,6 @@ export class UserController {
   }
 
   @Delete(':id')
-  @UseGuards(RolesGuard)
   @Roles('ADMIN', 'SUPER_ADMIN')
   async delete(
     @Param('id', ParseUUIDPipe) id: string,
@@ -98,7 +91,6 @@ export class UserController {
   }
 
   @Patch(':id/restore')
-  @UseGuards(RolesGuard)
   @Roles('ADMIN', 'SUPER_ADMIN')
   async restore(
     @Param('id', ParseUUIDPipe) id: string,

@@ -9,7 +9,7 @@ import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../../../../shared/prisma/prisma.service.js';
 import { AuditService } from '../../../audit/application/audit.service.js';
 import { AuditAction } from '../../../audit/domain/audit.constants.js';
-import { UserRole } from '../../../auth/domain/auth.types.js';
+import type { UserRole } from '../../../auth/domain/auth.types.js';
 import type { UserModel } from '../../../../generated/prisma/models/User.js';
 import {
   CreateUserDto,
@@ -17,12 +17,6 @@ import {
   UserListQueryDto,
 } from '../dtos/user.dto.js';
 import { PaginatedUsersResponse } from '../dtos/user-response.dto.js';
-
-interface UserSummary {
-  id: string;
-  name: string;
-  role: string;
-}
 
 export interface TutorSummary {
   id: string;
@@ -37,17 +31,6 @@ export class UserService {
     private readonly auditService: AuditService,
   ) {}
 
-  async findById(id: string): Promise<UserModel | null> {
-    return this.prisma.client.user.findUnique({ where: { id, deletedAt: null } });
-  }
-
-  async findAll(): Promise<UserSummary[]> {
-    return this.prisma.client.user.findMany({
-      where: { deletedAt: null },
-      select: { id: true, name: true, role: true },
-    });
-  }
-
   async findTutors(): Promise<TutorSummary[]> {
     return this.prisma.client.user.findMany({
       where: { role: 'TUTOR', deletedAt: null },
@@ -58,7 +41,10 @@ export class UserService {
 
   // ─── Admin User Management ────────────────────────────────────────────
 
-  async create(dto: CreateUserDto, actorId: string): Promise<Omit<UserModel, 'passwordHash'>> {
+  async create(
+    dto: CreateUserDto,
+    actorId: string,
+  ): Promise<Omit<UserModel, 'passwordHash'>> {
     const existing = await this.prisma.client.user.findFirst({
       where: { email: dto.email, deletedAt: null },
     });
@@ -89,13 +75,15 @@ export class UserService {
     return this.omitPassword(user);
   }
 
-  async findPaginated(query: UserListQueryDto): Promise<PaginatedUsersResponse> {
-    const page = Math.max(1, query.page ?? 1);
-    const limit = Math.min(100, Math.max(1, query.limit ?? 20));
+  async findPaginated(
+    query: UserListQueryDto,
+  ): Promise<PaginatedUsersResponse> {
+    const page = query.page!;
+    const limit = query.limit!;
     const skip = (page - 1) * limit;
 
     const where: Record<string, unknown> = { deletedAt: null };
-    if (query.role) where['role'] = query.role as UserRole;
+    if (query.role) where['role'] = query.role;
 
     const [users, total] = await Promise.all([
       this.prisma.client.user.findMany({
@@ -106,8 +94,6 @@ export class UserService {
           name: true,
           role: true,
           createdAt: true,
-          updatedAt: true,
-          deletedAt: true,
         },
         skip,
         take: limit,
@@ -128,7 +114,9 @@ export class UserService {
   }
 
   async getById(id: string): Promise<Omit<UserModel, 'passwordHash'>> {
-    const user = await this.prisma.client.user.findUnique({ where: { id, deletedAt: null } });
+    const user = await this.prisma.client.user.findUnique({
+      where: { id, deletedAt: null },
+    });
 
     if (!user) {
       throw new NotFoundException('User not found');
@@ -142,13 +130,14 @@ export class UserService {
     dto: UpdateUserDto,
     actorId: string,
   ): Promise<Omit<UserModel, 'passwordHash'>> {
-    const user = await this.prisma.client.user.findUnique({ where: { id, deletedAt: null } });
+    const user = await this.prisma.client.user.findUnique({
+      where: { id, deletedAt: null },
+    });
 
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
-    // Check email uniqueness if changing
     if (dto.email && dto.email !== user.email) {
       const emailTaken = await this.prisma.client.user.findFirst({
         where: { email: dto.email, deletedAt: null },
@@ -163,12 +152,12 @@ export class UserService {
       data: {
         ...(dto.name !== undefined && { name: dto.name }),
         ...(dto.email !== undefined && { email: dto.email }),
-        ...(dto.role !== undefined && { role: dto.role as UserRole }),
+        ...(dto.role !== undefined && { role: dto.role }),
       },
     });
 
     void this.auditService.log({
-      action: AuditAction.CREATE_USER,
+      action: AuditAction.UPDATE_USER,
       actorId,
       entityType: 'user',
       entityId: id,
@@ -178,14 +167,18 @@ export class UserService {
     return this.omitPassword(updated);
   }
 
-  async delete(id: string, actorId: string): Promise<{ id: string; deleted: true }> {
-    const user = await this.prisma.client.user.findUnique({ where: { id, deletedAt: null } });
+  async delete(
+    id: string,
+    actorId: string,
+  ): Promise<{ id: string; deleted: true }> {
+    const user = await this.prisma.client.user.findUnique({
+      where: { id, deletedAt: null },
+    });
 
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
-    // Prevent deleting yourself
     if (id === actorId) {
       throw new BadRequestException('Cannot delete your own account');
     }
@@ -196,11 +189,11 @@ export class UserService {
     });
 
     void this.auditService.log({
-      action: AuditAction.CREATE_USER,
+      action: AuditAction.DELETE_USER,
       actorId,
       entityType: 'user',
       entityId: id,
-      metadata: { action: 'DELETE_USER', email: user.email },
+      metadata: { email: user.email },
     });
 
     return { id, deleted: true };
@@ -234,7 +227,10 @@ export class UserService {
     return { success: true };
   }
 
-  async restore(id: string, actorId: string): Promise<Omit<UserModel, 'passwordHash'>> {
+  async restore(
+    id: string,
+    actorId: string,
+  ): Promise<Omit<UserModel, 'passwordHash'>> {
     const user = await this.prisma.client.user.findUnique({ where: { id } });
 
     if (!user) {
@@ -251,11 +247,11 @@ export class UserService {
     });
 
     void this.auditService.log({
-      action: AuditAction.CREATE_USER,
+      action: AuditAction.RESTORE_USER,
       actorId,
       entityType: 'user',
       entityId: id,
-      metadata: { action: 'RESTORE_USER', email: user.email },
+      metadata: { email: user.email },
     });
 
     return this.omitPassword(restored);
