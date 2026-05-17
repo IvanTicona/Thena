@@ -225,19 +225,4 @@ describe('NotificationService', () => {
       expect(result.count).toBe(0);
     });
   });
-
-  // ── countUnread ───────────────────────────────────────────────────────────
-
-  describe('countUnread', () => {
-    it('should return the unread notification count for a user', async () => {
-      prismaMock.client.notification.count.mockResolvedValue(3);
-
-      const result = await service.countUnread('user-1');
-
-      expect(result).toBe(3);
-      expect(prismaMock.client.notification.count).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { userId: 'user-1', read: false } }),
-      );
-    });
-  });
 });

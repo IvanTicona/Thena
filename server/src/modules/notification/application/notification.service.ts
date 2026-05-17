@@ -9,7 +9,7 @@ export interface PaginatedNotifications {
     title: string;
     body: string;
     read: boolean;
-    metadata: unknown;
+    metadata: Record<string, unknown>;
     createdAt: Date;
   }[];
   total: number;
@@ -24,7 +24,6 @@ export class NotificationService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Creates a notification in the DB.
    * Errors are swallowed intentionally — notifications must NEVER break the main business flow.
    */
   async create(
@@ -81,7 +80,7 @@ export class NotificationService {
     ]);
 
     return {
-      data,
+      data: data as PaginatedNotifications['data'],
       total,
       page,
       limit,
@@ -90,7 +89,7 @@ export class NotificationService {
     };
   }
 
-  async countUnread(userId: string): Promise<number> {
+  private async countUnread(userId: string): Promise<number> {
     return this.prisma.client.notification.count({
       where: { userId, read: false },
     });
@@ -100,7 +99,6 @@ export class NotificationService {
     id: string,
     userId: string,
   ): Promise<{ id: string; read: boolean }> {
-    // Verify ownership — findFirst returns null if not found or not owned
     const notification = await this.prisma.client.notification.findFirst({
       where: { id, userId },
     });
