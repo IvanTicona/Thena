@@ -61,14 +61,12 @@ export class SubmissionService {
     chapterId: string,
     file: Express.Multer.File,
   ) {
-    // Validate MIME type
     if (file.mimetype !== DOCX_MIME) {
       throw new BadRequestException(
         'Invalid file format. Only DOCX files are allowed.',
       );
     }
 
-    // Fetch chapter with thesis for ownership check
     const chapter = await this.prisma.client.chapter.findUnique({
       where: { id: chapterId },
       include: { thesis: { select: { studentId: true, tutorId: true } } },
@@ -98,7 +96,6 @@ export class SubmissionService {
       );
     }
 
-    // Block if there is an active AI review (QUEUED or PROCESSING) for this chapter
     const activeReviewJob = await this.prisma.client.reviewJob.findFirst({
       where: {
         submission: { chapterId },
@@ -112,14 +109,13 @@ export class SubmissionService {
       );
     }
 
-    // Determine version number
     const lastSubmission = await this.prisma.client.submission.findFirst({
       where: { chapterId },
       orderBy: { versionNumber: 'desc' },
     });
-    const versionNumber = (lastSubmission?.versionNumber ?? 0) + 1;
+    const versionNumber =
+      lastSubmission !== null ? lastSubmission.versionNumber + 1 : 1;
 
-    // Upload to MinIO
     const objectName = `${studentId}/${chapterId}/${versionNumber}.docx`;
     const fileUrl = await this.storage.upload(
       objectName,
@@ -127,7 +123,6 @@ export class SubmissionService {
       file.mimetype,
     );
 
-    // Create submission, review job, and update chapter
     const submission = await this.prisma.client.submission.create({
       data: {
         chapterId,
@@ -152,7 +147,6 @@ export class SubmissionService {
 
     const result = { submission, reviewJob };
 
-    // Enqueue job to BullMQ for the engine to pick up
     await this.reviewQueue.add('process-review', {
       jobId: result.reviewJob.id,
       submissionId: result.submission.id,
@@ -162,7 +156,6 @@ export class SubmissionService {
       versionNumber,
     });
 
-    // Audit log — fire-and-forget (errors swallowed in AuditService)
     void this.auditService.log({
       action: AuditAction.SUBMIT_CHAPTER,
       actorId: studentId,
@@ -176,11 +169,13 @@ export class SubmissionService {
       actorId: studentId,
       entityType: 'review_job',
       entityId: result.reviewJob.id,
-      metadata: { submissionId: result.submission.id, chapterId, versionNumber },
+      metadata: {
+        submissionId: result.submission.id,
+        chapterId,
+        versionNumber,
+      },
     });
 
-    // Notification for tutor — fire-and-forget (errors swallowed in NotificationService)
-    // Notify the tutor assigned to this thesis that a new submission was made
     if (chapter.thesis.tutorId) {
       void this.notificationService.create(
         chapter.thesis.tutorId,
@@ -191,7 +186,6 @@ export class SubmissionService {
       );
     }
 
-    // Auto-resolve any active INACTIVITY alert for this thesis — fire-and-forget
     void this.alertService.resolveInactivityAlertsForThesis(chapter.thesisId);
 
     return {
@@ -226,9 +220,10 @@ export class SubmissionService {
       throw new NotFoundException('Submission not found');
     }
 
-    // Only the student who owns the submission or a TUTOR can download
     if (userRole === 'STUDENT' && submission.studentId !== requestingUserId) {
-      throw new ForbiddenException('No tenés permiso para descargar este archivo');
+      throw new ForbiddenException(
+        'No tenés permiso para descargar este archivo',
+      );
     }
 
     // fileUrl format: "thena-documents/<objectName>"

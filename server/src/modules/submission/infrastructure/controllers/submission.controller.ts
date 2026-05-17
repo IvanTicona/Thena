@@ -12,12 +12,12 @@ import {
   MaxFileSizeValidator,
   Res,
 } from '@nestjs/common';
-import { Response } from 'express';
+import type { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { SubmissionService } from '../../application/services/submission.service.js';
 import { CreateSubmissionDto } from '../../application/dtos/create-submission.dto.js';
 import { CurrentUser } from '../../../../modules/auth/infrastructure/decorators/current-user.decorator.js';
-import { JwtPayload } from '../../../../modules/auth/domain/auth.types.js';
+import type { JwtPayload } from '../../../../modules/auth/domain/auth.types.js';
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 
@@ -28,7 +28,9 @@ export class SubmissionController {
   @Get('mine')
   async listMine(@CurrentUser() user: JwtPayload) {
     if (user.role !== 'STUDENT') {
-      throw new ForbiddenException('Only students can access their submissions');
+      throw new ForbiddenException(
+        'Only students can access their submissions',
+      );
     }
     return this.submissionService.findAllForStudent(user.sub);
   }

@@ -1,5 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { getQueueToken } from '@nestjs/bullmq';
 import { SubmissionService } from './submission.service.js';
 import { PrismaService } from '../../../../shared/prisma/prisma.service.js';
@@ -32,7 +36,9 @@ const makePrismaMock = () => ({
 });
 
 const makeStorageMock = () => ({
-  upload: jest.fn().mockResolvedValue('thena-documents/student-1/chapter-1/1.docx'),
+  upload: jest
+    .fn()
+    .mockResolvedValue('thena-documents/student-1/chapter-1/1.docx'),
   download: jest.fn().mockResolvedValue(Buffer.from('file-content')),
 });
 
@@ -54,7 +60,9 @@ const makeAlertMock = () => ({
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-const makeFile = (overrides: Partial<Express.Multer.File> = {}): Express.Multer.File => ({
+const makeFile = (
+  overrides: Partial<Express.Multer.File> = {},
+): Express.Multer.File => ({
   fieldname: 'file',
   originalname: 'chapter.docx',
   encoding: '7bit',
@@ -64,7 +72,7 @@ const makeFile = (overrides: Partial<Express.Multer.File> = {}): Express.Multer.
   destination: '',
   filename: '',
   path: '',
-  stream: null as any,
+  stream: null as unknown as import('stream').Readable,
   ...overrides,
 });
 
@@ -119,7 +127,13 @@ describe('SubmissionService', () => {
   describe('findAllForStudent', () => {
     it('should return submissions for a student', async () => {
       const mockSubmissions = [
-        { id: 'sub-1', chapterId: 'chapter-1', versionNumber: 1, fileName: 'ch1.docx', submittedAt: new Date() },
+        {
+          id: 'sub-1',
+          chapterId: 'chapter-1',
+          versionNumber: 1,
+          fileName: 'ch1.docx',
+          submittedAt: new Date(),
+        },
       ];
       prismaMock.client.submission.findMany.mockResolvedValue(mockSubmissions);
 
@@ -138,9 +152,9 @@ describe('SubmissionService', () => {
     it('should throw BadRequestException when file is not DOCX', async () => {
       const file = makeFile({ mimetype: 'application/pdf' });
 
-      await expect(service.create('student-1', 'chapter-1', file)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        service.create('student-1', 'chapter-1', file),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should throw NotFoundException when chapter does not exist', async () => {
@@ -153,7 +167,9 @@ describe('SubmissionService', () => {
 
     it('should throw ForbiddenException when chapter does not belong to student', async () => {
       prismaMock.client.chapter.findUnique.mockResolvedValue(
-        makeChapter({ thesis: { studentId: 'other-student', tutorId: 'tutor-1' } }),
+        makeChapter({
+          thesis: { studentId: 'other-student', tutorId: 'tutor-1' },
+        }),
       );
 
       await expect(
@@ -162,7 +178,9 @@ describe('SubmissionService', () => {
     });
 
     it('should throw BadRequestException when chapter is LOCKED', async () => {
-      prismaMock.client.chapter.findUnique.mockResolvedValue(makeChapter({ status: 'LOCKED' }));
+      prismaMock.client.chapter.findUnique.mockResolvedValue(
+        makeChapter({ status: 'LOCKED' }),
+      );
 
       await expect(
         service.create('student-1', 'chapter-1', makeFile()),
@@ -170,7 +188,9 @@ describe('SubmissionService', () => {
     });
 
     it('should throw BadRequestException when chapter is APPROVED', async () => {
-      prismaMock.client.chapter.findUnique.mockResolvedValue(makeChapter({ status: 'APPROVED' }));
+      prismaMock.client.chapter.findUnique.mockResolvedValue(
+        makeChapter({ status: 'APPROVED' }),
+      );
 
       await expect(
         service.create('student-1', 'chapter-1', makeFile()),
@@ -178,7 +198,9 @@ describe('SubmissionService', () => {
     });
 
     it('should throw BadRequestException when chapter is IN_REVIEW', async () => {
-      prismaMock.client.chapter.findUnique.mockResolvedValue(makeChapter({ status: 'IN_REVIEW' }));
+      prismaMock.client.chapter.findUnique.mockResolvedValue(
+        makeChapter({ status: 'IN_REVIEW' }),
+      );
 
       await expect(
         service.create('student-1', 'chapter-1', makeFile()),
@@ -187,7 +209,10 @@ describe('SubmissionService', () => {
 
     it('should throw BadRequestException when an active AI review job exists', async () => {
       prismaMock.client.chapter.findUnique.mockResolvedValue(makeChapter());
-      prismaMock.client.reviewJob.findFirst.mockResolvedValue({ id: 'job-1', status: 'PROCESSING' });
+      prismaMock.client.reviewJob.findFirst.mockResolvedValue({
+        id: 'job-1',
+        status: 'PROCESSING',
+      });
 
       await expect(
         service.create('student-1', 'chapter-1', makeFile()),
@@ -195,8 +220,18 @@ describe('SubmissionService', () => {
     });
 
     it('should create a submission with version 1 when no prior submissions exist', async () => {
-      const submission = { id: 'sub-1', chapterId: 'chapter-1', versionNumber: 1, fileName: 'chapter.docx', submittedAt: new Date() };
-      const reviewJob = { id: 'job-1', status: 'QUEUED', submissionId: 'sub-1' };
+      const submission = {
+        id: 'sub-1',
+        chapterId: 'chapter-1',
+        versionNumber: 1,
+        fileName: 'chapter.docx',
+        submittedAt: new Date(),
+      };
+      const reviewJob = {
+        id: 'job-1',
+        status: 'QUEUED',
+        submissionId: 'sub-1',
+      };
 
       prismaMock.client.chapter.findUnique.mockResolvedValue(makeChapter());
       prismaMock.client.reviewJob.findFirst.mockResolvedValue(null);
@@ -206,35 +241,57 @@ describe('SubmissionService', () => {
 
       const result = await service.create('student-1', 'chapter-1', makeFile());
 
-      expect(prismaMock.client.submission.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({ versionNumber: 1, studentId: 'student-1' }),
-        }),
-      );
+      const [createCallV1] = prismaMock.client.submission.create.mock
+        .calls[0] as [{ data: { versionNumber: number; studentId: string } }];
+      expect(createCallV1.data.versionNumber).toBe(1);
+      expect(createCallV1.data.studentId).toBe('student-1');
       expect(result.versionNumber).toBe(1);
       expect(result.reviewJob.status).toBe('QUEUED');
     });
 
     it('should increment version number based on previous submissions', async () => {
-      const submission = { id: 'sub-2', chapterId: 'chapter-1', versionNumber: 3, fileName: 'chapter.docx', submittedAt: new Date() };
-      const reviewJob = { id: 'job-2', status: 'QUEUED', submissionId: 'sub-2' };
+      const submission = {
+        id: 'sub-2',
+        chapterId: 'chapter-1',
+        versionNumber: 3,
+        fileName: 'chapter.docx',
+        submittedAt: new Date(),
+      };
+      const reviewJob = {
+        id: 'job-2',
+        status: 'QUEUED',
+        submissionId: 'sub-2',
+      };
 
       prismaMock.client.chapter.findUnique.mockResolvedValue(makeChapter());
       prismaMock.client.reviewJob.findFirst.mockResolvedValue(null);
-      prismaMock.client.submission.findFirst.mockResolvedValue({ versionNumber: 2 });
+      prismaMock.client.submission.findFirst.mockResolvedValue({
+        versionNumber: 2,
+      });
       prismaMock.client.submission.create.mockResolvedValue(submission);
       prismaMock.client.reviewJob.create.mockResolvedValue(reviewJob);
 
       const result = await service.create('student-1', 'chapter-1', makeFile());
 
-      const createCall = prismaMock.client.submission.create.mock.calls[0][0];
-      expect(createCall.data.versionNumber).toBe(3);
+      const [createCallV3] = prismaMock.client.submission.create.mock
+        .calls[0] as [{ data: { versionNumber: number } }];
+      expect(createCallV3.data.versionNumber).toBe(3);
       expect(result.versionNumber).toBe(3);
     });
 
     it('should enqueue a review job on BullMQ', async () => {
-      const submission = { id: 'sub-1', chapterId: 'chapter-1', versionNumber: 1, fileName: 'chapter.docx', submittedAt: new Date() };
-      const reviewJob = { id: 'job-1', status: 'QUEUED', submissionId: 'sub-1' };
+      const submission = {
+        id: 'sub-1',
+        chapterId: 'chapter-1',
+        versionNumber: 1,
+        fileName: 'chapter.docx',
+        submittedAt: new Date(),
+      };
+      const reviewJob = {
+        id: 'job-1',
+        status: 'QUEUED',
+        submissionId: 'sub-1',
+      };
 
       prismaMock.client.chapter.findUnique.mockResolvedValue(makeChapter());
       prismaMock.client.reviewJob.findFirst.mockResolvedValue(null);
@@ -251,8 +308,18 @@ describe('SubmissionService', () => {
     });
 
     it('should upload file to storage', async () => {
-      const submission = { id: 'sub-1', chapterId: 'chapter-1', versionNumber: 1, fileName: 'chapter.docx', submittedAt: new Date() };
-      const reviewJob = { id: 'job-1', status: 'QUEUED', submissionId: 'sub-1' };
+      const submission = {
+        id: 'sub-1',
+        chapterId: 'chapter-1',
+        versionNumber: 1,
+        fileName: 'chapter.docx',
+        submittedAt: new Date(),
+      };
+      const reviewJob = {
+        id: 'job-1',
+        status: 'QUEUED',
+        submissionId: 'sub-1',
+      };
 
       prismaMock.client.chapter.findUnique.mockResolvedValue(makeChapter());
       prismaMock.client.reviewJob.findFirst.mockResolvedValue(null);
@@ -281,7 +348,7 @@ describe('SubmissionService', () => {
       ).rejects.toThrow(NotFoundException);
     });
 
-    it('should throw ForbiddenException when STUDENT tries to download someone else\'s file', async () => {
+    it("should throw ForbiddenException when STUDENT tries to download someone else's file", async () => {
       prismaMock.client.submission.findUnique.mockResolvedValue({
         id: 'sub-1',
         fileUrl: 'thena-documents/other-student/ch1/1.docx',
@@ -303,7 +370,11 @@ describe('SubmissionService', () => {
       });
       storageMock.download.mockResolvedValue(Buffer.from('file-content'));
 
-      const result = await service.downloadFile('sub-1', 'student-1', 'STUDENT');
+      const result = await service.downloadFile(
+        'sub-1',
+        'student-1',
+        'STUDENT',
+      );
 
       expect(result.fileName).toBe('chapter.docx');
       expect(Buffer.isBuffer(result.buffer)).toBe(true);
@@ -334,7 +405,9 @@ describe('SubmissionService', () => {
 
       await service.downloadFile('sub-1', 'student-1', 'STUDENT');
 
-      expect(storageMock.download).toHaveBeenCalledWith('student-1/chapter-1/1.docx');
+      expect(storageMock.download).toHaveBeenCalledWith(
+        'student-1/chapter-1/1.docx',
+      );
     });
   });
 });

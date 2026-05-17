@@ -7,7 +7,12 @@ import { NotificationModule } from '../notification/notification.module.js';
 import { AlertModule } from '../alert/alert.module.js';
 
 @Module({
-  imports: [BullModule.registerQueue({ name: 'review' }), AuditModule, NotificationModule, AlertModule],
+  imports: [
+    BullModule.registerQueue({ name: 'review' }),
+    AuditModule,
+    NotificationModule,
+    AlertModule,
+  ],
   controllers: [SubmissionController],
   providers: [SubmissionService],
 })
