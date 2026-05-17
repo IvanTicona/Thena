@@ -6,10 +6,11 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
-import { CookieOptions, Response } from 'express';
+import type { StringValue } from 'ms';
+import type { CookieOptions, Response } from 'express';
 import { PrismaService } from '../../../shared/prisma/prisma.service.js';
-import { AuthTokens, JwtPayload } from '../domain/auth.types.js';
-import { LoginDto, RegisterDto } from './dtos/auth.dto.js';
+import type { AuthTokens, JwtPayload } from '../domain/auth.types.js';
+import type { LoginDto, RegisterDto } from './dtos/auth.dto.js';
 import { AuditService } from '../../audit/application/audit.service.js';
 import { AuditAction } from '../../audit/domain/audit.constants.js';
 
@@ -76,7 +77,9 @@ export class AuthService {
       { ...payload },
       {
         secret: this.config.getOrThrow<string>('JWT_ACCESS_SECRET'),
-        expiresIn: this.config.get('JWT_ACCESS_EXPIRY', '15m') as any,
+        expiresIn: this.config.getOrThrow<string>(
+          'JWT_ACCESS_EXPIRY',
+        ) as StringValue,
       },
     );
 
@@ -84,7 +87,9 @@ export class AuthService {
       { ...payload },
       {
         secret: this.config.getOrThrow<string>('JWT_REFRESH_SECRET'),
-        expiresIn: this.config.get('JWT_REFRESH_EXPIRY', '7d') as any,
+        expiresIn: this.config.getOrThrow<string>(
+          'JWT_REFRESH_EXPIRY',
+        ) as StringValue,
       },
     );
 
@@ -110,7 +115,9 @@ export class AuthService {
       { ...payload },
       {
         secret: this.config.getOrThrow<string>('JWT_ACCESS_SECRET'),
-        expiresIn: this.config.get('JWT_ACCESS_EXPIRY', '15m') as any,
+        expiresIn: this.config.getOrThrow<string>(
+          'JWT_ACCESS_EXPIRY',
+        ) as StringValue,
       },
     );
 
@@ -118,7 +125,8 @@ export class AuthService {
   }
 
   getCookieOptions(type: 'access' | 'refresh'): CookieOptions {
-    const isProduction = this.config.get('NODE_ENV') === 'production';
+    const isProduction =
+      this.config.getOrThrow<string>('NODE_ENV') === 'production';
     const maxAge =
       type === 'access'
         ? 15 * 60 * 1000 // 15 minutes
@@ -134,8 +142,16 @@ export class AuthService {
   }
 
   setAuthCookies(res: Response, tokens: AuthTokens): void {
-    res.cookie('access_token', tokens.accessToken, this.getCookieOptions('access'));
-    res.cookie('refresh_token', tokens.refreshToken, this.getCookieOptions('refresh'));
+    res.cookie(
+      'access_token',
+      tokens.accessToken,
+      this.getCookieOptions('access'),
+    );
+    res.cookie(
+      'refresh_token',
+      tokens.refreshToken,
+      this.getCookieOptions('refresh'),
+    );
   }
 
   clearAuthCookies(res: Response): void {

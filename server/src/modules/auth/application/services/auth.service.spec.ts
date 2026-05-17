@@ -23,7 +23,6 @@ const makeJwtMock = () => ({
 });
 
 const makeConfigMock = () => ({
-  get: jest.fn((key: string, fallback?: unknown) => fallback ?? 'mock-secret'),
   getOrThrow: jest.fn((_key: string) => 'mock-secret'),
 });
 
@@ -80,7 +79,11 @@ describe('AuthService', () => {
       prismaMock.client.user.findUnique.mockResolvedValue(baseUser);
 
       await expect(
-        service.register({ email: 'test@test.com', name: 'Test', password: 'password123' }),
+        service.register({
+          email: 'test@test.com',
+          name: 'Test',
+          password: 'password123',
+        }),
       ).rejects.toThrow(ConflictException);
     });
 
@@ -94,11 +97,11 @@ describe('AuthService', () => {
         password: 'password123',
       });
 
-      expect(prismaMock.client.user.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({ email: 'new@test.com', role: 'STUDENT' }),
-        }),
-      );
+      const [createCall] = prismaMock.client.user.create.mock.calls[0] as [
+        { data: { email: string; role: string } },
+      ];
+      expect(createCall.data.email).toBe('new@test.com');
+      expect(createCall.data.role).toBe('STUDENT');
       expect(result).not.toHaveProperty('passwordHash');
       expect(result).toHaveProperty('id');
       expect(result).toHaveProperty('email');
@@ -108,9 +111,15 @@ describe('AuthService', () => {
       prismaMock.client.user.findUnique.mockResolvedValue(null);
       prismaMock.client.user.create.mockResolvedValue(baseUser);
 
-      await service.register({ email: 'admin@test.com', name: 'Admin', password: 'pass1234' });
+      await service.register({
+        email: 'admin@test.com',
+        name: 'Admin',
+        password: 'pass1234',
+      });
 
-      const createCall = prismaMock.client.user.create.mock.calls[0][0];
+      const [createCall] = prismaMock.client.user.create.mock.calls[0] as [
+        { data: { role: string } },
+      ];
       expect(createCall.data.role).toBe('STUDENT');
     });
 
@@ -118,10 +127,19 @@ describe('AuthService', () => {
       prismaMock.client.user.findUnique.mockResolvedValue(null);
       prismaMock.client.user.create.mockResolvedValue(baseUser);
 
-      await service.register({ email: 'new@test.com', name: 'New', password: 'plaintext' });
+      await service.register({
+        email: 'new@test.com',
+        name: 'New',
+        password: 'plaintext',
+      });
 
-      const createCall = prismaMock.client.user.create.mock.calls[0][0];
-      const isHashed = await bcrypt.compare('plaintext', createCall.data.passwordHash);
+      const [createCall] = prismaMock.client.user.create.mock.calls[0] as [
+        { data: { passwordHash: string } },
+      ];
+      const isHashed = await bcrypt.compare(
+        'plaintext',
+        createCall.data.passwordHash,
+      );
       expect(isHashed).toBe(true);
     });
   });
@@ -150,9 +168,15 @@ describe('AuthService', () => {
 
     it('should return user without passwordHash on successful login', async () => {
       const hash = await bcrypt.hash('password123', 10);
-      prismaMock.client.user.findUnique.mockResolvedValue({ ...baseUser, passwordHash: hash });
+      prismaMock.client.user.findUnique.mockResolvedValue({
+        ...baseUser,
+        passwordHash: hash,
+      });
 
-      const result = await service.login({ email: 'test@test.com', password: 'password123' });
+      const result = await service.login({
+        email: 'test@test.com',
+        password: 'password123',
+      });
 
       expect(result).not.toHaveProperty('passwordHash');
       expect(result.email).toBe('test@test.com');
@@ -160,7 +184,10 @@ describe('AuthService', () => {
 
     it('should fire-and-forget audit log on successful login', async () => {
       const hash = await bcrypt.hash('password123', 10);
-      prismaMock.client.user.findUnique.mockResolvedValue({ ...baseUser, passwordHash: hash });
+      prismaMock.client.user.findUnique.mockResolvedValue({
+        ...baseUser,
+        passwordHash: hash,
+      });
 
       await service.login({ email: 'test@test.com', password: 'password123' });
 
@@ -188,7 +215,10 @@ describe('AuthService', () => {
       });
 
       expect(jwtMock.sign).toHaveBeenCalledTimes(2);
-      expect(result).toEqual({ accessToken: 'access-token', refreshToken: 'refresh-token' });
+      expect(result).toEqual({
+        accessToken: 'access-token',
+        refreshToken: 'refresh-token',
+      });
     });
   });
 
@@ -198,7 +228,9 @@ describe('AuthService', () => {
     it('should throw UnauthorizedException when user not found', async () => {
       prismaMock.client.user.findUnique.mockResolvedValue(null);
 
-      await expect(service.refresh('non-existent')).rejects.toThrow(UnauthorizedException);
+      await expect(service.refresh('non-existent')).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('should return a new accessToken when user is found', async () => {

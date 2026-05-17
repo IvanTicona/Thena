@@ -1,33 +1,20 @@
-import { IsEmail, IsEnum, IsNotEmpty, IsOptional, MinLength } from 'class-validator';
-
-export enum UserRole {
-  STUDENT = 'STUDENT',
-  TUTOR = 'TUTOR',
-}
+import { IsEmail, IsNotEmpty, MinLength } from 'class-validator';
 
 export class RegisterDto {
   @IsEmail()
-  email: string;
+  email!: string;
 
   @IsNotEmpty()
-  name: string;
+  name!: string;
 
   @MinLength(8)
-  password: string;
-
-  /**
-   * Optional role field — if provided and not STUDENT, the controller will
-   * reject with 403. Always forced to STUDENT for self-registration.
-   */
-  @IsOptional()
-  @IsEnum(UserRole)
-  role?: UserRole;
+  password!: string;
 }
 
 export class LoginDto {
   @IsEmail()
-  email: string;
+  email!: string;
 
   @IsNotEmpty()
-  password: string;
+  password!: string;
 }

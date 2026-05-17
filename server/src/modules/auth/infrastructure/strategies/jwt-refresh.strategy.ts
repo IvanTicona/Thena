@@ -2,8 +2,8 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { Request } from 'express';
-import { JwtPayload } from '../../domain/auth.types.js';
+import type { Request } from 'express';
+import type { JwtPayload } from '../../domain/auth.types.js';
 
 @Injectable()
 export class JwtRefreshStrategy extends PassportStrategy(
@@ -14,11 +14,12 @@ export class JwtRefreshStrategy extends PassportStrategy(
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
         (request: Request) => {
-          return request?.cookies?.['refresh_token'] ?? null;
+          const raw: unknown = request?.cookies?.['refresh_token'];
+          return typeof raw === 'string' ? raw : null;
         },
       ]),
       ignoreExpiration: false,
-      secretOrKey: config.get<string>('JWT_REFRESH_SECRET', 'changeme-refresh'),
+      secretOrKey: config.getOrThrow<string>('JWT_REFRESH_SECRET'),
     });
   }
 

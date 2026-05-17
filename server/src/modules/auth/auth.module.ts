@@ -1,9 +1,9 @@
+import type { StringValue } from 'ms';
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { PrismaModule } from '../../shared/prisma/prisma.module.js';
 import { AuthService } from './application/auth.service.js';
 import { AuthController } from './infrastructure/controllers/auth.controller.js';
 import { JwtStrategy } from './infrastructure/strategies/jwt.strategy.js';
@@ -14,9 +14,7 @@ import { AuditModule } from '../audit/audit.module.js';
 
 @Module({
   imports: [
-    PrismaModule,
     PassportModule,
-    ConfigModule,
     AuditModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -24,7 +22,9 @@ import { AuditModule } from '../audit/audit.module.js';
       useFactory: (config: ConfigService) => ({
         secret: config.getOrThrow<string>('JWT_ACCESS_SECRET'),
         signOptions: {
-          expiresIn: config.get('JWT_ACCESS_EXPIRY', '15m') as any,
+          expiresIn: config.getOrThrow<string>(
+            'JWT_ACCESS_EXPIRY',
+          ) as StringValue,
         },
       }),
     }),
