@@ -3,7 +3,7 @@
 # Thena — Database Backup Script
 # =============================================================================
 # Performs pg_dump, gzips the result, uploads to MinIO 'backups' bucket,
-# and deletes backups older than 30 days.
+# and deletes backups older than N days.
 #
 # Usage (manual):
 #   ./scripts/backup.sh
@@ -11,39 +11,36 @@
 # Usage (via Docker cron — see docker-compose.prod.yml):
 #   Runs automatically via backup-cron service at 02:00 UTC daily
 #
-# Required environment variables:
-#   POSTGRES_HOST     — PostgreSQL hostname (default: postgres)
-#   POSTGRES_PORT     — PostgreSQL port (default: 5432)
-#   POSTGRES_DB       — Database name (default: thena)
-#   POSTGRES_USER     — PostgreSQL username (default: thena)
-#   PGPASSWORD        — PostgreSQL password (required — set in env, NOT here)
-#   MINIO_ENDPOINT    — MinIO endpoint URL (e.g., http://minio:9000)
-#   MINIO_ACCESS_KEY  — MinIO access key
-#   MINIO_SECRET_KEY  — MinIO secret key
-#   MINIO_BACKUP_BUCKET — MinIO bucket name (default: thena-backups)
-#   BACKUP_RETENTION_DAYS — How many days to keep backups (default: 30)
+# Required environment variables (all required — no defaults):
+#   POSTGRES_HOST         — PostgreSQL hostname
+#   POSTGRES_PORT         — PostgreSQL port
+#   POSTGRES_DB           — Database name
+#   POSTGRES_USER         — PostgreSQL username
+#   PGPASSWORD            — PostgreSQL password
+#   MINIO_ENDPOINT_URL        — MinIO endpoint URL (e.g., http://minio:9000)
+#   MINIO_ACCESS_KEY      — MinIO access key
+#   MINIO_SECRET_KEY      — MinIO secret key
+#   MINIO_BACKUP_BUCKET   — MinIO bucket name
+#   BACKUP_RETENTION_DAYS — How many days to keep backups
 # =============================================================================
 
 set -e  # Exit immediately on error
 
 # -----------------------------------------------------------------
-# Configuration — read from env with sensible defaults
+# Configuration — all required, no defaults
 # -----------------------------------------------------------------
-POSTGRES_HOST="${POSTGRES_HOST:-postgres}"
-POSTGRES_PORT="${POSTGRES_PORT:-5432}"
-POSTGRES_DB="${POSTGRES_DB:-thena}"
-POSTGRES_USER="${POSTGRES_USER:-thena}"
-MINIO_ENDPOINT="${MINIO_ENDPOINT:-http://minio:9000}"
-MINIO_ACCESS_KEY="${MINIO_ACCESS_KEY:?ERROR: MINIO_ACCESS_KEY is required}"
-MINIO_SECRET_KEY="${MINIO_SECRET_KEY:?ERROR: MINIO_SECRET_KEY is required}"
-MINIO_BACKUP_BUCKET="${MINIO_BACKUP_BUCKET:-thena-backups}"
-BACKUP_RETENTION_DAYS="${BACKUP_RETENTION_DAYS:-30}"
+POSTGRES_HOST="${POSTGRES_HOST:?POSTGRES_HOST is required — set it in .env}"
+POSTGRES_PORT="${POSTGRES_PORT:?POSTGRES_PORT is required — set it in .env}"
+POSTGRES_DB="${POSTGRES_DB:?POSTGRES_DB is required — set it in .env}"
+POSTGRES_USER="${POSTGRES_USER:?POSTGRES_USER is required — set it in .env}"
+PGPASSWORD="${PGPASSWORD:?PGPASSWORD is required — set it in .env}"
+MINIO_ENDPOINT_URL="${MINIO_ENDPOINT_URL:?MINIO_ENDPOINT_URL is required — set it in .env}"
+MINIO_ACCESS_KEY="${MINIO_ACCESS_KEY:?MINIO_ACCESS_KEY is required — set it in .env}"
+MINIO_SECRET_KEY="${MINIO_SECRET_KEY:?MINIO_SECRET_KEY is required — set it in .env}"
+MINIO_BACKUP_BUCKET="${MINIO_BACKUP_BUCKET:?MINIO_BACKUP_BUCKET is required — set it in .env}"
+BACKUP_RETENTION_DAYS="${BACKUP_RETENTION_DAYS:?BACKUP_RETENTION_DAYS is required — set it in .env}"
 
-# PGPASSWORD must be set in the environment (not hardcoded here)
-if [ -z "$PGPASSWORD" ]; then
-    echo "[ERROR] $(date '+%Y-%m-%d %H:%M:%S') PGPASSWORD environment variable is not set." >&2
-    exit 1
-fi
+export PGPASSWORD
 
 # -----------------------------------------------------------------
 # Timestamp and filename
@@ -85,7 +82,7 @@ echo "[INFO]  $(date '+%Y-%m-%d %H:%M:%S') Backup created: ${LOCAL_BACKUP_PATH} 
 # -----------------------------------------------------------------
 echo "[INFO]  $(date '+%Y-%m-%d %H:%M:%S') Configuring MinIO client..."
 
-mc alias set thena-minio "$MINIO_ENDPOINT" "$MINIO_ACCESS_KEY" "$MINIO_SECRET_KEY" --api s3v4 > /dev/null 2>&1
+mc alias set thena-minio "$MINIO_ENDPOINT_URL" "$MINIO_ACCESS_KEY" "$MINIO_SECRET_KEY" --api s3v4 > /dev/null 2>&1
 
 # Create bucket if it doesn't exist
 mc mb --ignore-existing "thena-minio/${MINIO_BACKUP_BUCKET}" > /dev/null 2>&1
@@ -113,22 +110,17 @@ echo "[INFO]  $(date '+%Y-%m-%d %H:%M:%S') Local temp file removed."
 # -----------------------------------------------------------------
 echo "[INFO]  $(date '+%Y-%m-%d %H:%M:%S') Applying retention policy (keep last ${BACKUP_RETENTION_DAYS} days)..."
 
-# Calculate cutoff date in seconds since epoch
 CUTOFF_EPOCH=$(date -d "-${BACKUP_RETENTION_DAYS} days" '+%s' 2>/dev/null || \
                date -v "-${BACKUP_RETENTION_DAYS}d" '+%s' 2>/dev/null)
 
 if [ -z "$CUTOFF_EPOCH" ]; then
     echo "[WARN]  $(date '+%Y-%m-%d %H:%M:%S') Could not compute cutoff date — skipping retention cleanup."
 else
-    # List all backup files and filter by last-modified date
-    DELETED_COUNT=0
     mc ls "thena-minio/${MINIO_BACKUP_BUCKET}" 2>/dev/null | while read -r LINE; do
-        # mc ls output format: [YYYY-MM-DD HH:MM:SS UTC] <size> <filename>
         FILE_DATE=$(echo "$LINE" | awk '{print $1}')
         FILE_TIME=$(echo "$LINE" | awk '{print $2}')
         FILE_NAME=$(echo "$LINE" | awk '{print $NF}')
 
-        # Convert file date to epoch
         FILE_EPOCH=$(date -d "${FILE_DATE} ${FILE_TIME}" '+%s' 2>/dev/null || \
                      date -j -f "%Y-%m-%d %H:%M:%S" "${FILE_DATE} ${FILE_TIME}" '+%s' 2>/dev/null)
 

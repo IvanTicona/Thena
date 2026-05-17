@@ -7,9 +7,8 @@
 #
 # IMPORTANT — Before deploying, update the following:
 #   1. Copy .env.example to .env and fill in all production values
-#   2. Domain is already set to lab.skynetupb.store in nginx/nginx.conf
-#   3. Obtain SSL certs: certbot certonly --webroot -w /var/www/certbot -d lab.skynetupb.store
-#   4. Copy pgbouncer/userlist.txt.example to pgbouncer/userlist.txt and set credentials
+#   2. Domain is already set to thena.skynetupb.store in nginx/nginx.conf
+#   3. Obtain SSL certs: certbot certonly --webroot -w /var/www/certbot -d thena.skynetupb.store
 # =============================================================================
 
 services:
@@ -154,37 +153,6 @@ services:
     # Renew certificates every 12 hours; certbot only acts if expiry is within 30 days
     entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
     restart: unless-stopped
-
-  # ---------------------------------------------------------------------------
-  # PgBouncer — PostgreSQL connection pooling
-  # ---------------------------------------------------------------------------
-  pgbouncer:
-    image: edoburu/pgbouncer:1.23.0-p0
-    container_name: thena-pgbouncer
-    environment:
-      # edoburu/pgbouncer reads these env vars to auto-generate config
-      DB_HOST: postgres
-      DB_PORT: "5432"
-      DB_USER: "${POSTGRES_USER:-thena}"
-      DB_PASSWORD: "${POSTGRES_PASSWORD}"
-      DB_NAME: "${POSTGRES_DB:-thena}"
-      POOL_MODE: transaction
-      MAX_CLIENT_CONN: "100"
-      DEFAULT_POOL_SIZE: "20"
-    volumes:
-      # Override auto-generated config with our custom files
-      - ./pgbouncer/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini:ro
-      - ./pgbouncer/userlist.txt:/etc/pgbouncer/userlist.txt:ro
-    # No external port — accessible only within the Docker network (server:6432, engine:6432)
-    depends_on:
-      postgres:
-        condition: service_healthy
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -h localhost -p 6432 -U ${POSTGRES_USER:-thena}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   # ---------------------------------------------------------------------------
   # Backup Cron — scheduled pg_dump + MinIO upload

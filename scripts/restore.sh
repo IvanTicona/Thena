@@ -10,46 +10,41 @@
 #
 # If no filename is provided, lists available backups and exits.
 #
-# Required environment variables:
-#   POSTGRES_HOST     — PostgreSQL hostname (default: postgres)
-#   POSTGRES_PORT     — PostgreSQL port (default: 5432)
-#   POSTGRES_DB       — Database name (default: thena)
-#   POSTGRES_USER     — PostgreSQL username (default: thena)
-#   PGPASSWORD        — PostgreSQL password (required — set in env, NOT here)
-#   MINIO_ENDPOINT    — MinIO endpoint URL (e.g., http://minio:9000)
-#   MINIO_ACCESS_KEY  — MinIO access key
-#   MINIO_SECRET_KEY  — MinIO secret key
-#   MINIO_BACKUP_BUCKET — MinIO bucket name (default: thena-backups)
+# Required environment variables (all required — no defaults):
+#   POSTGRES_HOST       — PostgreSQL hostname
+#   POSTGRES_PORT       — PostgreSQL port
+#   POSTGRES_DB         — Database name
+#   POSTGRES_USER       — PostgreSQL username
+#   PGPASSWORD          — PostgreSQL password
+#   MINIO_ENDPOINT_URL      — MinIO endpoint URL (e.g., http://minio:9000)
+#   MINIO_ACCESS_KEY    — MinIO access key
+#   MINIO_SECRET_KEY    — MinIO secret key
+#   MINIO_BACKUP_BUCKET — MinIO bucket name
 # =============================================================================
 
 set -e
 
 # -----------------------------------------------------------------
-# Configuration — read from env with sensible defaults
+# Configuration — all required, no defaults
 # -----------------------------------------------------------------
-POSTGRES_HOST="${POSTGRES_HOST:-postgres}"
-POSTGRES_PORT="${POSTGRES_PORT:-5432}"
-POSTGRES_DB="${POSTGRES_DB:-thena}"
-POSTGRES_USER="${POSTGRES_USER:-thena}"
-MINIO_ENDPOINT="${MINIO_ENDPOINT:-http://minio:9000}"
-MINIO_ACCESS_KEY="${MINIO_ACCESS_KEY:?ERROR: MINIO_ACCESS_KEY is required}"
-MINIO_SECRET_KEY="${MINIO_SECRET_KEY:?ERROR: MINIO_SECRET_KEY is required}"
-MINIO_BACKUP_BUCKET="${MINIO_BACKUP_BUCKET:-thena-backups}"
+POSTGRES_HOST="${POSTGRES_HOST:?POSTGRES_HOST is required — set it in .env}"
+POSTGRES_PORT="${POSTGRES_PORT:?POSTGRES_PORT is required — set it in .env}"
+POSTGRES_DB="${POSTGRES_DB:?POSTGRES_DB is required — set it in .env}"
+POSTGRES_USER="${POSTGRES_USER:?POSTGRES_USER is required — set it in .env}"
+PGPASSWORD="${PGPASSWORD:?PGPASSWORD is required — set it in .env}"
+MINIO_ENDPOINT_URL="${MINIO_ENDPOINT_URL:?MINIO_ENDPOINT_URL is required — set it in .env}"
+MINIO_ACCESS_KEY="${MINIO_ACCESS_KEY:?MINIO_ACCESS_KEY is required — set it in .env}"
+MINIO_SECRET_KEY="${MINIO_SECRET_KEY:?MINIO_SECRET_KEY is required — set it in .env}"
+MINIO_BACKUP_BUCKET="${MINIO_BACKUP_BUCKET:?MINIO_BACKUP_BUCKET is required — set it in .env}"
+
+export PGPASSWORD
 
 BACKUP_FILENAME="$1"
 
 # -----------------------------------------------------------------
-# Validate required env
-# -----------------------------------------------------------------
-if [ -z "$PGPASSWORD" ]; then
-    echo "[ERROR] $(date '+%Y-%m-%d %H:%M:%S') PGPASSWORD environment variable is not set." >&2
-    exit 1
-fi
-
-# -----------------------------------------------------------------
 # Configure MinIO client
 # -----------------------------------------------------------------
-mc alias set thena-minio "$MINIO_ENDPOINT" "$MINIO_ACCESS_KEY" "$MINIO_SECRET_KEY" --api s3v4 > /dev/null 2>&1
+mc alias set thena-minio "$MINIO_ENDPOINT_URL" "$MINIO_ACCESS_KEY" "$MINIO_SECRET_KEY" --api s3v4 > /dev/null 2>&1
 
 # -----------------------------------------------------------------
 # If no filename provided, list available backups and exit

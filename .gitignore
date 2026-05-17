@@ -58,20 +58,5 @@ htmlcov/
 tmp/
 temp/
 
-# Spec CSV exports
-spec/**/*.csv
-
-# Project documentation
-docs/
-
-# Utility scripts — ignore auto-generated docs script, but track infra scripts
-scripts/generate-docs.mjs
-
-# PgBouncer auth file — contains credentials, must not be committed
-# Copy pgbouncer/userlist.txt.example and fill in production credentials
-pgbouncer/userlist.txt
-
-# AI tool settings
-.claude/
-.opencode/
-.atl/
+# Linter caches
+.ruff_cache/
