@@ -1,13 +1,21 @@
-import { IsNotEmpty, IsOptional, IsInt, Min, Max, IsUUID, MaxLength } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsOptional,
+  IsInt,
+  Min,
+  Max,
+  IsUUID,
+  MaxLength,
+} from 'class-validator';
 
 export class CreateThesisDto {
   @IsNotEmpty()
   @MaxLength(500)
-  title: string;
+  title!: string;
 
   @IsNotEmpty()
   @IsUUID()
-  tutorId: string;
+  tutorId!: string;
 
   @IsOptional()
   @IsInt()

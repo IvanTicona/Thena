@@ -8,7 +8,8 @@ import { PrismaService } from '../../../../shared/prisma/prisma.service.js';
 import { CreateThesisDto } from '../dtos/create-thesis.dto.js';
 import { UpdateThesisDto } from '../dtos/update-thesis.dto.js';
 import { TutorDashboardQueryDto } from '../dtos/tutor-dashboard-query.dto.js';
-import { UserRole } from '../../../auth/domain/auth.types.js';
+import type { UserRole } from '../../../auth/domain/auth.types.js';
+import type { ChapterStatus } from '../../../../generated/prisma/enums.js';
 import { DEFAULT_CHAPTERS } from '../../domain/thesis.types.js';
 
 @Injectable()
@@ -16,7 +17,6 @@ export class ThesisService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(studentId: string, dto: CreateThesisDto) {
-    // Check student doesn't already have a thesis (non-deleted)
     const existing = await this.prisma.client.thesisDocument.findFirst({
       where: { studentId, deletedAt: null },
     });
@@ -25,20 +25,21 @@ export class ThesisService {
       throw new BadRequestException('Student already has a thesis');
     }
 
-    // Validate tutor exists and has TUTOR role
     const tutor = await this.prisma.client.user.findUnique({
       where: { id: dto.tutorId, deletedAt: null },
     });
 
     if (!tutor || tutor.role !== 'TUTOR') {
-      throw new BadRequestException('Invalid tutor ID: user not found or not a tutor');
+      throw new BadRequestException(
+        'Invalid tutor ID: user not found or not a tutor',
+      );
     }
 
-    // Determine chapter count and titles
-    const chapterCount = dto.chapterCount ?? DEFAULT_CHAPTERS.length;
+    const chapterCount =
+      dto.chapterCount !== undefined
+        ? dto.chapterCount
+        : DEFAULT_CHAPTERS.length;
     const chapterTitles = this.resolveChapterTitles(chapterCount);
-
-    // Create thesis + chapters in a transaction
     const thesis = await this.prisma.client.$transaction(async (tx) => {
       const newThesis = await tx.thesisDocument.create({
         data: {
@@ -71,10 +72,6 @@ export class ThesisService {
     return thesis;
   }
 
-  /**
-   * Resolves chapter titles for a given count.
-   * Uses DEFAULT_CHAPTERS when count matches, otherwise generates generic titles.
-   */
   private resolveChapterTitles(count: number): string[] {
     if (count === DEFAULT_CHAPTERS.length) {
       return [...DEFAULT_CHAPTERS];
@@ -82,7 +79,6 @@ export class ThesisService {
     if (count <= DEFAULT_CHAPTERS.length) {
       return [...DEFAULT_CHAPTERS].slice(0, count);
     }
-    // More chapters than defaults: use defaults + generate extra
     const titles = [...DEFAULT_CHAPTERS] as string[];
     for (let i = DEFAULT_CHAPTERS.length + 1; i <= count; i++) {
       titles.push(`Capítulo ${i}`);
@@ -118,7 +114,8 @@ export class ThesisService {
         number: ch.number,
         title: ch.title,
         status: ch.status,
-        latestSubmission: ch.submissions[0] ?? null,
+        latestSubmission:
+          ch.submissions[0] !== undefined ? ch.submissions[0] : null,
         submissionCount: ch._count.submissions,
       })),
     };
@@ -161,7 +158,8 @@ export class ThesisService {
         number: ch.number,
         title: ch.title,
         status: ch.status,
-        latestSubmission: ch.submissions[0] ?? null,
+        latestSubmission:
+          ch.submissions[0] !== undefined ? ch.submissions[0] : null,
         submissionCount: ch._count.submissions,
       })),
     }));
@@ -194,15 +192,18 @@ export class ThesisService {
         number: ch.number,
         title: ch.title,
         status: ch.status,
-        latestSubmission: ch.submissions[0] ?? null,
+        latestSubmission:
+          ch.submissions[0] !== undefined ? ch.submissions[0] : null,
         submissionCount: ch._count.submissions,
       })),
     }));
   }
 
-  async findForTutorWithFilters(tutorId: string, query: TutorDashboardQueryDto) {
-    const page = Math.max(1, query.page ?? 1);
-    const limit = Math.min(100, Math.max(1, query.limit ?? 20));
+  async findForTutorWithFilters(
+    tutorId: string,
+    query: TutorDashboardQueryDto,
+  ) {
+    const { page, limit } = query;
     const skip = (page - 1) * limit;
 
     const where: Record<string, unknown> = { tutorId };
@@ -220,7 +221,10 @@ export class ThesisService {
           student: { select: { id: true, name: true, email: true } },
           chapters: {
             orderBy: { number: 'asc' },
-            where: query.chapterStatus ? { status: query.chapterStatus as any } : undefined,
+            where:
+              query.chapterStatus !== undefined
+                ? { status: query.chapterStatus as ChapterStatus }
+                : undefined,
             include: {
               submissions: {
                 orderBy: { versionNumber: 'desc' },
@@ -245,7 +249,8 @@ export class ThesisService {
         number: ch.number,
         title: ch.title,
         status: ch.status,
-        latestSubmission: ch.submissions[0] ?? null,
+        latestSubmission:
+          ch.submissions[0] !== undefined ? ch.submissions[0] : null,
         submissionCount: ch._count.submissions,
       })),
     }));
@@ -285,7 +290,6 @@ export class ThesisService {
       throw new NotFoundException('Thesis not found');
     }
 
-    // Ownership check
     if (role === 'STUDENT' && thesis.studentId !== userId) {
       throw new ForbiddenException('Thesis does not belong to this student');
     }
@@ -301,7 +305,8 @@ export class ThesisService {
         number: ch.number,
         title: ch.title,
         status: ch.status,
-        latestSubmission: ch.submissions[0] ?? null,
+        latestSubmission:
+          ch.submissions[0] !== undefined ? ch.submissions[0] : null,
         submissionCount: ch._count.submissions,
       })),
     };
@@ -320,7 +325,6 @@ export class ThesisService {
       throw new ForbiddenException('Thesis does not belong to this student');
     }
 
-    // Validate new tutorId if changing tutor
     if (dto.tutorId !== undefined) {
       if (dto.tutorId !== null) {
         const tutor = await this.prisma.client.user.findUnique({
@@ -328,7 +332,9 @@ export class ThesisService {
         });
 
         if (!tutor || tutor.role !== 'TUTOR') {
-          throw new BadRequestException('Invalid tutor ID: user not found or not a tutor');
+          throw new BadRequestException(
+            'Invalid tutor ID: user not found or not a tutor',
+          );
         }
       }
     }

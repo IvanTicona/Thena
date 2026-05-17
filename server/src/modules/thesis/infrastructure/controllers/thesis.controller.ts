@@ -14,7 +14,7 @@ import { CreateThesisDto } from '../../application/dtos/create-thesis.dto.js';
 import { UpdateThesisDto } from '../../application/dtos/update-thesis.dto.js';
 import { TutorDashboardQueryDto } from '../../application/dtos/tutor-dashboard-query.dto.js';
 import { CurrentUser } from '../../../../modules/auth/infrastructure/decorators/current-user.decorator.js';
-import { JwtPayload } from '../../../../modules/auth/domain/auth.types.js';
+import type { JwtPayload } from '../../../../modules/auth/domain/auth.types.js';
 
 @Controller('theses')
 export class ThesisController {
@@ -29,7 +29,10 @@ export class ThesisController {
   }
 
   @Get()
-  async findAll(@CurrentUser() user: JwtPayload, @Query() query: TutorDashboardQueryDto) {
+  async findAll(
+    @CurrentUser() user: JwtPayload,
+    @Query() query: TutorDashboardQueryDto,
+  ) {
     if (user.role === 'STUDENT') {
       return this.thesisService.findMine(user.sub);
     }

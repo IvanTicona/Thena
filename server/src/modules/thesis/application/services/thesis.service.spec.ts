@@ -32,14 +32,24 @@ const makePrismaMock = () => {
       },
       user: { findUnique: jest.fn() },
       studentAssignment: { findMany: jest.fn() },
-      $transaction: jest.fn().mockImplementation(async (fn: (tx: any) => unknown) => fn(tx)),
+      $transaction: jest
+        .fn()
+        .mockImplementation(
+          (fn: (tx: ReturnType<typeof makeTxMock>) => unknown) => fn(tx),
+        ),
     },
   };
 };
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-const tutorUser = { id: 'tutor-1', name: 'Tutor', email: 't@t.com', role: 'TUTOR', deletedAt: null };
+const tutorUser = {
+  id: 'tutor-1',
+  name: 'Tutor',
+  email: 't@t.com',
+  role: 'TUTOR',
+  deletedAt: null,
+};
 const baseThesis = {
   id: 'thesis-1',
   title: 'My Thesis',
@@ -83,54 +93,88 @@ describe('ThesisService', () => {
     it('should throw BadRequestException when student already has a thesis', async () => {
       prismaMock.client.thesisDocument.findFirst.mockResolvedValue(baseThesis);
 
-      await expect(service.create('student-1', dto)).rejects.toThrow(BadRequestException);
+      await expect(service.create('student-1', dto)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw BadRequestException when tutor not found', async () => {
       prismaMock.client.thesisDocument.findFirst.mockResolvedValue(null);
       prismaMock.client.user.findUnique.mockResolvedValue(null);
 
-      await expect(service.create('student-1', dto)).rejects.toThrow(BadRequestException);
+      await expect(service.create('student-1', dto)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw BadRequestException when user is not a TUTOR', async () => {
       prismaMock.client.thesisDocument.findFirst.mockResolvedValue(null);
-      prismaMock.client.user.findUnique.mockResolvedValue({ ...tutorUser, role: 'STUDENT' });
+      prismaMock.client.user.findUnique.mockResolvedValue({
+        ...tutorUser,
+        role: 'STUDENT',
+      });
 
-      await expect(service.create('student-1', dto)).rejects.toThrow(BadRequestException);
+      await expect(service.create('student-1', dto)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should create thesis with chapters in a transaction', async () => {
       prismaMock.client.thesisDocument.findFirst.mockResolvedValue(null);
       prismaMock.client.user.findUnique.mockResolvedValue(tutorUser);
-      prismaMock._tx.thesisDocument.create.mockResolvedValue({ id: 'thesis-1', ...dto });
-      prismaMock._tx.chapter.createMany.mockResolvedValue({ count: DEFAULT_CHAPTERS.length });
-      prismaMock._tx.thesisDocument.findUniqueOrThrow.mockResolvedValue(baseThesis);
+      prismaMock._tx.thesisDocument.create.mockResolvedValue({
+        id: 'thesis-1',
+        ...dto,
+      });
+      prismaMock._tx.chapter.createMany.mockResolvedValue({
+        count: DEFAULT_CHAPTERS.length,
+      });
+      prismaMock._tx.thesisDocument.findUniqueOrThrow.mockResolvedValue(
+        baseThesis,
+      );
 
       const result = await service.create('student-1', dto);
 
       expect(prismaMock.client.$transaction).toHaveBeenCalledTimes(1);
-      expect(prismaMock._tx.chapter.createMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.arrayContaining([
-            expect.objectContaining({ number: 1, status: 'DRAFT' }),
-            expect.objectContaining({ number: 2, status: 'LOCKED' }),
-          ]),
-        }),
-      );
+      const [createManyCallA] = prismaMock._tx.chapter.createMany.mock
+        .calls[0] as [{ data: { number: number; status: string }[] }];
+      expect(createManyCallA.data[0]).toMatchObject({
+        number: 1,
+        status: 'DRAFT',
+      });
+      expect(createManyCallA.data[1]).toMatchObject({
+        number: 2,
+        status: 'LOCKED',
+      });
       expect(result).toEqual(baseThesis);
     });
 
     it('should create default number of chapters when chapterCount is not provided', async () => {
       prismaMock.client.thesisDocument.findFirst.mockResolvedValue(null);
       prismaMock.client.user.findUnique.mockResolvedValue(tutorUser);
-      prismaMock._tx.thesisDocument.create.mockResolvedValue({ id: 'thesis-1' });
-      prismaMock._tx.chapter.createMany.mockResolvedValue({ count: DEFAULT_CHAPTERS.length });
-      prismaMock._tx.thesisDocument.findUniqueOrThrow.mockResolvedValue(baseThesis);
+      prismaMock._tx.thesisDocument.create.mockResolvedValue({
+        id: 'thesis-1',
+      });
+      prismaMock._tx.chapter.createMany.mockResolvedValue({
+        count: DEFAULT_CHAPTERS.length,
+      });
+      prismaMock._tx.thesisDocument.findUniqueOrThrow.mockResolvedValue(
+        baseThesis,
+      );
 
       await service.create('student-1', dto);
 
-      const createManyCall = prismaMock._tx.chapter.createMany.mock.calls[0][0];
+      const [createManyCall] = prismaMock._tx.chapter.createMany.mock
+        .calls[0] as [
+        {
+          data: {
+            number: number;
+            title: string;
+            status: string;
+            thesisId: string;
+          }[];
+        },
+      ];
       expect(createManyCall.data).toHaveLength(DEFAULT_CHAPTERS.length);
     });
   });
@@ -155,7 +199,9 @@ describe('ThesisService', () => {
             number: 1,
             title: 'Chapter 1',
             status: 'DRAFT',
-            submissions: [{ id: 'sub-1', versionNumber: 1, submittedAt: new Date() }],
+            submissions: [
+              { id: 'sub-1', versionNumber: 1, submittedAt: new Date() },
+            ],
             _count: { submissions: 1 },
           },
         ],
@@ -201,21 +247,21 @@ describe('ThesisService', () => {
     it('should throw NotFoundException when thesis not found', async () => {
       prismaMock.client.thesisDocument.findUnique.mockResolvedValue(null);
 
-      await expect(service.findById('nonexistent', 'student-1', 'STUDENT')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.findById('nonexistent', 'student-1', 'STUDENT'),
+      ).rejects.toThrow(NotFoundException);
     });
 
-    it('should throw ForbiddenException when student accesses another student\'s thesis', async () => {
+    it("should throw ForbiddenException when student accesses another student's thesis", async () => {
       prismaMock.client.thesisDocument.findUnique.mockResolvedValue({
         ...baseThesis,
         studentId: 'other-student',
         chapters: [],
       });
 
-      await expect(service.findById('thesis-1', 'student-1', 'STUDENT')).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(
+        service.findById('thesis-1', 'student-1', 'STUDENT'),
+      ).rejects.toThrow(ForbiddenException);
     });
 
     it('should throw ForbiddenException when tutor accesses unassigned thesis', async () => {
@@ -225,9 +271,9 @@ describe('ThesisService', () => {
         chapters: [],
       });
 
-      await expect(service.findById('thesis-1', 'tutor-1', 'TUTOR')).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(
+        service.findById('thesis-1', 'tutor-1', 'TUTOR'),
+      ).rejects.toThrow(ForbiddenException);
     });
 
     it('should return thesis for the owning student', async () => {
@@ -259,9 +305,9 @@ describe('ThesisService', () => {
     it('should throw NotFoundException when thesis not found', async () => {
       prismaMock.client.thesisDocument.findUnique.mockResolvedValue(null);
 
-      await expect(service.update('nonexistent', 'student-1', { title: 'New' })).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.update('nonexistent', 'student-1', { title: 'New' }),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should throw ForbiddenException when student is not the owner', async () => {
@@ -270,25 +316,30 @@ describe('ThesisService', () => {
         studentId: 'other-student',
       });
 
-      await expect(service.update('thesis-1', 'student-1', { title: 'New' })).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(
+        service.update('thesis-1', 'student-1', { title: 'New' }),
+      ).rejects.toThrow(ForbiddenException);
     });
 
     it('should throw BadRequestException when new tutorId is invalid', async () => {
       prismaMock.client.thesisDocument.findUnique.mockResolvedValue(baseThesis);
       prismaMock.client.user.findUnique.mockResolvedValue(null);
 
-      await expect(service.update('thesis-1', 'student-1', { tutorId: 'bad-tutor' })).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        service.update('thesis-1', 'student-1', { tutorId: 'bad-tutor' }),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should update title and return updated thesis', async () => {
       prismaMock.client.thesisDocument.findUnique.mockResolvedValue(baseThesis);
-      prismaMock.client.thesisDocument.update.mockResolvedValue({ ...baseThesis, title: 'New Title' });
+      prismaMock.client.thesisDocument.update.mockResolvedValue({
+        ...baseThesis,
+        title: 'New Title',
+      });
 
-      const result = await service.update('thesis-1', 'student-1', { title: 'New Title' });
+      const result = await service.update('thesis-1', 'student-1', {
+        title: 'New Title',
+      });
 
       expect(result.title).toBe('New Title');
     });
