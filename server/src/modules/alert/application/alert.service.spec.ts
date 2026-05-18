@@ -12,6 +12,7 @@ const makePrismaMock = () => ({
     alert: {
       create: jest.fn(),
       findUnique: jest.fn(),
+      findMany: jest.fn(),
       update: jest.fn(),
       updateMany: jest.fn(),
     },
@@ -233,6 +234,54 @@ describe('AlertService', () => {
       await expect(
         service.resolveInactivityAlertsForThesis('thesis-1'),
       ).resolves.toBeUndefined();
+    });
+  });
+
+  // ── getActiveAlerts ───────────────────────────────────────────────────────
+
+  describe('getActiveAlerts', () => {
+    const mockAlerts = [
+      {
+        id: 'alert-1',
+        thesisId: 'thesis-1',
+        type: 'INACTIVITY',
+        triggeredAt: new Date(),
+        resolvedAt: null,
+        metadata: {},
+        thesis: { id: 'thesis-1', title: 'My Thesis', student: { id: 's1', name: 'Student', email: 's@test.com' } },
+      },
+    ];
+
+    it('should return all active alerts when no thesisId provided', async () => {
+      prismaMock.client.alert.findMany.mockResolvedValue(mockAlerts);
+
+      const result = await service.getActiveAlerts();
+
+      const [findCall] = prismaMock.client.alert.findMany.mock.calls[0] as [
+        { where: { resolvedAt: null; thesisId?: string } },
+      ];
+      expect(findCall.where.resolvedAt).toBeNull();
+      expect(findCall.where.thesisId).toBeUndefined();
+      expect(result).toHaveLength(1);
+    });
+
+    it('should filter by thesisId when provided — regression for !== undefined change', async () => {
+      prismaMock.client.alert.findMany.mockResolvedValue(mockAlerts);
+
+      await service.getActiveAlerts('thesis-1');
+
+      const [findCall] = prismaMock.client.alert.findMany.mock.calls[0] as [
+        { where: { resolvedAt: null; thesisId: string } },
+      ];
+      expect(findCall.where.thesisId).toBe('thesis-1');
+    });
+
+    it('should return empty array when no active alerts', async () => {
+      prismaMock.client.alert.findMany.mockResolvedValue([]);
+
+      const result = await service.getActiveAlerts();
+
+      expect(result).toEqual([]);
     });
   });
 });

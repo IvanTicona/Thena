@@ -1,53 +1,57 @@
-/**
- * E2E integration tests for the Auth endpoints.
- * Uses a focused TestingModule with all external deps mocked —
- * no real DB, Redis, or MinIO required.
- */
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
-import * as request from 'supertest';
-import * as cookieParser from 'cookie-parser';
+import request from 'supertest';
+import cookieParser from 'cookie-parser';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule } from '@nestjs/config';
-import * as bcrypt from 'bcryptjs';
-import { ThrottlerModule } from '@nestjs/throttler';
+import bcrypt from 'bcryptjs';
 
-import { AuthModule } from '../src/modules/auth/auth.module.js';
+import { AuthController } from '../src/modules/auth/infrastructure/controllers/auth.controller.js';
+import { AuthService } from '../src/modules/auth/application/auth.service.js';
 import { PrismaService } from '../src/shared/prisma/prisma.service.js';
 import { AuditService } from '../src/modules/audit/application/audit.service.js';
 
-// ── Shared mock builder ───────────────────────────────────────────────────────
+// ── Mock factories ────────────────────────────────────────────────────────────
 
-function buildPrismaUserMock() {
+function buildPrismaMock() {
   return {
     client: {
       user: {
         findUnique: jest.fn(),
         create: jest.fn(),
+        update: jest.fn(),
       },
-      auditLog: {
-        create: jest.fn().mockResolvedValue({}),
-      },
+      auditLog: { create: jest.fn().mockResolvedValue({}) },
     },
   };
 }
 
 // ── App factory ───────────────────────────────────────────────────────────────
 
-async function createTestApp(prisma: ReturnType<typeof buildPrismaUserMock>): Promise<INestApplication> {
+async function createTestApp(
+  prisma: ReturnType<typeof buildPrismaMock>,
+): Promise<INestApplication> {
+  process.env.JWT_ACCESS_SECRET = 'test-access-secret';
+  process.env.JWT_REFRESH_SECRET = 'test-refresh-secret';
+  process.env.JWT_ACCESS_EXPIRY = '15m';
+  process.env.JWT_REFRESH_EXPIRY = '7d';
+  process.env.NODE_ENV = 'test';
+
   const moduleRef: TestingModule = await Test.createTestingModule({
     imports: [
       ConfigModule.forRoot({ isGlobal: true }),
-      ThrottlerModule.forRoot([{ name: 'global', ttl: 60_000, limit: 100 }]),
-      JwtModule.register({ secret: 'test-access-secret', signOptions: { expiresIn: '15m' } }),
-      AuthModule,
+      JwtModule.register({
+        secret: 'test-access-secret',
+        signOptions: { expiresIn: '15m' },
+      }),
     ],
-  })
-    .overrideProvider(PrismaService)
-    .useValue(prisma)
-    .overrideProvider(AuditService)
-    .useValue({ log: jest.fn().mockResolvedValue(undefined) })
-    .compile();
+    controllers: [AuthController],
+    providers: [
+      AuthService,
+      { provide: PrismaService, useValue: prisma },
+      { provide: AuditService, useValue: { log: jest.fn().mockResolvedValue(undefined) } },
+    ],
+  }).compile();
 
   const app = moduleRef.createNestApplication();
   app.use(cookieParser());
@@ -64,13 +68,10 @@ async function createTestApp(prisma: ReturnType<typeof buildPrismaUserMock>): Pr
 
 describe('Auth E2E (/api/v1/auth)', () => {
   let app: INestApplication;
-  let prismaMock: ReturnType<typeof buildPrismaUserMock>;
+  let prismaMock: ReturnType<typeof buildPrismaMock>;
 
   beforeEach(async () => {
-    process.env.JWT_ACCESS_SECRET = 'test-access-secret';
-    process.env.JWT_REFRESH_SECRET = 'test-refresh-secret';
-
-    prismaMock = buildPrismaUserMock();
+    prismaMock = buildPrismaMock();
     app = await createTestApp(prismaMock);
   });
 
@@ -79,7 +80,7 @@ describe('Auth E2E (/api/v1/auth)', () => {
     jest.clearAllMocks();
   });
 
-  // ── POST /auth/register ──────────────────────────────────────────────────
+  // ── POST /auth/register ───────────────────────────────────────────────────
 
   describe('POST /api/v1/auth/register', () => {
     it('should return 201 and user data on valid registration', async () => {
@@ -90,6 +91,7 @@ describe('Auth E2E (/api/v1/auth)', () => {
         role: 'STUDENT',
         createdAt: new Date(),
         updatedAt: new Date(),
+        deletedAt: null,
         passwordHash: 'hash',
       };
 
@@ -151,6 +153,7 @@ describe('Auth E2E (/api/v1/auth)', () => {
         role: 'STUDENT',
         createdAt: new Date(),
         updatedAt: new Date(),
+        deletedAt: null,
         passwordHash: 'hash',
       };
 
@@ -161,8 +164,7 @@ describe('Auth E2E (/api/v1/auth)', () => {
         .post('/api/v1/auth/register')
         .send({ email: 'new@test.com', name: 'New User', password: 'password123' });
 
-      expect(res.headers['set-cookie']).toBeDefined();
-      const cookies = res.headers['set-cookie'] as string[];
+      const cookies = res.headers['set-cookie'] as unknown as string[];
       expect(cookies.some((c: string) => c.startsWith('access_token'))).toBe(true);
       expect(cookies.some((c: string) => c.startsWith('refresh_token'))).toBe(true);
     });
@@ -181,6 +183,7 @@ describe('Auth E2E (/api/v1/auth)', () => {
         passwordHash: hash,
         createdAt: new Date(),
         updatedAt: new Date(),
+        deletedAt: null,
       };
 
       prismaMock.client.user.findUnique.mockResolvedValue(user);
@@ -210,6 +213,7 @@ describe('Auth E2E (/api/v1/auth)', () => {
         id: 'user-1',
         email: 'test@test.com',
         passwordHash: hash,
+        deletedAt: null,
       });
 
       const res = await request(app.getHttpServer())
@@ -237,13 +241,14 @@ describe('Auth E2E (/api/v1/auth)', () => {
         passwordHash: hash,
         createdAt: new Date(),
         updatedAt: new Date(),
+        deletedAt: null,
       });
 
       const res = await request(app.getHttpServer())
         .post('/api/v1/auth/login')
         .send({ email: 'test@test.com', password: 'password123' });
 
-      const cookies = res.headers['set-cookie'] as string[];
+      const cookies = res.headers['set-cookie'] as unknown as string[];
       expect(cookies.some((c: string) => c.startsWith('access_token'))).toBe(true);
     });
   });
@@ -252,8 +257,7 @@ describe('Auth E2E (/api/v1/auth)', () => {
 
   describe('POST /api/v1/auth/logout', () => {
     it('should return 200 and clear cookies', async () => {
-      const res = await request(app.getHttpServer())
-        .post('/api/v1/auth/logout');
+      const res = await request(app.getHttpServer()).post('/api/v1/auth/logout');
 
       expect(res.status).toBe(200);
       expect(res.body).toEqual({ message: 'ok' });

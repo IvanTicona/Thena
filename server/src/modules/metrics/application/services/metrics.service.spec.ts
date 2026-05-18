@@ -161,5 +161,21 @@ describe('MetricsService', () => {
         expect(result[i].date > result[i - 1].date).toBe(true);
       }
     });
+
+    it('should skip jobs with null completedAt — regression for === null check', async () => {
+      const today = new Date();
+      today.setHours(12, 0, 0, 0);
+
+      prismaMock.client.reviewJob.findMany.mockResolvedValue([
+        { completedAt: null },
+        { completedAt: today },
+      ]);
+
+      const result = await service.getReviewsOverTime();
+      const todayKey = today.toISOString().slice(0, 10);
+      const todayEntry = result.find((r) => r.date === todayKey);
+
+      expect(todayEntry?.count).toBe(1);
+    });
   });
 });
