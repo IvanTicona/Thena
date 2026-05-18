@@ -74,14 +74,11 @@ describe('AlertService', () => {
 
       await service.checkInactivity();
 
-      expect(prismaMock.client.alert.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
-            thesisId: 't1',
-            type: 'INACTIVITY',
-          }),
-        }),
-      );
+      const [createCall] = prismaMock.client.alert.create.mock.calls[0] as [
+        { data: { thesisId: string; type: string } },
+      ];
+      expect(createCall.data.thesisId).toBe('t1');
+      expect(createCall.data.type).toBe('INACTIVITY');
     });
 
     it('notifies the assigned tutor when an inactivity alert is created', async () => {
@@ -114,7 +111,12 @@ describe('AlertService', () => {
 
     it('skips a thesis that has no submissions at all', async () => {
       prismaMock.client.thesisDocument.findMany.mockResolvedValue([
-        { id: 't3', tutorId: 'tutor-t3', student: { id: 's3', name: 'S3' }, chapters: [{ submissions: [] }] },
+        {
+          id: 't3',
+          tutorId: 'tutor-t3',
+          student: { id: 's3', name: 'S3' },
+          chapters: [{ submissions: [] }],
+        },
       ]);
 
       await service.checkInactivity();
@@ -144,9 +146,10 @@ describe('AlertService', () => {
       await service.checkInactivity();
 
       expect(prismaMock.client.alert.create).toHaveBeenCalledTimes(1);
-      expect(prismaMock.client.alert.create).toHaveBeenCalledWith(
-        expect.objectContaining({ data: expect.objectContaining({ thesisId: 'old' }) }),
-      );
+      const [createCall] = prismaMock.client.alert.create.mock.calls[0] as [
+        { data: { thesisId: string } },
+      ];
+      expect(createCall.data.thesisId).toBe('old');
     });
 
     it('stores the last submission date in alert metadata', async () => {
@@ -158,14 +161,11 @@ describe('AlertService', () => {
 
       await service.checkInactivity();
 
-      expect(prismaMock.client.alert.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
-            metadata: expect.objectContaining({
-              lastSubmissionAt: lastSubmission.toISOString(),
-            }),
-          }),
-        }),
+      const [createCall] = prismaMock.client.alert.create.mock.calls[0] as [
+        { data: { metadata: { lastSubmissionAt: string } } },
+      ];
+      expect(createCall.data.metadata.lastSubmissionAt).toBe(
+        lastSubmission.toISOString(),
       );
     });
   });
@@ -176,22 +176,29 @@ describe('AlertService', () => {
     it('throws NotFoundException when the alert does not exist', async () => {
       prismaMock.client.alert.findUnique.mockResolvedValue(null);
 
-      await expect(service.resolveAlert('alert-999')).rejects.toThrow(NotFoundException);
+      await expect(service.resolveAlert('alert-999')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('sets resolvedAt on the alert and returns it', async () => {
       const resolvedAt = new Date();
-      prismaMock.client.alert.findUnique.mockResolvedValue({ id: 'alert-1', type: 'INACTIVITY' });
-      prismaMock.client.alert.update.mockResolvedValue({ id: 'alert-1', resolvedAt });
+      prismaMock.client.alert.findUnique.mockResolvedValue({
+        id: 'alert-1',
+        type: 'INACTIVITY',
+      });
+      prismaMock.client.alert.update.mockResolvedValue({
+        id: 'alert-1',
+        resolvedAt,
+      });
 
       const result = await service.resolveAlert('alert-1');
 
-      expect(prismaMock.client.alert.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { id: 'alert-1' },
-          data: expect.objectContaining({ resolvedAt: expect.any(Date) }),
-        }),
-      );
+      const [updateCall] = prismaMock.client.alert.update.mock.calls[0] as [
+        { where: { id: string }; data: { resolvedAt: Date } },
+      ];
+      expect(updateCall.where.id).toBe('alert-1');
+      expect(updateCall.data.resolvedAt).toBeInstanceOf(Date);
       expect(result.id).toBe('alert-1');
       expect(result.resolvedAt).toBeInstanceOf(Date);
     });
@@ -205,22 +212,27 @@ describe('AlertService', () => {
 
       await service.resolveInactivityAlertsForThesis('thesis-1');
 
-      expect(prismaMock.client.alert.updateMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: {
-            thesisId: 'thesis-1',
-            type: 'INACTIVITY',
-            resolvedAt: null,
-          },
-          data: expect.objectContaining({ resolvedAt: expect.any(Date) }),
-        }),
-      );
+      const [updateManyCall] = prismaMock.client.alert.updateMany.mock
+        .calls[0] as [
+        {
+          where: { thesisId: string; type: string; resolvedAt: null };
+          data: { resolvedAt: Date };
+        },
+      ];
+      expect(updateManyCall.where.thesisId).toBe('thesis-1');
+      expect(updateManyCall.where.type).toBe('INACTIVITY');
+      expect(updateManyCall.where.resolvedAt).toBeNull();
+      expect(updateManyCall.data.resolvedAt).toBeInstanceOf(Date);
     });
 
     it('does not throw when updateMany rejects — errors are swallowed', async () => {
-      prismaMock.client.alert.updateMany.mockRejectedValue(new Error('DB error'));
+      prismaMock.client.alert.updateMany.mockRejectedValue(
+        new Error('DB error'),
+      );
 
-      await expect(service.resolveInactivityAlertsForThesis('thesis-1')).resolves.toBeUndefined();
+      await expect(
+        service.resolveInactivityAlertsForThesis('thesis-1'),
+      ).resolves.toBeUndefined();
     });
   });
 });

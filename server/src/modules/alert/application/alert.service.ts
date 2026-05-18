@@ -14,12 +14,6 @@ export class AlertService {
     private readonly notificationService: NotificationService,
   ) {}
 
-  /**
-   * Runs daily at 8:00 AM.
-   * Finds all thesis documents where the last submission was > 7 days ago
-   * and no active INACTIVITY alert already exists.
-   * Creates an alert and notifies the assigned tutor.
-   */
   @Cron(CronExpression.EVERY_DAY_AT_8AM)
   async checkInactivity(): Promise<void> {
     this.logger.log('Running inactivity check...');
@@ -27,12 +21,10 @@ export class AlertService {
     const thresholdDate = new Date();
     thresholdDate.setDate(thresholdDate.getDate() - INACTIVITY_THRESHOLD_DAYS);
 
-    // Find thesis documents with at least one submission and no active INACTIVITY alert
     const inactiveTheses = await this.prisma.client.thesisDocument.findMany({
       where: {
         // Must have a tutor assigned to receive the notification
         tutorId: { not: null },
-        // Has at least one chapter with submissions
         chapters: {
           some: {
             submissions: {
@@ -40,7 +32,6 @@ export class AlertService {
             },
           },
         },
-        // No active (unresolved) INACTIVITY alert
         alerts: {
           none: {
             type: 'INACTIVITY',
@@ -72,17 +63,14 @@ export class AlertService {
     let alertsCreated = 0;
 
     for (const thesis of inactiveTheses) {
-      // Find the most recent submission across all chapters
       const latestSubmission = thesis.chapters
         .flatMap((c) => c.submissions)
         .sort((a, b) => b.submittedAt.getTime() - a.submittedAt.getTime())[0];
 
-      // Skip if no submissions at all, or last submission is recent enough
       if (!latestSubmission || latestSubmission.submittedAt >= thresholdDate) {
         continue;
       }
 
-      // Create the inactivity alert
       await this.prisma.client.alert.create({
         data: {
           thesisId: thesis.id,
@@ -95,7 +83,6 @@ export class AlertService {
         },
       });
 
-      // Notify the tutor — fire-and-forget
       void this.notificationService.create(
         thesis.tutorId!,
         'INACTIVITY_ALERT',
@@ -112,13 +99,14 @@ export class AlertService {
       alertsCreated++;
     }
 
-    this.logger.log(`Inactivity check complete. Alerts created: ${alertsCreated}`);
+    this.logger.log(
+      `Inactivity check complete. Alerts created: ${alertsCreated}`,
+    );
   }
 
-  /**
-   * Resolves an active alert by setting its resolvedAt timestamp.
-   */
-  async resolveAlert(alertId: string): Promise<{ id: string; resolvedAt: Date }> {
+  async resolveAlert(
+    alertId: string,
+  ): Promise<{ id: string; resolvedAt: Date }> {
     const alert = await this.prisma.client.alert.findUnique({
       where: { id: alertId },
     });
@@ -136,14 +124,11 @@ export class AlertService {
     return { id: updated.id, resolvedAt: updated.resolvedAt! };
   }
 
-  /**
-   * Returns active (unresolved) alerts, optionally filtered by thesisId.
-   */
   async getActiveAlerts(thesisId?: string) {
     return this.prisma.client.alert.findMany({
       where: {
         resolvedAt: null,
-        ...(thesisId ? { thesisId } : {}),
+        ...(thesisId !== undefined ? { thesisId } : {}),
       },
       orderBy: { triggeredAt: 'desc' },
       select: {
@@ -167,7 +152,6 @@ export class AlertService {
   }
 
   /**
-   * Auto-resolves any active INACTIVITY alert for a thesis when a new submission is created.
    * Fire-and-forget — errors are swallowed so they never break the submission flow.
    */
   async resolveInactivityAlertsForThesis(thesisId: string): Promise<void> {

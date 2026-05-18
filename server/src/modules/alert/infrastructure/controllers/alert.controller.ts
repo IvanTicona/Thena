@@ -17,21 +17,12 @@ import { Roles } from '../../../auth/infrastructure/decorators/roles.decorator.j
 export class AlertController {
   constructor(private readonly alertService: AlertService) {}
 
-  /**
-   * GET /api/v1/alerts
-   * Returns all active (unresolved) alerts. Admin/Super-admin only.
-   * Optional query param: ?thesisId=<uuid>
-   */
   @Get()
   @Roles('ADMIN', 'SUPER_ADMIN')
   async getActiveAlerts(@Query('thesisId') thesisId?: string) {
     return this.alertService.getActiveAlerts(thesisId);
   }
 
-  /**
-   * PATCH /api/v1/alerts/:id/resolve
-   * Manually resolves an alert. Admin/Super-admin only.
-   */
   @Patch(':id/resolve')
   @Roles('ADMIN', 'SUPER_ADMIN')
   async resolveAlert(@Param('id', ParseUUIDPipe) id: string) {
