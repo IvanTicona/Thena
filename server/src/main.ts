@@ -6,14 +6,13 @@ import { AppModule } from './app.module.js';
 import { LoggingInterceptor } from './shared/interceptors/logging.interceptor.js';
 import { requireEnv } from './shared/utils/require-env.js';
 
-/** Guard: reject insecure JWT secrets before accepting any connections. */
 function validateJwtSecrets(logger: Logger): void {
   const accessSecret = process.env.JWT_ACCESS_SECRET;
   const refreshSecret = process.env.JWT_REFRESH_SECRET;
 
   const insecure = ['changeme-access', 'changeme-refresh', '', undefined];
 
-  if (!accessSecret || insecure.includes(accessSecret)) {
+  if (insecure.includes(accessSecret)) {
     logger.error(
       'JWT_ACCESS_SECRET is missing or using an insecure default value. ' +
         'Set a strong secret in your .env before starting Thena.',
@@ -21,7 +20,7 @@ function validateJwtSecrets(logger: Logger): void {
     process.exit(1);
   }
 
-  if (!refreshSecret || insecure.includes(refreshSecret)) {
+  if (insecure.includes(refreshSecret)) {
     logger.error(
       'JWT_REFRESH_SECRET is missing or using an insecure default value. ' +
         'Set a strong secret in your .env before starting Thena.',
@@ -34,7 +33,6 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const logger = new Logger('Bootstrap');
 
-  // Abort immediately if JWT secrets are not properly configured
   validateJwtSecrets(logger);
 
   // Security hardening — helmet adds essential HTTP security headers
@@ -52,7 +50,6 @@ async function bootstrap() {
     }),
   );
 
-  // Global request logging — logs method, path, userId, duration, status
   app.useGlobalInterceptors(new LoggingInterceptor());
 
   app.enableCors({
