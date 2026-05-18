@@ -68,7 +68,7 @@ export interface Observation {
 }
 
 export interface SourceReference {
-  layer: 'TUTOR' | 'INSTITUTIONAL';
+  layer: 'TUTOR' | 'INSTITUTIONAL' | 'BIBLIOGRAPHY';
   chunkId: string;
   documentTitle: string;
   section: string;

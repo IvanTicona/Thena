@@ -126,7 +126,7 @@ export class AuthService {
 
   getCookieOptions(type: 'access' | 'refresh'): CookieOptions {
     const isProduction =
-      this.config.getOrThrow<string>('NODE_ENV') === 'production';
+      this.config.get<string>('NODE_ENV') === 'production';
     const maxAge =
       type === 'access'
         ? 15 * 60 * 1000 // 15 minutes

@@ -1,12 +1,9 @@
 export const DEFAULT_CHAPTERS = [
-  'Perfil del Proyecto',
+  'Marco Referencial',
   'Marco Teórico',
-  'Marco Práctico / Metodología',
-  'Ingeniería del Proyecto',
-  'Desarrollo e Implementación',
-  'Pruebas y Resultados',
-  'Conclusiones y Recomendaciones',
-  'Anexos y Bibliografía',
+  'Marco Práctico',
+  'Resultados',
+  'Conclusiones',
 ] as const;
 
 export interface CreateThesisPayload {

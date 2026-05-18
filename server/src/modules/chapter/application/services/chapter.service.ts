@@ -220,7 +220,7 @@ export class ChapterService {
     const chapter = await this.prisma.client.chapter.findUnique({
       where: { id: chapterId },
       include: {
-        thesis: { select: { studentId: true } },
+        thesis: { select: { studentId: true, tutorId: true } },
         submissions: {
           include: { reviewJob: true },
           orderBy: { versionNumber: 'desc' },
@@ -268,6 +268,16 @@ export class ChapterService {
       where: { id: chapterId },
       data: { status: 'IN_REVIEW' },
     });
+
+    if (chapter.thesis.tutorId) {
+      void this.notificationService.create(
+        chapter.thesis.tutorId,
+        'NEW_SUBMISSION',
+        'Solicitud de revisión',
+        `El estudiante solicita revisión del capítulo "${chapter.title}".`,
+        { chapterId, chapterNumber: chapter.number },
+      );
+    }
 
     return { id: updated.id, status: updated.status };
   }

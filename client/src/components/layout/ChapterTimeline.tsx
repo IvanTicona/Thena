@@ -14,6 +14,13 @@ export function ChapterTimeline({ chapters }: ChapterTimelineProps) {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Determine the chapter that represents the student's current progress:
+  // the first chapter that is not LOCKED or APPROVED (i.e. DRAFT or IN_REVIEW).
+  // If all chapters are APPROVED, fall back to the last one.
+  const currentProgressChapter =
+    chapters.find((c) => c.status === 'DRAFT' || c.status === 'IN_REVIEW') ??
+    chapters[chapters.length - 1];
+
   return (
     <nav className="chapter-timeline" aria-label="Progreso de capítulos">
       {chapters.map((ch, index) => {
@@ -21,7 +28,10 @@ export function ChapterTimeline({ chapters }: ChapterTimelineProps) {
         const cfg = CHAPTER_STATUS[status];
         const isFirst = index === 0;
         const isLast = index === chapters.length - 1;
-        const isActive = location.pathname.startsWith(`/chapters/${ch.id}`);
+        const isActive =
+          location.pathname.startsWith(`/chapters/${ch.id}`) ||
+          (!location.pathname.includes('/chapters/') &&
+            ch.id === currentProgressChapter?.id);
         const isClickable = status !== 'LOCKED';
 
         // Previous chapter's connector color (for the top-half line)

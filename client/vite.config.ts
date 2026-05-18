@@ -7,6 +7,9 @@ export default defineConfig({
   server: {
     host: true,
     allowedHosts: ['thena.skynetupb.store', 'lab.skynetupb.store'],
+    watch: {
+      usePolling: true,
+    },
   },
   test: {
     globals: true,

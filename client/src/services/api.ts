@@ -12,7 +12,7 @@ import type {
 import { ApiError } from './api-error';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1',
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3100/api/v1',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -116,6 +116,15 @@ export const chaptersApi = {
   requestTutorReview: (id: string) => api.patch(`/chapters/${id}/request-review`),
 };
 
+export interface ChapterDetectionResponse {
+  found: boolean;
+  headingTitle: string | null;
+  preview: string | null;
+  tempFileKey: string;
+  chapterNumber: number;
+  chapterTitle: string;
+}
+
 export const submissionsApi = {
   upload: (chapterId: string, file: File) => {
     const formData = new FormData();
@@ -125,6 +134,16 @@ export const submissionsApi = {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
   },
+  analyzeDocument: (chapterId: string, file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('chapterId', chapterId);
+    return api.post<ChapterDetectionResponse>('/submissions/analyze', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+  confirmFromFullDocument: (chapterId: string, tempFileKey: string) =>
+    api.post<Submission>('/submissions/confirm', { chapterId, tempFileKey }),
   downloadFile: (submissionId: string) =>
     api.get(`/submissions/${submissionId}/file`, { responseType: 'arraybuffer' }),
 };

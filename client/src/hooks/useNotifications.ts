@@ -3,7 +3,7 @@ import { notificationsApi } from '../services/api';
 import type { Notification } from '../services/api';
 import { useAuth } from '../contexts/useAuth';
 
-const POLL_INTERVAL_MS = 30_000; // 30 seconds
+const POLL_INTERVAL_MS = 8_000; // 8 seconds
 
 export interface UseNotificationsResult {
   notifications: Notification[];

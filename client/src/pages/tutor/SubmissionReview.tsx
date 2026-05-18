@@ -20,7 +20,7 @@ import ObservationCard from '../student/components/ObservationCard';
 import ObservationFilters from '../student/components/ObservationFilters';
 import DocumentPreview from '../student/components/DocumentPreview';
 import ObservationFormModal from './components/ObservationFormModal';
-import api from '../../services/api';
+import api, { chaptersApi } from '../../services/api';
 import { observationsApi } from '../../services/api';
 import { ApiError } from '../../services/api-error';
 import './SubmissionReview.css';
@@ -49,9 +49,19 @@ export default function SubmissionReview() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingObs, setEditingObs] = useState<Observation | null>(null);
+  const [chapterStatus, setChapterStatus] = useState<string | null>(null);
   const markdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { document.title = 'Revisión de Entrega — Thena'; }, []);
+
+  useEffect(() => {
+    if (!chapterId) return;
+    chaptersApi.getById(chapterId).then((res) => {
+      setChapterStatus(res.data.status);
+    }).catch(() => {
+      // Silently ignore — action bar will remain enabled as a safe fallback
+    });
+  }, [chapterId]);
 
   // Append refreshKey as a query param to force usePolling to re-fetch
   const reviewUrl = chapterId
@@ -243,22 +253,33 @@ export default function SubmissionReview() {
               Agregar observación
             </Button>
           )}
-          <Button
-            type="primary"
-            icon={<CheckOutlined />}
-            onClick={handleApprove}
-            disabled={!chapterId}
-          >
-            Aprobar capítulo
-          </Button>
-          <Button
-            danger
-            icon={<CloseOutlined />}
-            onClick={handleReject}
-            disabled={!chapterId}
-          >
-            Rechazar capítulo
-          </Button>
+          {chapterStatus === 'APPROVED' ? (
+            <Alert
+              type="success"
+              message="Capítulo aprobado"
+              showIcon
+              style={{ padding: '4px 12px' }}
+            />
+          ) : (
+            <>
+              <Button
+                type="primary"
+                icon={<CheckOutlined />}
+                onClick={handleApprove}
+                disabled={!chapterId}
+              >
+                Aprobar capítulo
+              </Button>
+              <Button
+                danger
+                icon={<CloseOutlined />}
+                onClick={handleReject}
+                disabled={!chapterId}
+              >
+                Rechazar capítulo
+              </Button>
+            </>
+          )}
         </Space>
       </div>
 

@@ -9,6 +9,7 @@ import {
   Spin,
   message,
   Alert,
+  Modal,
 } from 'antd';
 import {
   FileWordOutlined,
@@ -20,7 +21,12 @@ import {
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { useParams, useNavigate } from 'react-router-dom';
-import { chaptersApi, submissionsApi, type ChapterDetailData } from '../../services/api';
+import {
+  chaptersApi,
+  submissionsApi,
+  type ChapterDetailData,
+  type ChapterDetectionResponse,
+} from '../../services/api';
 import { ApiError } from '../../services/api-error';
 import type { Submission } from '../../types';
 import { CHAPTER_STATUS, JOB_STATUS } from '../../utils/status';
@@ -36,7 +42,10 @@ export default function ChapterDetail() {
   const [chapter, setChapter] = useState<ChapterDetailData | null>(null);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState<ChapterDetectionResponse | null>(null);
+  const [confirmModalVisible, setConfirmModalVisible] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const [requestingReview, setRequestingReview] = useState(false);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -65,13 +74,27 @@ export default function ChapterDetail() {
   }, [chapter]);
 
   const handleUpload = async (file: File) => {
-    setUploading(true);
     if (!id) return;
-
+    setAnalyzing(true);
     try {
-      const res = await submissionsApi.upload(id, file);
-      message.success('Documento subido correctamente');
+      const res = await submissionsApi.analyzeDocument(id, file);
+      setAnalysisResult(res.data);
+      setConfirmModalVisible(true);
+    } catch (err) {
+      message.error(err instanceof ApiError ? err.message : 'Error al analizar el documento');
+    } finally {
+      setAnalyzing(false);
+    }
+  };
 
+  const handleConfirm = async () => {
+    if (!id || !analysisResult) return;
+    setConfirming(true);
+    try {
+      const res = await submissionsApi.confirmFromFullDocument(id, analysisResult.tempFileKey);
+      setConfirmModalVisible(false);
+      setAnalysisResult(null);
+      message.success('Entrega realizada correctamente');
       const jobId = res.data.reviewJob?.id;
       if (jobId) {
         navigate(`/chapters/${id}/review/${jobId}`);
@@ -79,10 +102,15 @@ export default function ChapterDetail() {
         fetchData();
       }
     } catch (err) {
-      message.error(err instanceof ApiError ? err.message : 'Error al subir el documento');
+      message.error(err instanceof ApiError ? err.message : 'Error al confirmar la entrega');
     } finally {
-      setUploading(false);
+      setConfirming(false);
     }
+  };
+
+  const handleCancelConfirm = () => {
+    setConfirmModalVisible(false);
+    setAnalysisResult(null);
   };
 
   const handleRequestTutorReview = async () => {
@@ -305,7 +333,7 @@ export default function ChapterDetail() {
           <Dragger
             accept=".docx"
             showUploadList={false}
-            disabled={uploading}
+            disabled={analyzing}
             beforeUpload={(file) => {
               handleUpload(file);
               return false;
@@ -316,24 +344,90 @@ export default function ChapterDetail() {
               <InboxOutlined style={{ color: '#06175d', fontSize: 48 }} />
             </p>
             <p className="chapter-detail__dragger-heading">
-              Subí tu archivo DOCX
+              Subí tu tesis completa en .docx
             </p>
             <p className="chapter-detail__dragger-sub">
               Arrastrá y soltá aquí o hacé clic para seleccionar
             </p>
             <Button
               type="primary"
-              loading={uploading}
+              loading={analyzing}
               className="chapter-detail__dragger-btn"
               style={{ background: '#06175d', borderColor: '#06175d' }}
             >
               Seleccionar archivo
             </Button>
             <p className="chapter-detail__dragger-hint">
-              Solo archivos .docx · Máx. 20MB
+              Solo archivos .docx · Máx. 20MB · Thena extrae el capítulo automáticamente
             </p>
           </Dragger>
         </Card>
+      )}
+
+      {/* Chapter detection confirmation modal */}
+      {analysisResult && (
+        <Modal
+          open={confirmModalVisible}
+          title="Confirmar entrega"
+          onCancel={handleCancelConfirm}
+          footer={
+            analysisResult.found
+              ? [
+                  <Button key="cancel" onClick={handleCancelConfirm}>
+                    Cancelar
+                  </Button>,
+                  <Button
+                    key="confirm"
+                    type="primary"
+                    loading={confirming}
+                    onClick={handleConfirm}
+                    style={{ background: '#06175d', borderColor: '#06175d' }}
+                  >
+                    Confirmar entrega
+                  </Button>,
+                ]
+              : [
+                  <Button key="close" onClick={handleCancelConfirm}>
+                    Cerrar
+                  </Button>,
+                ]
+          }
+        >
+          {analysisResult.found ? (
+            <div className="chapter-detail__confirm-modal-body">
+              <p>
+                Encontramos el{' '}
+                <strong>
+                  Capítulo {analysisResult.chapterNumber}: {analysisResult.chapterTitle}
+                </strong>{' '}
+                en tu documento.
+              </p>
+              {analysisResult.headingTitle && (
+                <p>
+                  Título detectado: <em>{analysisResult.headingTitle}</em>
+                </p>
+              )}
+              {analysisResult.preview && (
+                <div className="chapter-detail__confirm-preview">
+                  <p>
+                    <strong>Vista previa del contenido:</strong>
+                  </p>
+                  <blockquote className="chapter-detail__confirm-blockquote">
+                    {analysisResult.preview}…
+                  </blockquote>
+                </div>
+              )}
+              <p>¿Confirmás que este es el capítulo que querés entregar?</p>
+            </div>
+          ) : (
+            <Alert
+              type="error"
+              message="Capítulo no encontrado"
+              description={`No encontramos el Capítulo ${analysisResult.chapterNumber} en tu documento. Asegurate de que los capítulos estén marcados con estilo "Título 1" (Heading 1) en Word.`}
+              showIcon
+            />
+          )}
+        </Modal>
       )}
 
       {/* Submissions history table */}

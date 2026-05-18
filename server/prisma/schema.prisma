@@ -161,8 +161,9 @@ model Submission {
   fileUrl         String   @map("file_url") @db.VarChar(500)
   fileName        String   @map("file_name") @db.VarChar(255)
   mimeType        String   @map("mime_type") @db.VarChar(100)
-  markdownContent String?  @map("markdown_content") @db.Text
-  submittedAt     DateTime @default(now()) @map("submitted_at")
+  markdownContent     String?  @map("markdown_content") @db.Text
+  sourceDocumentUrl   String?  @map("source_document_url") @db.VarChar(500)
+  submittedAt         DateTime @default(now()) @map("submitted_at")
 
   // Relations
   chapter   Chapter    @relation(fields: [chapterId], references: [id])

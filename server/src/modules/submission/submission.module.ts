@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
 import { SubmissionController } from './infrastructure/controllers/submission.controller.js';
 import { SubmissionService } from './application/services/submission.service.js';
+import { DocumentParserService } from './application/services/document-parser.service.js';
 import { AuditModule } from '../audit/audit.module.js';
 import { NotificationModule } from '../notification/notification.module.js';
 import { AlertModule } from '../alert/alert.module.js';
@@ -14,6 +15,6 @@ import { AlertModule } from '../alert/alert.module.js';
     AlertModule,
   ],
   controllers: [SubmissionController],
-  providers: [SubmissionService],
+  providers: [SubmissionService, DocumentParserService],
 })
 export class SubmissionModule {}

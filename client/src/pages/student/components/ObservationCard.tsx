@@ -65,11 +65,6 @@ export default function ObservationCard({ observation, isSelected, onClick, onEd
           {observation.suggestion}
         </Paragraph>
       )}
-      {observation.textFragment && (
-        <blockquote className="observation-card__quote">
-          {observation.textFragment}
-        </blockquote>
-      )}
       {observation.sourceReference && (
         <Tooltip
           title={`${observation.sourceReference.documentTitle} - ${observation.sourceReference.section}`}
@@ -78,8 +73,13 @@ export default function ObservationCard({ observation, isSelected, onClick, onEd
             type="secondary"
             className="observation-card__source"
           >
-            Fuente: {observation.sourceReference.layer === 'TUTOR' ? 'Tutor' : 'Institucional'} -{' '}
-            {observation.sourceReference.section}
+            Fuente:{' '}
+            {observation.sourceReference.layer === 'TUTOR'
+              ? 'Tutor'
+              : observation.sourceReference.layer === 'BIBLIOGRAPHY'
+                ? 'Bibliografía'
+                : 'Institucional'}{' '}
+            — {observation.sourceReference.section}
           </Text>
         </Tooltip>
       )}

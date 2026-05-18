@@ -16,6 +16,7 @@ import type { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { SubmissionService } from '../../application/services/submission.service.js';
 import { CreateSubmissionDto } from '../../application/dtos/create-submission.dto.js';
+import { AnalyzeSubmissionDto, ConfirmSubmissionDto } from '../../application/dtos/analyze-submission.dto.js';
 import { CurrentUser } from '../../../../modules/auth/infrastructure/decorators/current-user.decorator.js';
 import type { JwtPayload } from '../../../../modules/auth/domain/auth.types.js';
 
@@ -56,6 +57,39 @@ export class SubmissionController {
     });
 
     res.end(buffer);
+  }
+
+  @Post('analyze')
+  @UseInterceptors(FileInterceptor('file'))
+  async analyze(
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [new MaxFileSizeValidator({ maxSize: MAX_FILE_SIZE })],
+      }),
+    )
+    file: Express.Multer.File,
+    @Body() dto: AnalyzeSubmissionDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    if (user.role !== 'STUDENT') {
+      throw new ForbiddenException('Only students can analyze documents');
+    }
+    return this.submissionService.analyzeDocument(user.sub, dto.chapterId, file);
+  }
+
+  @Post('confirm')
+  async confirm(
+    @Body() dto: ConfirmSubmissionDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    if (user.role !== 'STUDENT') {
+      throw new ForbiddenException('Only students can confirm submissions');
+    }
+    return this.submissionService.confirmFromFullDocument(
+      user.sub,
+      dto.chapterId,
+      dto.tempFileKey,
+    );
   }
 
   @Post()

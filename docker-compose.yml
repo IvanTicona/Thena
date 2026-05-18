@@ -61,7 +61,7 @@ services:
     env_file:
       - .env
     ports:
-      - "3100:3000"
+      - "3100:3100"
     volumes:
       - ./server:/app
       - /app/node_modules

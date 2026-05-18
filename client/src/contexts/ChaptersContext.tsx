@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import { chaptersApi } from '../services/api';
+import { thesisApi } from '../services/api';
 import type { Chapter } from '../types';
 
 /* ── Context type ───────────────────────────────────────── */
@@ -34,13 +34,9 @@ export function ChaptersProvider({ children, enabled = true }: ChaptersProviderP
     }
     setLoading(true);
     setError(null);
-    chaptersApi
-      .list()
-      .then((res) => {
-        // Server returns paginated { data: [...], meta: {...} }
-        const payload = res.data;
-        setChapters(Array.isArray(payload) ? payload : payload.data ?? []);
-      })
+    thesisApi
+      .findMine()
+      .then((thesis) => setChapters(thesis?.chapters ?? []))
       .catch(() => setError('Error al cargar los capítulos'))
       .finally(() => setLoading(false));
   }, [enabled]);

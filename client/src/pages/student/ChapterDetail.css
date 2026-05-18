@@ -184,6 +184,30 @@
   gap: 0;
 }
 
+/* ── CONFIRM MODAL ───────────────────────────────────────── */
+.chapter-detail__confirm-modal-body {
+  line-height: 1.6;
+}
+
+.chapter-detail__confirm-modal-body p {
+  margin-bottom: 8px;
+}
+
+.chapter-detail__confirm-preview {
+  margin: 12px 0;
+}
+
+.chapter-detail__confirm-blockquote {
+  background: #f9fafb;
+  border-left: 3px solid #d4d9ed;
+  border-radius: 0 4px 4px 0;
+  padding: 10px 14px;
+  margin: 8px 0 0;
+  color: #374151;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
 /* ── MOBILE ──────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .chapter-detail__header {
