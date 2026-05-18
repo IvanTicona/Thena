@@ -44,7 +44,9 @@ describe('MetricsService', () => {
     it('should return all summary fields', async () => {
       prismaMock.client.thesisDocument.count.mockResolvedValue(10);
       prismaMock.client.reviewJob.count.mockResolvedValue(20);
-      prismaMock.client.reviewJob.aggregate.mockResolvedValue({ _avg: { durationMs: 30000 } });
+      prismaMock.client.reviewJob.aggregate.mockResolvedValue({
+        _avg: { durationMs: 30000 },
+      });
       prismaMock.client.submission.findMany.mockResolvedValue([
         { studentId: 's1' },
         { studentId: 's2' },
@@ -61,7 +63,9 @@ describe('MetricsService', () => {
     it('should handle zero avg duration', async () => {
       prismaMock.client.thesisDocument.count.mockResolvedValue(0);
       prismaMock.client.reviewJob.count.mockResolvedValue(0);
-      prismaMock.client.reviewJob.aggregate.mockResolvedValue({ _avg: { durationMs: null } });
+      prismaMock.client.reviewJob.aggregate.mockResolvedValue({
+        _avg: { durationMs: null },
+      });
       prismaMock.client.submission.findMany.mockResolvedValue([]);
 
       const result = await service.getSummary();
