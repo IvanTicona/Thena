@@ -4,6 +4,9 @@ export const DEFAULT_CHAPTERS = [
   'Marco Práctico',
   'Resultados',
   'Conclusiones',
+  'Recomendaciones',
+  'Bibliografía',
+  'Anexos',
 ] as const;
 
 export interface CreateThesisPayload {
