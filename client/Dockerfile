@@ -24,7 +24,7 @@ ARG VITE_API_URL
 ENV VITE_API_URL=$VITE_API_URL
 RUN npm ci
 COPY . .
-RUN npm run build
+RUN npx vite build
 
 # ---- Production (Nginx serving static files) ----
 FROM nginx:1.27-alpine AS production
