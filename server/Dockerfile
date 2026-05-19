@@ -36,4 +36,4 @@ COPY --from=builder /app/src/generated ./src/generated
 # Schema needed for prisma migrate deploy
 COPY prisma ./prisma
 EXPOSE 3000
-CMD ["node", "dist/main.js"]
+CMD ["node", "dist/src/main.js"]
