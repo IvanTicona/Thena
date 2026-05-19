@@ -24,7 +24,7 @@ CMD ["npm", "run", "start:dev"]
 FROM base AS builder
 RUN npm ci
 COPY . .
-RUN npx prisma generate && npm run build
+RUN npx prisma generate && npm run build && npx tsc --project tsconfig.seed.json
 
 # ---- Production (compiled JS only) ----
 FROM base AS production
