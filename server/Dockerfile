@@ -33,7 +33,8 @@ RUN npm ci --omit=dev
 COPY --from=builder /app/dist ./dist
 # Prisma client is generated to src/generated/prisma (custom output in schema.prisma)
 COPY --from=builder /app/src/generated ./src/generated
-# Schema needed for prisma migrate deploy
+# Schema and config needed for prisma migrate deploy
 COPY prisma ./prisma
+COPY prisma.config.ts ./
 EXPOSE 3000
 CMD ["node", "dist/src/main.js"]
