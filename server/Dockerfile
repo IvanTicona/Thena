@@ -31,9 +31,9 @@ FROM base AS production
 ENV NODE_ENV=production
 RUN npm ci --omit=dev
 COPY --from=builder /app/dist ./dist
-# Prisma requires the generated client engine from the builder stage
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-# Schema needed for prisma migrate deploy at startup (if used)
+# Prisma client is generated to src/generated/prisma (custom output in schema.prisma)
+COPY --from=builder /app/src/generated ./src/generated
+# Schema needed for prisma migrate deploy
 COPY prisma ./prisma
 EXPOSE 3000
 CMD ["node", "dist/main.js"]
