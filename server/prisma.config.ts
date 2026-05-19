@@ -1,5 +1,7 @@
-import "dotenv/config";
 import { defineConfig } from "prisma/config";
+
+// Load .env for local dev; in production containers env vars are injected by docker-compose
+try { require("dotenv").config(); } catch { /* not available in production — env vars already set */ }
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
