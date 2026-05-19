@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Form, Input, Button, Typography, Card, Alert, Select } from 'antd';
+import { Form, Input, Button, Typography, Card, Alert } from 'antd';
 import {
   UserOutlined,
   MailOutlined,
@@ -18,7 +18,6 @@ interface RegisterFormValues {
   email: string;
   password: string;
   confirmPassword: string;
-  role: 'STUDENT' | 'TUTOR';
 }
 
 export default function RegisterPage() {
@@ -34,7 +33,7 @@ export default function RegisterPage() {
     setIsLoading(true);
     setErrorMsg(null);
     try {
-      await register(values.name, values.email, values.password, values.role);
+      await register(values.name, values.email, values.password);
       navigate('/', { replace: true });
     } catch (err) {
       if (err instanceof ApiError) {
@@ -150,21 +149,6 @@ export default function RegisterPage() {
                 placeholder="Repetí tu contraseña"
                 size="large"
                 autoComplete="new-password"
-              />
-            </Form.Item>
-
-            <Form.Item
-              name="role"
-              label="Rol"
-              rules={[{ required: true, message: 'Seleccioná tu rol' }]}
-            >
-              <Select
-                size="large"
-                placeholder="Seleccioná tu rol"
-                options={[
-                  { value: 'STUDENT', label: 'Estudiante' },
-                  { value: 'TUTOR', label: 'Tutor' },
-                ]}
               />
             </Form.Item>
 

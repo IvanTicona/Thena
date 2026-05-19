@@ -44,17 +44,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const register = useCallback(
-    async (
-      name: string,
-      email: string,
-      password: string,
-      role: 'STUDENT' | 'TUTOR',
-    ) => {
+    async (name: string, email: string, password: string) => {
       const res = await api.post<AuthUser>('/auth/register', {
         name,
         email,
         password,
-        role,
       });
       localStorage.setItem('hasSession', 'true');
       setUser(res.data);

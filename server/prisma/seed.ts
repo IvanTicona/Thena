@@ -55,7 +55,7 @@ async function main() {
     update: { passwordHash },
     create: {
       email: 'tutor@thena.dev',
-      name: 'Dr. Marcelo Ticona',
+      name: 'Ing. Paul Landaeta',
       role: 'TUTOR',
       passwordHash,
     },
